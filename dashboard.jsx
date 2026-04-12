@@ -1,4 +1,5 @@
-import { useState, useRef } from "react";
+// React グローバル変数展開（Babel Standalone用）
+const { useState, useEffect, useRef, useMemo, useCallback, useContext, createContext } = React;
 
 // ── トークン ─────────────────────────────
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -38,6 +39,30 @@ const T_DARK = {
 // デフォルト（コンポーネント外）はライトモード
 const T = T_LIGHT;
 
+// ── 共通スタイル定数（インライン重複削減）
+const CARD_BASE = {
+  background:"#fff", borderRadius:10,
+  boxShadow:"0 1px 4px rgba(15,51,32,.08)",
+  padding:"18px 20px",
+};
+const MODAL_CONTENT = {
+  background:"#fff", borderRadius:14,
+  width:"100%", maxWidth:640,
+  maxHeight:"88vh", overflowY:"auto",
+  boxShadow:"0 8px 48px rgba(0,0,0,.22)",
+};
+const FLEX_CENTER = { display:"flex", alignItems:"center" };
+const FLEX_BETWEEN = { display:"flex", justifyContent:"space-between", alignItems:"center" };
+const BREAKPOINTS = { mobile:768, tablet:1024, sidebar:228 };
+const FONT = {
+  h1:{ fontSize:18, fontWeight:800 },
+  h2:{ fontSize:15, fontWeight:800 },
+  h3:{ fontSize:13, fontWeight:700 },
+  label:{ fontSize:11, fontWeight:700 },
+  small:{ fontSize:10 },
+  badge:{ fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:10 },
+};
+
 // ── localStorage キー定数（一元管理）──────────
 const LS = {
   orders:        "sld_orders",
@@ -51,6 +76,7 @@ const LS = {
   staffRole:     "sld_staff_role",
   bookmarks:     "sld_bookmarks",
   tourDone:      "sld_tour_done",
+  quickActions:  "sld_quick_actions",
 };
 
 // ── ナビゲーション（大/中/小 3層構造）──────────
@@ -153,7 +179,7 @@ const READER_PROFILE_DATA = {
   b1: { // 民法改正と実務対応【第3版】（有斐閣）
     totalBuyers: 98,
     byType: [
-      { type:"弁護士",    pct:71, count:70, color:"#1a5c38" },
+      { type:"弁護士",    pct:71, count:70, color:T.g2 },
       { type:"企業法務",  pct:19, count:19, color:"#2d7a4f" },
       { type:"司法書士",  pct:7,  count:7,  color:"#4a9968" },
       { type:"その他",    pct:3,  count:2,  color:"#a8cbb7"  },
@@ -181,7 +207,7 @@ const READER_PROFILE_DATA = {
     totalBuyers: 73,
     byType: [
       { type:"企業法務",  pct:44, count:32, color:"#1565c0" },
-      { type:"弁護士",    pct:38, count:28, color:"#1a5c38" },
+      { type:"弁護士",    pct:38, count:28, color:T.g2 },
       { type:"司法書士",  pct:12, count:9,  color:"#4a9968" },
       { type:"その他",    pct:6,  count:4,  color:"#a8cbb7"  },
     ],
@@ -207,7 +233,7 @@ const READER_PROFILE_DATA = {
   b3: { // 労働法実務大全【第4版】（弘文堂）
     totalBuyers: 66,
     byType: [
-      { type:"弁護士",    pct:58, count:38, color:"#1a5c38" },
+      { type:"弁護士",    pct:58, count:38, color:T.g2 },
       { type:"企業法務",  pct:28, count:19, color:"#2d7a4f" },
       { type:"社労士",    pct:9,  count:6,  color:"#4a9968" },
       { type:"その他",    pct:5,  count:3,  color:"#a8cbb7"  },
@@ -235,7 +261,7 @@ const READER_PROFILE_DATA = {
     totalBuyers: 41,
     byType: [
       { type:"企業法務",  pct:51, count:21, color:"#1565c0" },
-      { type:"弁護士",    pct:32, count:13, color:"#1a5c38" },
+      { type:"弁護士",    pct:32, count:13, color:T.g2 },
       { type:"その他",    pct:17, count:7,  color:"#a8cbb7"  },
     ],
     byCareer: [
@@ -259,7 +285,7 @@ const READER_PROFILE_DATA = {
   b6: { // 行政法実務テキスト（有斐閣）
     totalBuyers: 28,
     byType: [
-      { type:"弁護士",    pct:46, count:13, color:"#1a5c38" },
+      { type:"弁護士",    pct:46, count:13, color:T.g2 },
       { type:"行政書士",  pct:29, count:8,  color:"#4a9968" },
       { type:"公務員",    pct:18, count:5,  color:"#78909c" },
       { type:"その他",    pct:7,  count:2,  color:"#a8cbb7"  },
@@ -334,8 +360,6 @@ const DM_CAMPAIGN_HISTORY = [
   { id:"dm-02", pubName:"商事法務",bookTitle:"改正会社法 実務セミナー告知", sentAt:"2026-03-05", targetSeg:"企業法務会員", targetCount:2400, opens:"38.7%", clicks:"11.2%", orders:28, revenue:0, fee:50000 },
   { id:"dm-03", pubName:"弘文堂",  bookTitle:"労働法実務大全【第4版】発売",  sentAt:"2026-01-15", targetSeg:"労働法購入履歴あり", targetCount:1820, opens:"44.2%", clicks:"18.6%", orders:31, revenue:224640, fee:60000 },
 ];
-
-
 
 // ── 支払方法マスタ ─────────────────────────────────
 // feeRate: 決済手数料率
@@ -470,7 +494,7 @@ const calcBPO = (params) => {
 // ── 取次マスタ サンプルデータ ────────────────────────
 const TORIKESHI_DATA = [
   {
-    id:"t1", name:"日本出版販売（日販）", short:"日販", color:"#01579b",
+    id:"t1", name:"日本出版販売（日販）", short:"日販", color:T.navy,
     type:"major", status:"active",
     contractRate: 0.73, paymentDays: 60, returnLimit: 0.30,
     accountCode:"NP-0012345",
@@ -485,7 +509,7 @@ const TORIKESHI_DATA = [
     lastContact:"2026-02-15",
   },
   {
-    id:"t2", name:"トーハン", short:"トーハン", color:"#e65100",
+    id:"t2", name:"トーハン", short:"トーハン", color:T.amber,
     type:"major", status:"active",
     contractRate: 0.72, paymentDays: 60, returnLimit: 0.25,
     accountCode:"TH-0098765",
@@ -499,7 +523,7 @@ const TORIKESHI_DATA = [
     lastContact:"2026-01-20",
   },
   {
-    id:"t3", name:"大阪屋栗田", short:"大栗", color:"#1a7a4a",
+    id:"t3", name:"大阪屋栗田", short:"大栗", color:T.ok,
     type:"mid", status:"active",
     contractRate: 0.74, paymentDays: 90, returnLimit: 0.35,
     accountCode:"OK-0045678",
@@ -511,7 +535,7 @@ const TORIKESHI_DATA = [
     lastContact:"2025-12-10",
   },
   {
-    id:"t4", name:"中央社", short:"中央社", color:"#6a1b9a",
+    id:"t4", name:"中央社", short:"中央社", color:T.purple,
     type:"mid", status:"review",
     contractRate: 0.75, paymentDays: 90, returnLimit: 0.40,
     accountCode:"CS-0011111",
@@ -536,7 +560,7 @@ const FEEDBACK_DATA_INIT = [
   { id:"fb006", created:"2026-03-22 09:00", staff:"佐藤（本店）",     page:"mail_ma",      type:"improvement", priority:"low",    content:"配信スケジュールをカレンダーUIで管理できると便利。",                              status:"rejected",    note:"v3対応予定", emoji:null },
 ];
 
-const BOOKS_DATA = [
+const MOCK_BOOKS = [ // ⚠ MOCK: Supabase移行時にAPI呼び出しに差替え
   { id:"b1", title:"民法改正と実務対応【第3版】",     author:"中田裕康",   pub:"yuhikaku",   price:5800, rate:0.65, stock:142, stockByLocation:{kasumigaseki:98, honsha:44}, elec:true,  pod:false, podPrintCost:0,    status:"published", rank:1,  sales:98,  elecSales:42, views:2840, trialClicks:312, cartRate:0.18, cvr:0.14, elecReq:0,
     prevEditionId:"b1_v2", prevEditionTitle:"民法改正と実務対応【第2版】", revisionNote:"2024年改正相続法・共有法全面改訂", revisionDate:"2025-10-01", prevBuyerCount:284 },
   { id:"b2", title:"会社法実務ハンドブック",           author:"江頭憲治郎", pub:"shojihomu",  price:6500, rate:0.68, stock:87,  stockByLocation:{kasumigaseki:55, honsha:32}, elec:true,  pod:false, podPrintCost:0,    status:"published", rank:2,  sales:73,  elecSales:31, views:1920, trialClicks:241, cartRate:0.16, cvr:0.12, elecReq:0,
@@ -780,17 +804,17 @@ const PUBLISHING_PROJECTS = [
 ];
 
 const PUB_STATUS_MAP = {
-  planning: { label:"企画中",  color:"#8a8a78",  bg:"#f4f3ef"  },
-  editing:  { label:"編集中",  color:"#01579b",  bg:"#e3f2fd"  },
-  review:   { label:"校正中",  color:"#e65100",  bg:"#fff3e0"  },
-  printing: { label:"印刷中",  color:"#6a1b9a",  bg:"#f3e5f5"  },
-  released: { label:"発売済",  color:"#1a7a4a",  bg:"#e8f5e9"  },
-  paused:   { label:"保留",    color:"#b71c1c",  bg:"#fef2f2"  },
+  planning: { label:"企画中",  color:T.ink4,  bg:T.bg  },
+  editing:  { label:"編集中",  color:T.navy,  bg:T.navyPale  },
+  review:   { label:"校正中",  color:T.amber,  bg:T.amberPale  },
+  printing: { label:"印刷中",  color:T.purple,  bg:T.purplePale  },
+  released: { label:"発売済",  color:T.ok,  bg:T.okPale  },
+  paused:   { label:"保留",    color:T.red,  bg:T.redPale  },
 };
 const PUB_TYPE_MAP = {
-  original: { label:"自社企画", icon:"🏠", color:"#1a5c38" },
-  support:  { label:"著者支援", icon:"🤝", color:"#01579b" },
-  elec:     { label:"電子化",   icon:"📱", color:"#6a1b9a" },
+  original: { label:"自社企画", icon:"🏠", color:T.g2 },
+  support:  { label:"著者支援", icon:"🤝", color:T.navy },
+  elec:     { label:"電子化",   icon:"📱", color:T.purple },
 };
 
 // ── デジタル商品サンプルデータ ─────────────
@@ -931,7 +955,7 @@ const COMPANY = {
   invoiceNo:  "{COMPANY.invoiceNo}",
 };
 
-const ORDERS_DATA = [
+const MOCK_ORDERS = [
   { id:"ORD-2841", member:"田中 弁護士事務所", items:"民法改正と実務対応 ×2",   total:11600, fmt:"paper", status:"pending",   date:"2026-03-10 14:32",
     caseNo:"2026-民-0341", caseName:"山田商事 vs 鈴木商会 損害賠償請求事件",
     urgent:true,  urgentBy:"2026-03-15", urgentNote:"期日3/15 口頭弁論前日までに必要",
@@ -979,7 +1003,7 @@ const ORDERS_DATA = [
 
 
 // ── 入金消し込みデータ ──────────────────────────────────
-const BANK_DEPOSITS_SAMPLE = [
+const MOCK_DEPOSITS = [
   { id:"dep001", date:"2026-03-10", amount:32500, transferName:"マルベニホウム",         rawName:"マルベニホウム",          status:"matched",   orderId:"ORD-2839", confidence:98, memo:"" },
   { id:"dep002", date:"2026-03-10", amount:55100, transferName:"トウキョウホウリツJム",   rawName:"トウキョウホウリツジムショ", status:"matched",   orderId:"ORD-2837", confidence:92, memo:"" },
   { id:"dep003", date:"2026-03-09", amount:12000, transferName:"ヤマダ ケンタ",           rawName:"ヤマダ ケンタ",            status:"unmatched",  orderId:null,       confidence:0,  memo:"注文番号不明" },
@@ -1458,7 +1482,7 @@ const StoreView = ({ onToast, darkMode }) => {
               <div style={{ fontSize:15, fontWeight:800, color:T.ink }}>📱 AIタブレット化 ロードマップ</div>
               <button onClick={() => setShowRoadmap(false)}
                 style={{ background:T.bg, border:`1px solid ${T.rule}`,
-                  borderRadius:6, padding:"4px 10px", cursor:"pointer", color:T.ink4, fontSize:12 }}>✕</button>
+                  borderRadius:6, padding:"4px 10px", cursor:"pointer", color:T.ink4, fontSize:12 }} aria-label="閉じる">✕</button>
             </div>
             <div style={{ padding:"20px 22px" }}>
               {[
@@ -1528,7 +1552,7 @@ const REVIEWS_DATA = [
   { id:"rv4", book:"企業法務の基礎", author:"弁護士 Y.K.", stars:5, text:"新人研修テキストとして毎年採用...", date:"2026-03-06", status:"pending" },
 ];
 
-const CORP_ACCOUNTS = [
+const MOCK_CORPS = [ // ⚠ MOCK: Supabase移行時にAPI呼び出しに差替え
   { id:"corp-01", name:"丸紅株式会社 法務部",      members:12, plan:"法人Pro", monthly:78000, status:"active",  pending:1,
     invoiceAddr:"東京都千代田区霞が関1-1-1 丸紅法務部", invoiceEmail:"accounting@marubeni.co.jp",
     invoiceMethod:"email",
@@ -1579,7 +1603,7 @@ const CORP_ACCOUNTS = [
   },
 ];
 
-const POINTS_LOG = [
+const MOCK_POINTS_LOG = [
   { id:"pt1", member:"弁護士 T.S.",  action:"レビュー承認",       pts:+50,  balance:320,  date:"2026-03-10" },
   { id:"pt2", member:"司法書士 M.A.", action:"書籍購入還元",       pts:+290, balance:580,  date:"2026-03-10" },
   { id:"pt3", member:"法務部 K.N.",   action:"書籍購入還元",       pts:+325, balance:810,  date:"2026-03-09" },
@@ -1587,7 +1611,7 @@ const POINTS_LOG = [
   { id:"pt5", member:"弁護士 R.T.",   action:"ポイント失効（90日）",pts:-200, balance:0,    date:"2026-03-08" },
 ];
 
-const ALERT_QUEUE = [
+const MOCK_ALERT_QUEUE = [
   { type:"改訂版リリース", title:"民法改正と実務対応【第3版】", targets:4821, seg:"民法購入者", status:"ready",  scheduled:"2026-03-11 10:00" },
   { type:"法改正アラート", title:"民法改正 施行まで22日",       targets:8412, seg:"全弁護士会員",status:"draft",  scheduled:"2026-03-12 09:00" },
 ];
@@ -1598,14 +1622,14 @@ const ALERT_QUEUE = [
 
 // メルマガセグメントタグマスタ
 const MAIL_SEGMENTS = [
-  { id:"seg-minpo",    label:"民法",          color:"#1a5c38", count:4821, note:"民法カテゴリ購入・クリック履歴あり" },
+  { id:"seg-minpo",    label:"民法",          color:T.g2, count:4821, note:"民法カテゴリ購入・クリック履歴あり" },
   { id:"seg-kaisha",   label:"会社法",        color:"#1565c0", count:3240, note:"会社法・M&Aカテゴリ" },
-  { id:"seg-rodo",     label:"労働法",        color:"#e65100", count:2180, note:"労働法・雇用カテゴリ" },
-  { id:"seg-keiji",    label:"刑事弁護",      color:"#6a1b9a", count:1240, note:"刑事法カテゴリ" },
+  { id:"seg-rodo",     label:"労働法",        color:T.amber, count:2180, note:"労働法・雇用カテゴリ" },
+  { id:"seg-keiji",    label:"刑事弁護",      color:T.purple, count:1240, note:"刑事法カテゴリ" },
   { id:"seg-gyosei",   label:"行政法",        color:"#0277bd", count:890,  note:"行政法・官公庁法務" },
   { id:"seg-shuushu",  label:"修習生",        color:"#558b2f", count:1502, note:"修習生ステータス" },
   { id:"seg-bpo",      label:"BPO見込み",     color:"#c62828", count:412,  note:"BPO記事クリック・問い合わせ" },
-  { id:"seg-expert",   label:"エキスパート",  color:"#c8a84b", count:387,  note:"エキスパート認定会員" },
+  { id:"seg-expert",   label:"エキスパート",  color:T.gold, count:387,  note:"エキスパート認定会員" },
   { id:"seg-corp",     label:"企業法務",      color:"#37474f", count:947,  note:"法人会員紐づき企業法務担当" },
 ];
 
@@ -1634,15 +1658,15 @@ const TRAINEE_MAIL_SERIES = [
 ];
 
 
-const BLASTENGINE_CAMPAIGNS = [
+const MOCK_BLASTENGINE = [
   { id:"be-31", name:"2026年3月 法改正ニュースレター", seg:"全会員 29,418名", status:"sent",  sentAt:"2026-03-01", opens:"34.2%", clicks:"8.1%" },
   { id:"be-30", name:"フリーランス保護法 完全施行直前ガイド", seg:"弁護士+企業法務 10,200名", status:"sent", sentAt:"2026-02-15", opens:"41.8%", clicks:"12.4%" },
   { id:"be-32", name:"4月施行 民法改正 完全対策特集",  seg:"民法カテゴリ閲覧者 3,840名", status:"scheduled", sentAt:"2026-03-20 10:00", opens:"—",clicks:"—" },
   { id:"be-33", name:"新刊案内 2026年3月",            seg:"全会員",          status:"draft", sentAt:"—",          opens:"—", clicks:"—" },
 ];
 
-// m7/m8 はMEMBERS_DATAに追加（修習生 木村・林）
-const MEMBERS_EXTRA = [
+// m7/m8 はMOCK_MEMBERSに追加（修習生 木村・林）
+const MOCK_MEMBERS_EXTRA = [
   { id:"m7", name:"木村 隼人", type:"修習生", email:"kimura@shuushu.jp", plan:"Std", status:"active",
     joined:"2026-01-15", lastLogin:"2026-03-09", pts:80, orders:4, spend:24800, corpId:null,
     barNo:"", barAssoc:"", barYear:null, isExpert:false, expertStatus:null, expertComment:"", expertBooks:[],
@@ -1660,7 +1684,7 @@ const MEMBERS_EXTRA = [
       addr1:"埼玉県和光市南2-3-8", addr2:"司法研修所", name:"林 さくら", tel:"090-8888-0001", isDefault:true, note:"" }]
   }
 ];
-const MEMBERS_DATA = [
+const MOCK_MEMBERS = [ // ⚠ MOCK: Supabase移行時にAPI呼び出しに差替え
   { id:"m1", name:"田中 誠一",   type:"弁護士",    email:"tanaka@law.jp",     plan:"Pro",    status:"active",  joined:"2024-04-01", lastLogin:"2026-03-10", pts:320,  orders:12, spend:82400,
     corpId:"corp-01",
     barNo:"第45291号", barAssoc:"東京弁護士会", barYear:2008,
@@ -1734,7 +1758,7 @@ const MEMBERS_DATA = [
       { id:"da6-2", type:"home",   label:"自宅（大阪・梅田）",           zip:"530-0001", addr1:"大阪府大阪市北区梅田1-1",    addr2:"伊藤 律子",          name:"伊藤 律子",          tel:"090-6666-0001",isDefault:false,note:"出張不在時 ⚠ 要確認" },
     ]
   },
-].concat(MEMBERS_EXTRA);
+].concat(MOCK_MEMBERS_EXTRA);
 
 const INVENTORY_LOG = [
   { date:"2026-03-10", book:"民法改正と実務対応【第3版】",  type:"販売", qty:-2,  after:142, note:"ORD-2841" },
@@ -1874,8 +1898,72 @@ const ModalHeader = ({ title, onClose, actions }) => (
       {actions}
       <button onClick={onClose}
         style={{ background:T.bg,border:"1px solid "+T.rule,borderRadius:6,
-          padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12 }}>✕</button>
+          padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12 }} aria-label="閉じる">✕</button>
     </div>
+  </div>
+);
+
+// ── Skeleton（ローディング状態表示）──────────────────────
+const SkeletonPulse = ({ width, height, radius, style }) => (
+  <div style={{
+    width: width || "100%",
+    height: height || 16,
+    borderRadius: radius || 6,
+    background: "linear-gradient(90deg, " + T.rule + " 25%, " + T.bg + " 50%, " + T.rule + " 75%)",
+    backgroundSize: "200% 100%",
+    animation: "skeletonPulse 1.5s ease-in-out infinite",
+    ...style
+  }} />
+);
+
+const SkeletonKPI = () => (
+  <Card style={{ padding: "14px 18px" }}>
+    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
+      <SkeletonPulse width={28} height={28} radius="50%" />
+      <SkeletonPulse width={48} height={18} />
+    </div>
+    <SkeletonPulse width="60%" height={26} style={{ marginBottom: 6 }} />
+    <SkeletonPulse width="40%" height={12} />
+  </Card>
+);
+
+const SkeletonTableRow = () => (
+  <div style={{ display: "flex", gap: 16, padding: "12px 20px", borderBottom: "1px solid " + T.rule }}>
+    <SkeletonPulse width="25%" height={14} />
+    <SkeletonPulse width="20%" height={14} />
+    <SkeletonPulse width="15%" height={14} />
+    <SkeletonPulse width="10%" height={14} />
+    <SkeletonPulse width="18%" height={14} />
+  </div>
+);
+
+const SkeletonDashboard = () => (
+  <div style={{ padding: 20 }}>
+    <SkeletonPulse width={200} height={22} style={{ marginBottom: 20 }} />
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 14, marginBottom: 28 }}>
+      {[1,2,3,4,5,6].map(function(k){ return <SkeletonKPI key={k} />; })}
+    </div>
+    <Card>
+      <div style={{ padding: "14px 20px", borderBottom: "1px solid " + T.rule }}>
+        <SkeletonPulse width={160} height={16} />
+      </div>
+      {[1,2,3,4,5].map(function(k){ return <SkeletonTableRow key={k} />; })}
+    </Card>
+  </div>
+);
+
+const SkeletonList = () => (
+  <div style={{ padding: 20 }}>
+    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 20 }}>
+      <SkeletonPulse width={180} height={22} />
+      <SkeletonPulse width={120} height={34} radius={8} />
+    </div>
+    <Card>
+      <div style={{ padding: "12px 20px", borderBottom: "1px solid " + T.rule }}>
+        <SkeletonPulse width={280} height={32} radius={8} />
+      </div>
+      {[1,2,3,4,5,6,7].map(function(k){ return <SkeletonTableRow key={k} />; })}
+    </Card>
   </div>
 );
 
@@ -2086,42 +2174,42 @@ const DELTA_DATA = {
 // KPI全14指標の定義（初期優先順位）
 // KPIグループ定義
 const KPI_GROUPS = [
-  { id:"revenue", label:"売上・注文",   icon:"💰", color:"#1a5c38" },
-  { id:"crm",     label:"会員・CRM",    icon:"👤", color:"#01579b" },
-  { id:"ec",      label:"書籍・在庫",   icon:"📚", color:"#00695c" },
-  { id:"saas",    label:"SaaS",        icon:"🤖", color:"#6a1b9a" },
-  { id:"bpo",     label:"BPO",          icon:"📋", color:"#e65100" },
+  { id:"revenue", label:"売上・注文",   icon:"💰", color:T.g2 },
+  { id:"crm",     label:"会員・CRM",    icon:"👤", color:T.navy },
+  { id:"ec",      label:"書籍・在庫",   icon:"📚", color:T.teal },
+  { id:"saas",    label:"SaaS",        icon:"🤖", color:T.purple },
+  { id:"bpo",     label:"BPO",          icon:"📋", color:T.amber },
 ];
 
 const INITIAL_KPI_ORDER = [
-  { id:"sales",       label:"月間売上",          value:"¥4,280,000", deltaKey:"sales",       color:"#1a5c38", icon:"💰", nav:"sales",   group:"revenue", goalVal:5000000,  goalDisp:"¥500万", goalPct:86 },
-  { id:"orders",      label:"新規注文",           value:"312件",       deltaKey:"orders",      color:"#01579b", icon:"🛒", nav:"orders",  group:"revenue", goalVal:350,      goalDisp:"350件",  goalPct:89 },
-  { id:"members",     label:"総会員数",           value:"29,418名",    deltaKey:"members",     color:"#1a8f5e", icon:"👤", nav:"members", group:"crm",     goalVal:30000,    goalDisp:"3万名",  goalPct:98 },
-  { id:"mau",         label:"AI司書 MAU",         value:"1,842名",     deltaKey:"mau",         color:"#6a1b9a", icon:"🤖", nav:"saas",    group:"saas",    goalVal:2000,     goalDisp:"2,000名",goalPct:92 },
-  { id:"mail_sub",    label:"メルマガ登録者数",   value:"18,240名", deltaKey:"mail_sub", color:"#00695c", icon:"📬", nav:"mail_ma", group:"crm", sub:"登録率 62.7%（会員29,418名中）",  goalVal:20000,    goalDisp:"2万名",  goalPct:91 },
-  { id:"mail_rate",   label:"メルマガ開封率",     value:"34.2%",       deltaKey:"mail_rate",   color:"#00695c", icon:"📧", nav:"mail_ma", group:"crm",     goalVal:35,       goalDisp:"35%",    goalPct:98 },
-  { id:"books_paper", label:"掲載書籍数",         value:"247冊",       deltaKey:"books_paper", color:"#1a5c38", icon:"📚", nav:"books",   group:"ec", wide:true },
-  { id:"newbooks",    label:"新刊登録（月）",      value:"6冊", deltaKey:"newbooks", color:"#e65100", icon:"🆕", nav:"books", group:"ec", sub:"📗紙4 📱電書1 📦セット1 🖨POD0", goalVal:8, goalDisp:"8冊", goalPct:75 },
-  { id:"ad_count",    label:"広告掲載（全媒体）", value:"9件",         deltaKey:"ad_count",    color:"#c8a84b", icon:"📣", nav:"banners", group:"revenue", goalVal:15,       goalDisp:"15件",   goalPct:60 },
-  { id:"ad_sales",    label:"広告月額収益（全媒体）", value:"¥480,000", deltaKey:"ad_sales",    color:"#c8a84b", icon:"💴", nav:"banners", group:"revenue", goalVal:700000,   goalDisp:"¥70万",  goalPct:69 },
-  { id:"bpo",         label:"BPO稼働案件",        value:"23件",        deltaKey:"bpo",         color:"#e65100", icon:"📋", nav:"bpo",     group:"bpo",     goalVal:25,       goalDisp:"25件",   goalPct:92 },
+  { id:"sales",       label:"月間売上",          value:"¥4,280,000", deltaKey:"sales",       color:T.g2, icon:"💰", nav:"sales",   group:"revenue", goalVal:5000000,  goalDisp:"¥500万", goalPct:86 },
+  { id:"orders",      label:"新規注文",           value:"312件",       deltaKey:"orders",      color:T.navy, icon:"🛒", nav:"orders",  group:"revenue", goalVal:350,      goalDisp:"350件",  goalPct:89 },
+  { id:"members",     label:"総会員数",           value:"29,418名",    deltaKey:"members",     color:T.g3, icon:"👤", nav:"members", group:"crm",     goalVal:30000,    goalDisp:"3万名",  goalPct:98 },
+  { id:"mau",         label:"AI司書 MAU",         value:"1,842名",     deltaKey:"mau",         color:T.purple, icon:"🤖", nav:"saas",    group:"saas",    goalVal:2000,     goalDisp:"2,000名",goalPct:92 },
+  { id:"mail_sub",    label:"メルマガ登録者数",   value:"18,240名", deltaKey:"mail_sub", color:T.teal, icon:"📬", nav:"mail_ma", group:"crm", sub:"登録率 62.7%（会員29,418名中）",  goalVal:20000,    goalDisp:"2万名",  goalPct:91 },
+  { id:"mail_rate",   label:"メルマガ開封率",     value:"34.2%",       deltaKey:"mail_rate",   color:T.teal, icon:"📧", nav:"mail_ma", group:"crm",     goalVal:35,       goalDisp:"35%",    goalPct:98 },
+  { id:"books_paper", label:"掲載書籍数",         value:"247冊",       deltaKey:"books_paper", color:T.g2, icon:"📚", nav:"books",   group:"ec", wide:true },
+  { id:"newbooks",    label:"新刊登録（月）",      value:"6冊", deltaKey:"newbooks", color:T.amber, icon:"🆕", nav:"books", group:"ec", sub:"📗紙4 📱電書1 📦セット1 🖨POD0", goalVal:8, goalDisp:"8冊", goalPct:75 },
+  { id:"ad_count",    label:"広告掲載（全媒体）", value:"9件",         deltaKey:"ad_count",    color:T.gold, icon:"📣", nav:"banners", group:"revenue", goalVal:15,       goalDisp:"15件",   goalPct:60 },
+  { id:"ad_sales",    label:"広告月額収益（全媒体）", value:"¥480,000", deltaKey:"ad_sales",    color:T.gold, icon:"💴", nav:"banners", group:"revenue", goalVal:700000,   goalDisp:"¥70万",  goalPct:69 },
+  { id:"bpo",         label:"BPO稼働案件",        value:"23件",        deltaKey:"bpo",         color:T.amber, icon:"📋", nav:"bpo",     group:"bpo",     goalVal:25,       goalDisp:"25件",   goalPct:92 },
   { id:"pay_hold",    label:"発送保留",             value:"1件",         deltaKey:"pay_hold",    color:"#c62828", icon:"🔒", nav:"orders",  group:"revenue", goalVal:0,        goalDisp:"0件",    goalPct:100 },
-  { id:"reviews",     label:"レビュー投稿（月）",  value:"43件",        deltaKey:"reviews",     color:"#c8a84b", icon:"⭐", nav:"reviews", group:"crm",     goalVal:50,       goalDisp:"50件",   goalPct:86 },
-  { id:"inquiry",     label:"お問い合わせ数",      value:"37件",        deltaKey:"inquiry",     color:"#5a5a4c", icon:"✉", nav:null,      group:"crm" },
+  { id:"reviews",     label:"レビュー投稿（月）",  value:"43件",        deltaKey:"reviews",     color:T.gold, icon:"⭐", nav:"reviews", group:"crm",     goalVal:50,       goalDisp:"50件",   goalPct:86 },
+  { id:"inquiry",     label:"お問い合わせ数",      value:"37件",        deltaKey:"inquiry",     color:T.ink3, icon:"✉", nav:null,      group:"crm" },
 ];
 
 // 収益柱別データ（7項目）
 // 合計 ¥4,906,000。pct合計100%
 // 収益柱別 期間別データ（有料会員費追加・合計100%）
 const REVENUE_PILLAR_META = [
-  { id:"ec_paper",   label:"EC・紙書籍",    color:"#1a5c38", icon:"📗", gm:12, targets:{ today:9400, this_week:63000, this_month:250, q1:690,   this_year:2800, last_month:218 } },
-  { id:"elec",       label:"電子書籍",       color:"#01579b", icon:"📱", gm:40, targets:{ today:3600, this_week:24000, this_month:100, q1:265,   this_year:1100, last_month:88  } },
-  { id:"set",        label:"セット販売",     color:"#00695c", icon:"📦", gm:18, targets:{ today:1200, this_week:8000,  this_month:30,  q1:78,    this_year:320,  last_month:26  } },
-  { id:"pod",        label:"POD",            color:"#1a8f5e", icon:"🖨", gm:22, targets:{ today: 600, this_week:4000,  this_month:15,  q1:40,    this_year:160,  last_month:13  } },
+  { id:"ec_paper",   label:"EC・紙書籍",    color:T.g2, icon:"📗", gm:12, targets:{ today:9400, this_week:63000, this_month:250, q1:690,   this_year:2800, last_month:218 } },
+  { id:"elec",       label:"電子書籍",       color:T.navy, icon:"📱", gm:40, targets:{ today:3600, this_week:24000, this_month:100, q1:265,   this_year:1100, last_month:88  } },
+  { id:"set",        label:"セット販売",     color:T.teal, icon:"📦", gm:18, targets:{ today:1200, this_week:8000,  this_month:30,  q1:78,    this_year:320,  last_month:26  } },
+  { id:"pod",        label:"POD",            color:T.g3, icon:"🖨", gm:22, targets:{ today: 600, this_week:4000,  this_month:15,  q1:40,    this_year:160,  last_month:13  } },
   { id:"member",     label:"有料会員費",     color:"#00838f", icon:"💎", targets:{ today:1800, this_week:12000, this_month:45,  q1:120,   this_year:480,  last_month:38  } },
-  { id:"saas",       label:"AI司書 SaaS",    color:"#6a1b9a", icon:"🤖", targets:{ today:2400, this_week:16000, this_month:70,  q1:185,   this_year:750,  last_month:58  } },
-  { id:"bpo",        label:"BPO代行",        color:"#e65100", icon:"📋", targets:{ today:2700, this_week:18000, this_month:65,  q1:172,   this_year:700,  last_month:55  } },
-  { id:"ad",         label:"広告（全媒体）", color:"#c8a84b", icon:"📣", gm:65, targets:{ today:1600, this_week:10000, this_month:48,  q1:125,   this_year:500,  last_month:38  } },
+  { id:"saas",       label:"AI司書 SaaS",    color:T.purple, icon:"🤖", targets:{ today:2400, this_week:16000, this_month:70,  q1:185,   this_year:750,  last_month:58  } },
+  { id:"bpo",        label:"BPO代行",        color:T.amber, icon:"📋", targets:{ today:2700, this_week:18000, this_month:65,  q1:172,   this_year:700,  last_month:55  } },
+  { id:"ad",         label:"広告（全媒体）", color:T.gold, icon:"📣", gm:65, targets:{ today:1600, this_week:10000, this_month:48,  q1:125,   this_year:500,  last_month:38  } },
 ];
 // 期間別 実績値（万円単位）
 const REVENUE_PILLAR_VALS = {
@@ -2159,7 +2247,6 @@ const DashboardView = ({ onNav, darkMode, staffRole, staffName, orders, deposits
   var isGaishoo   = currentRole === "gaishoo";
   var isOps       = currentRole === "ops";
   var isOwnerAdmin = currentRole === "admin" || currentRole === "owner";
-  var rm = ROLE_META[currentRole] || ROLE_META.admin;
   // ロール別ウェルカムKPI（ダッシュボード上部に表示）
   var ord = orders || [];
   var dep = deposits || [];
@@ -2183,13 +2270,13 @@ const DashboardView = ({ onNav, darkMode, staffRole, staffName, orders, deposits
       return [
         { label:"出荷待ち",       val:pend.length+"件",  color:T.g2,      bg:T.okPale,  nav:"orders",   icon:"📦" },
         { label:"EC注文",         val:ec.length+"件",    color:T.navy,    bg:T.navyPale,nav:"orders",   icon:"🌐" },
-        { label:"電子化Req",      val:"27件",             color:"#6a1b9a", bg:"#f3e5f5", nav:"elec_req", icon:"📱" },
+        { label:"電子化Req",      val:"27件",             color:T.purple, bg:T.purplePale, nav:"elec_req", icon:"📱" },
         { label:"在庫管理",       val:"確認",             color:T.ink4,    bg:T.bg,      nav:"inventory",icon:"📦" },
       ];
     }
     if(currentRole === "content") {
       return [
-        { label:"未入稿記事",     val:"11件",  color:"#6a1b9a", bg:"#f3e5f5",  nav:"articles",  icon:"✍"  },
+        { label:"未入稿記事",     val:"11件",  color:T.purple, bg:T.purplePale,  nav:"articles",  icon:"✍"  },
         { label:"次回メルマガ",   val:"月曜",  color:T.g2,      bg:T.okPale,   nav:"mail_ma",   icon:"📰" },
         { label:"法改正カレンダー",val:"1件",  color:T.navy,    bg:T.navyPale, nav:"reform_cal",icon:"📅" },
         { label:"バナー審査",     val:"0件",   color:T.ink4,    bg:T.bg,       nav:"banners",   icon:"🖼" },
@@ -2254,39 +2341,39 @@ const DashboardView = ({ onNav, darkMode, staffRole, staffName, orders, deposits
       {DATE_PRESETS.map(p=>(
         <button key={p.id} onClick={()=>{ setPreset(p.id); setShowCustom(false); }} style={{
           padding:"5px 13px", borderRadius:5, fontSize:12, fontWeight:preset===p.id?700:400,
-          border:`1.5px solid ${preset===p.id?"#1a5c38":"#d8d4c8"}`,
-          background:preset===p.id?"#1a5c38":"transparent",
-          color:preset===p.id?"#fff":"#8a8a78", cursor:"pointer", fontFamily:"inherit",
+          border:`1.5px solid ${preset===p.id?T.g2:T.rule}`,
+          background:preset===p.id?T.g2:"transparent",
+          color:preset===p.id?"#fff":T.ink4, cursor:"pointer", fontFamily:"inherit",
           transition:"all .12s" }}>
           {p.short}
         </button>
       ))}
       <button onClick={()=>{ setShowCustom(!showCustom); setPreset("custom"); }} style={{
         padding:"5px 13px", borderRadius:5, fontSize:12, fontWeight:preset==="custom"?700:400,
-        border:`1.5px solid ${preset==="custom"?"#6a1b9a":"#d8d4c8"}`,
-        background:preset==="custom"?"#6a1b9a":"transparent",
-        color:preset==="custom"?"#fff":"#8a8a78", cursor:"pointer", fontFamily:"inherit" }}>
+        border:`1.5px solid ${preset==="custom"?T.purple:T.rule}`,
+        background:preset==="custom"?T.purple:"transparent",
+        color:preset==="custom"?"#fff":T.ink4, cursor:"pointer", fontFamily:"inherit" }}>
         🗓 カスタム
       </button>
       {showCustom && (
         <div style={{ display:"flex", gap:6, alignItems:"center",
-          padding:"6px 12px", background:"#f3e5f5", borderRadius:7,
+          padding:"6px 12px", background:T.purplePale, borderRadius:7,
           border:"1.5px solid rgba(106,27,154,.2)" }}>
-          <input type="date" value={customFrom} onChange={e=>setCustomFrom(e.target.value)}
+          <input aria-label="開始日" type="date" value={customFrom} onChange={e=>setCustomFrom(e.target.value)}
             style={{ fontSize:12, border:"1px solid #d8d4c8", borderRadius:4,
               padding:"3px 8px", fontFamily:"inherit", background:"#fff" }} />
-          <span style={{ fontSize:12, color:"#8a8a78" }}>〜</span>
-          <input type="date" value={customTo} onChange={e=>setCustomTo(e.target.value)}
+          <span style={{ fontSize:12, color:T.ink4 }}>〜</span>
+          <input aria-label="開始日" type="date" value={customTo} onChange={e=>setCustomTo(e.target.value)}
             style={{ fontSize:12, border:"1px solid #d8d4c8", borderRadius:4,
               padding:"3px 8px", fontFamily:"inherit", background:"#fff" }} />
         </div>
       )}
       <div style={{ marginLeft:8, display:"flex", gap:4, alignItems:"center" }}>
-        <span style={{ fontSize:11, color:"#8a8a78", fontWeight:700 }}>比較：</span>
+        <span style={{ fontSize:11, color:T.ink4, fontWeight:700 }}>比較：</span>
         {[["day","先日比"],["week","先週比"],["month","先月比"],["year","昨年比"]].map(([v,l])=>(
           <button key={v} onClick={()=>setCmp(v)} style={{
-            padding:"4px 10px", borderRadius:5, border:`1.5px solid ${cmp===v?"#01579b":"#d8d4c8"}`,
-            background:cmp===v?"#01579b":"transparent", color:cmp===v?"#fff":"#8a8a78",
+            padding:"4px 10px", borderRadius:5, border:`1.5px solid ${cmp===v?T.navy:T.rule}`,
+            background:cmp===v?T.navy:"transparent", color:cmp===v?"#fff":T.ink4,
             fontWeight:cmp===v?700:400, fontSize:11, cursor:"pointer", fontFamily:"inherit" }}>
             {l}
           </button>
@@ -2308,37 +2395,37 @@ const DashboardView = ({ onNav, darkMode, staffRole, staffName, orders, deposits
           onDragOver={e=>handleDragOver(e,k.id)} onDrop={e=>handleDrop(e,k.id)}
           onClick={()=>onNav(k.nav)}
           style={{ gridColumn:"span 2", background:"#fff", borderRadius:10,
-            border:`2px solid ${isOver?"#1a5c38":"#d8d4c8"}`,
+            border:`2px solid ${isOver?T.g2:T.rule}`,
             boxShadow:"0 1px 4px rgba(15,51,32,.08)", padding:"14px 18px",
             cursor:"grab", opacity:isDragging ? 0.5 : 1,
             position:"relative" }}>
           {/* ドラッグハンドル */}
           <div style={{ position:"absolute",top:8,right:10,fontSize:14,
-            color:"#c4bfb0",userSelect:"none",cursor:"grab" }}
+            color:T.rule2,userSelect:"none",cursor:"grab" }}
             title="ドラッグして並び替え">⠿</div>
           <div style={{ display:"flex", justifyContent:"space-between", marginBottom:10 }}>
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
               <span style={{ fontSize:16 }}>📚</span>
-              <span style={{ fontSize:13, fontWeight:800, color:"#1a1a14" }}>掲載書籍数</span>
-              <span style={{ fontSize:11, color:"#8a8a78", fontWeight:700 }}>総計 {k.value}</span>
+              <span style={{ fontSize:13, fontWeight:800, color:T.ink }}>掲載書籍数</span>
+              <span style={{ fontSize:11, color:T.ink4, fontWeight:700 }}>総計 {k.value}</span>
             </div>
             <div style={{ textAlign:"right" }}>
-              <div style={{ fontSize:12, fontWeight:800, color:isUp?"#1a7a4a":isDown?"#b71c1c":"#8a8a78" }}>{delta}</div>
-              {basis && <div style={{ fontSize:9, color:"#8a8a78" }}>{basis}</div>}
+              <div style={{ fontSize:12, fontWeight:800, color:isUp?T.ok:isDown?T.red:T.ink4 }}>{delta}</div>
+              {basis && <div style={{ fontSize:9, color:T.ink4 }}>{basis}</div>}
             </div>
           </div>
           <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:8 }}>
             {[
-              { label:"紙書籍",   val:"189冊", color:"#1a5c38", icon:"📗" },
-              { label:"電子書籍", val:"38冊",  color:"#01579b", icon:"📱" },
-              { label:"セット",   val:"12冊",  color:"#00695c", icon:"📦" },
-              { label:"POD",      val:"8冊",   color:"#1a8f5e", icon:"🖨" },
+              { label:"紙書籍",   val:"189冊", color:T.g2, icon:"📗" },
+              { label:"電子書籍", val:"38冊",  color:T.navy, icon:"📱" },
+              { label:"セット",   val:"12冊",  color:T.teal, icon:"📦" },
+              { label:"POD",      val:"8冊",   color:T.g3, icon:"🖨" },
             ].map((b,i)=>(
               <div key={i} style={{ textAlign:"center", padding:"8px 6px",
-                background:"#f4f3ef", borderRadius:7, border:"1px solid #d8d4c8" }}>
+                background:T.bg, borderRadius:7, border:"1px solid #d8d4c8" }}>
                 <div style={{ fontSize:14, marginBottom:2 }}>{b.icon}</div>
                 <div style={{ fontFamily:"'Inter'", fontSize:16, fontWeight:800, color:b.color }}>{b.val}</div>
-                <div style={{ fontSize:10, color:"#8a8a78" }}>{b.label}</div>
+                <div style={{ fontSize:10, color:T.ink4 }}>{b.label}</div>
               </div>
             ))}
           </div>
@@ -2350,7 +2437,7 @@ const DashboardView = ({ onNav, darkMode, staffRole, staffName, orders, deposits
         onDragOver={e=>handleDragOver(e,k.id)} onDrop={e=>handleDrop(e,k.id)}
         onClick={k.nav?()=>onNav(k.nav):undefined}
         style={{ background:"#fff", borderRadius:10,
-          border:`2px solid ${isOver?"#1a5c38":"#d8d4c8"}`,
+          border:`2px solid ${isOver?T.g2:T.rule}`,
           boxShadow:"0 1px 4px rgba(15,51,32,.08)", padding:"14px 16px",
           cursor:"grab", opacity:isDragging ? 0.4 : 1,
           position:"relative" }}
@@ -2358,40 +2445,40 @@ const DashboardView = ({ onNav, darkMode, staffRole, staffName, orders, deposits
         onMouseLeave={e=>{ e.currentTarget.style.boxShadow="0 1px 4px rgba(15,51,32,.08)"; }}>
         {/* ドラッグハンドル */}
         <div style={{ position:"absolute",top:6,right:8,fontSize:13,
-          color:"#c4bfb0",userSelect:"none",cursor:"grab",pointerEvents:"none" }}>⠿</div>
+          color:T.rule2,userSelect:"none",cursor:"grab",pointerEvents:"none" }}>⠿</div>
         <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
           <span style={{ fontSize:18 }}>{k.icon}</span>
           <div style={{ textAlign:"right" }}>
             <div style={{ fontSize:12, fontWeight:800,
-              color:isUp?"#1a7a4a":isDown?"#b71c1c":"#8a8a78" }}>{delta}</div>
-            {basis && <div style={{ fontSize:9, color:"#8a8a78", marginTop:1 }}>{basis}</div>}
+              color:isUp?T.ok:isDown?T.red:T.ink4 }}>{delta}</div>
+            {basis && <div style={{ fontSize:9, color:T.ink4, marginTop:1 }}>{basis}</div>}
           </div>
         </div>
         <div style={{ fontFamily:"'Inter',sans-serif", fontSize:20, fontWeight:800,
           color:k.color, lineHeight:1.1, marginBottom:2 }}>{k.value}</div>
         {k.sub && (
-          <div style={{ fontSize:9,color:"#00695c",fontWeight:600,marginBottom:2 }}>
+          <div style={{ fontSize:9,color:T.teal,fontWeight:600,marginBottom:2 }}>
             {k.sub}
           </div>
         )}
-        <div style={{ fontSize:12, color:"#8a8a78", marginBottom: k.goal?8:0 }}>{k.label}</div>
+        <div style={{ fontSize:12, color:T.ink4, marginBottom: k.goal?8:0 }}>{k.label}</div>
         {k.goalDisp && (() => {
           const g = goals[k.id] || { pct: k.goalPct, disp: k.goalDisp };
           return (
             <div>
               <div style={{ display:"flex", justifyContent:"space-between", marginBottom:3 }}>
-                <span style={{ fontSize:10, color:"#8a8a78", cursor:"pointer" }}
+                <span style={{ fontSize:10, color:T.ink4, cursor:"pointer" }}
                   title="目標設定 → 右上「目標設定」ボタンから変更できます">
                   目標 {g.disp}
                 </span>
                 <span style={{ fontSize:10, fontWeight:700,
-                  color:g.pct>=100?"#1a7a4a":g.pct>=70?"#c8a84b":"#e65100" }}>
+                  color:g.pct>=100?T.ok:g.pct>=70?T.gold:T.amber }}>
                   {g.pct}%
                 </span>
               </div>
-              <div style={{ height:4, background:"#d8d4c8", borderRadius:4, overflow:"hidden" }}>
+              <div style={{ height:4, background:T.rule, borderRadius:4, overflow:"hidden" }}>
                 <div style={{ height:"100%", borderRadius:4,
-                  background:g.pct>=100?"#1a7a4a":g.pct>=70?"#c8a84b":"#e65100",
+                  background:g.pct>=100?T.ok:g.pct>=70?T.gold:T.amber,
                   width:`${Math.min(100,g.pct)}%`, transition:"width .4s" }} />
               </div>
             </div>
@@ -2421,7 +2508,7 @@ const DashboardView = ({ onNav, darkMode, staffRole, staffName, orders, deposits
                 </div>
               </div>
               <button onClick={()=>setGoalModal(false)} style={{ background:T.bg,border:`1px solid ${T.rule}`,
-                borderRadius:6,padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12,fontWeight:700 }}>✕</button>
+                borderRadius:6,padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12,fontWeight:700 }} aria-label="閉じる">✕</button>
             </div>
             <div style={{ padding:"18px 24px" }}>
               {/* ── 自動設定ボタン ── */}
@@ -2506,7 +2593,7 @@ const DashboardView = ({ onNav, darkMode, staffRole, staffName, orders, deposits
                           </div>
                         </div>
                         <div style={{ display:"flex",alignItems:"center",gap:8 }}>
-                          <input
+                          <input aria-label="KPI目標値"
                             value={g.disp}
                             onChange={e=>setEditGoals(function(prev){ var p2=Object.assign({},prev); var g2=Object.assign({},g,{disp:e.target.value}); p2[k.id]=g2; return p2; })}
                             style={{ width:90,padding:"5px 8px",borderRadius:6,
@@ -2577,9 +2664,10 @@ const DashboardView = ({ onNav, darkMode, staffRole, staffName, orders, deposits
           {roleKpis.map(function(k,i){
             return (
               <div key={i} onClick={function(){ if(k.nav) onNav(k.nav); }}
+                title={k.nav ? "クリックで「"+k.label+"」画面へ" : ""}
                 style={{ padding:"10px 14px",borderRadius:8,cursor:k.nav?"pointer":"default",
                   background:k.bg,border:"1px solid "+k.color+"30",
-                  transition:"box-shadow .15s" }}
+                  transition:"box-shadow .15s,transform .15s" }}
                 onMouseEnter={function(e){ e.currentTarget.style.boxShadow="0 2px 12px rgba(0,0,0,.1)"; }}
                 onMouseLeave={function(e){ e.currentTarget.style.boxShadow=""; }}>
                 <div style={{ display:"flex",alignItems:"center",gap:6,marginBottom:4 }}>
@@ -2609,7 +2697,7 @@ const DashboardView = ({ onNav, darkMode, staffRole, staffName, orders, deposits
             background:"#fff8e1",border:"1.5px solid #f9a825" }}>
             <span style={{ fontSize:20 }}>🎯</span>
             <div style={{ flex:1 }}>
-              <div style={{ fontSize:13,fontWeight:700,color:"#e65100" }}>
+              <div style={{ fontSize:13,fontWeight:700,color:T.amber }}>
                 今月の目標をまだ更新していません（{undone}件が低達成率）
               </div>
               <div style={{ fontSize:11,color:"#8a6500",marginTop:2 }}>
@@ -2622,8 +2710,6 @@ const DashboardView = ({ onNav, darkMode, staffRole, staffName, orders, deposits
           </div>
         );
       })()}
-
-
 
       {/* ── AI サマリーバー（折りたたみ対応・詳細展開）── */}
       {(()=>{
@@ -2692,27 +2778,27 @@ const DashboardView = ({ onNav, darkMode, staffRole, staffName, orders, deposits
               onClick={()=>setAiOpen(o=>!o)}>
               <span style={{ fontSize:18, flexShrink:0 }}>🤖</span>
               <div style={{ flex:1 }}>
-                <div style={{ fontSize:11, fontWeight:800, color:"#6a1b9a", letterSpacing:".05em" }}>
+                <div style={{ fontSize:11, fontWeight:800, color:T.purple, letterSpacing:".05em" }}>
                   AI サマリー — {currentPreset.label}
                 </div>
-                <div style={{ fontSize:13, color:"#2e2e24", marginTop:2, lineHeight:1.6 }}>
+                <div style={{ fontSize:13, color:T.ink2, marginTop:2, lineHeight:1.6 }}>
                   {shortText}
                 </div>
               </div>
               {/* 右側：売上バッジ＋開閉ボタン */}
               <div style={{ display:"flex", flexDirection:"column", gap:4, alignItems:"flex-end", flexShrink:0 }}>
-                <div style={{ fontFamily:"'Inter'", fontSize:18, fontWeight:800, color:"#1a5c38" }}>
+                <div style={{ fontFamily:"'Inter'", fontSize:18, fontWeight:800, color:T.g2 }}>
                   {fmtM(ps.total)}
                 </div>
-                <div style={{ fontSize:10, color:ps.pct>=0?"#1a7a4a":"#b71c1c", fontWeight:700 }}>
+                <div style={{ fontSize:10, color:ps.pct>=0?T.ok:T.red, fontWeight:700 }}>
                   {fmtPct(ps.pct)} 前年比
                 </div>
               </div>
               <div style={{ flexShrink:0, display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
-                <div style={{ fontSize:10, color:"#6a1b9a", fontWeight:700 }}>
+                <div style={{ fontSize:10, color:T.purple, fontWeight:700 }}>
                   {aiOpen ? "閉じる" : "詳細を見る"}
                 </div>
-                <div style={{ fontSize:14, color:"#6a1b9a", transition:"transform .2s",
+                <div style={{ fontSize:14, color:T.purple, transition:"transform .2s",
                   transform:aiOpen?"rotate(180deg)":"rotate(0deg)" }}>▼</div>
               </div>
             </div>
@@ -2736,11 +2822,11 @@ const DashboardView = ({ onNav, darkMode, staffRole, staffName, orders, deposits
                 </div>
                 <div style={{ display:"flex", gap:6, justifyContent:"flex-end" }}>
                   <span style={{ fontSize:11, padding:"3px 8px", borderRadius:5,
-                    background:"#e8f5e9", color:"#1a7a4a", fontWeight:700 }}>EC {fmtM(ps.ec)}</span>
+                    background:T.okPale, color:T.ok, fontWeight:700 }}>EC {fmtM(ps.ec)}</span>
                   <span style={{ fontSize:11, padding:"3px 8px", borderRadius:5,
-                    background:"#f3e5f5", color:"#6a1b9a", fontWeight:700 }}>SaaS {fmtM(ps.saas)}</span>
+                    background:T.purplePale, color:T.purple, fontWeight:700 }}>SaaS {fmtM(ps.saas)}</span>
                   <span style={{ fontSize:11, padding:"3px 8px", borderRadius:5,
-                    background:"#fff3e0", color:"#e65100", fontWeight:700 }}>BPO {fmtM(ps.bpo)}</span>
+                    background:T.amberPale, color:T.amber, fontWeight:700 }}>BPO {fmtM(ps.bpo)}</span>
                   <span style={{ fontSize:11, padding:"3px 8px", borderRadius:5,
                     background:T.amberPale, color:T.gold, fontWeight:700 }}>広告 ¥48万</span>
                 </div>
@@ -2753,13 +2839,13 @@ const DashboardView = ({ onNav, darkMode, staffRole, staffName, orders, deposits
       {/* ── KPIカード（財務権限がある場合のみ全表示） ── */}
       <div style={{ marginBottom:16 }}>
         {isFinance && (
-          <div style={{ fontSize:11, color:"#8a8a78", marginBottom:8, display:"flex", alignItems:"center", gap:6 }}>
+          <div style={{ fontSize:11, color:T.ink4, marginBottom:8, display:"flex", alignItems:"center", gap:6 }}>
             <span>⠿</span><span>カードをドラッグして並び替えできます</span>
             <HelpTip text={"KPIカードをドラッグ&ドロップで並び替えられます。\n「初期順に戻す」で元の順番に戻せます。\n数値をクリックすると対応する管理画面に移動します。"} />
             <button onClick={()=>setKpiOrder(INITIAL_KPI_ORDER.map(k=>k.id))}
               style={{ marginLeft:"auto", fontSize:11, background:"none",
                 border:"1px solid #d8d4c8", borderRadius:4, padding:"2px 8px",
-                cursor:"pointer", color:"#8a8a78" }}>初期順に戻す</button>
+                cursor:"pointer", color:T.ink4 }}>初期順に戻す</button>
           </div>
         )}
         {isFinance ? (
@@ -2815,6 +2901,7 @@ const DashboardView = ({ onNav, darkMode, staffRole, staffName, orders, deposits
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
                 <h3 style={{ fontSize:14, fontWeight:800, color:T.ink, margin:0 }}>
                   🥧 収益柱別比率 — {currentPreset.short}
+                  <HelpTip text="粗利率は各収益柱の入力欄で手動変更できます。書籍ごとの正確な掛率は書籍マスタのkakuRateフィールドで管理します。" color={T.g2} />
                 </h3>
                 <div style={{ textAlign:"right" }}>
                   <div style={{ display:"flex",alignItems:"baseline",gap:10,justifyContent:"flex-end" }}>
@@ -2875,7 +2962,7 @@ const DashboardView = ({ onNav, darkMode, staffRole, staffName, orders, deposits
                               粗利 ¥{Math.round(s.val*s.gm/100/10000).toFixed(0)}万
                             </div>
                             <div style={{ display:"flex",alignItems:"center",gap:2 }}>
-                              <input type="number" min="0" max="100"
+                              <input aria-label="粗利率" type="number" min="0" max="100"
                                 value={s.gm}
                                 onChange={function(e){
                                   updateGrossMargin(s.id, parseInt(e.target.value)||0);
@@ -2954,22 +3041,22 @@ const DashboardView = ({ onNav, darkMode, staffRole, staffName, orders, deposits
         {/* 要対応アクション */}
         <Card style={{ padding:"18px 20px", border:"1.5px solid rgba(183,28,28,.18)" }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
-            <h3 style={{ fontSize:14, fontWeight:800, color:"#1a1a14", margin:0 }}>
+            <h3 style={{ fontSize:14, fontWeight:800, color:T.ink, margin:0 }}>
               🚨 要対応アクション
-              <span style={{ marginLeft:8, fontSize:12, fontWeight:700, background:"#b71c1c",
+              <span style={{ marginLeft:8, fontSize:12, fontWeight:700, background:T.red,
                 color:"#fff", padding:"2px 8px", borderRadius:10 }}>15件</span>
             </h3>
-            <span style={{ fontSize:11, color:"#8a8a78" }}>クリックで該当画面へ</span>
+            <span style={{ fontSize:11, color:T.ink4 }}>クリックで該当画面へ</span>
           </div>
           <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
             {[
-              { label:"BPO 72条フラグあり",  n:2, nav:"bpo_72",   urgency:"即時", color:"#b71c1c", bg:"#fef2f2", icon:"⚖", who:"金子" },
-              { label:"保留中の注文",         n:3, nav:"orders",   urgency:"今日中",color:"#b71c1c", bg:"#fef2f2", icon:"🛒", who:"田中" },
-              { label:"在庫切れ書籍",         n:1, nav:"inventory",urgency:"今日中",color:"#e65100", bg:"#fff3e0", icon:"📦", who:"金子" },
-              { label:"未承認レビュー",       n:8, nav:"reviews",  urgency:"今週中",color:"#e65100", bg:"#fff3e0", icon:"⭐", who:"鈴木" },
-              { label:"改訂アラート未送信",   n:2, nav:"mail_tx",  urgency:"今週中",color:"#01579b", bg:"#e3f2fd", icon:"📧", who:"田中" },
-              { label:"法人申請 保留",        n:2, nav:"corporate",urgency:"今月中",color:"#6a1b9a", bg:"#f3e5f5", icon:"🏢", who:"金子" },
-              { label:"MicroCMS 未入稿記事",  n:11,nav:"articles", urgency:"今月中",color:"#6a1b9a", bg:"#f3e5f5", icon:"✍", who:"鈴木" },
+              { label:"BPO 72条フラグあり",  n:2, nav:"bpo_72",   urgency:"即時", color:T.red, bg:T.redPale, icon:"⚖", who:"金子" },
+              { label:"保留中の注文",         n:3, nav:"orders",   urgency:"今日中",color:T.red, bg:T.redPale, icon:"🛒", who:"田中" },
+              { label:"在庫切れ書籍",         n:1, nav:"inventory",urgency:"今日中",color:T.amber, bg:T.amberPale, icon:"📦", who:"金子" },
+              { label:"未承認レビュー",       n:8, nav:"reviews",  urgency:"今週中",color:T.amber, bg:T.amberPale, icon:"⭐", who:"鈴木" },
+              { label:"改訂アラート未送信",   n:2, nav:"mail_tx",  urgency:"今週中",color:T.navy, bg:T.navyPale, icon:"📧", who:"田中" },
+              { label:"法人申請 保留",        n:2, nav:"corporate",urgency:"今月中",color:T.purple, bg:T.purplePale, icon:"🏢", who:"金子" },
+              { label:"MicroCMS 未入稿記事",  n:11,nav:"articles", urgency:"今月中",color:T.purple, bg:T.purplePale, icon:"✍", who:"鈴木" },
             ].map((a,i)=>(
               <div key={i} onClick={()=>onNav(a.nav)}
                 style={{ display:"flex", alignItems:"center", gap:10,
@@ -2978,10 +3065,10 @@ const DashboardView = ({ onNav, darkMode, staffRole, staffName, orders, deposits
                 onMouseEnter={e=>e.currentTarget.style.opacity=".85"}
                 onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
                 <span style={{ fontSize:14 }}>{a.icon}</span>
-                <span style={{ fontSize:13, color:"#2e2e24", flex:1 }}>{a.label}</span>
+                <span style={{ fontSize:13, color:T.ink2, flex:1 }}>{a.label}</span>
                 <span style={{ fontSize:10, fontWeight:700, padding:"2px 7px", borderRadius:4,
                   background:a.color, color:"#fff", flexShrink:0 }}>{a.urgency}</span>
-                <span style={{ fontSize:10, color:"#8a8a78", flexShrink:0 }}>担:{a.who}</span>
+                <span style={{ fontSize:10, color:T.ink4, flexShrink:0 }}>担:{a.who}</span>
                 <span style={{ fontFamily:"'Inter'", fontSize:15, fontWeight:800,
                   color:a.color, minWidth:22, textAlign:"right" }}>{a.n}</span>
               </div>
@@ -3010,7 +3097,7 @@ const PubReportView = ({ onToast, darkMode }) => {
   const [planIdx, setPlanIdx] = useState(0);
 
   const pub      = PUBLISHERS.find(p=>p.id===pubId);
-  const books    = BOOKS_DATA.filter(b=>b.pub===pubId);
+  const books    = MOCK_BOOKS.filter(b=>b.pub===pubId);
   const totalSales  = books.reduce((s,b)=>s+b.sales*b.price,0);
   const totalUnits  = books.reduce((s,b)=>s+b.sales,0);
   const totalElecReq= books.reduce((s,b)=>s+b.elecReq,0);
@@ -3558,7 +3645,7 @@ const PubReportView = ({ onToast, darkMode }) => {
                 padding:"10px 14px",borderRadius:8,cursor:"pointer",marginBottom:6,
                 background:dmSeg===seg.id?T.purplePale:T.bg,
                 border:"1.5px solid "+(dmSeg===seg.id?T.purple:T.rule) }}>
-                <input type="radio" name="dmSeg" value={seg.id}
+                <input aria-label={seg.label} type="radio" name="dmSeg" value={seg.id}
                   checked={dmSeg===seg.id} onChange={()=>setDmSeg(seg.id)} />
                 <div style={{ flex:1 }}>
                   <div style={{ fontSize:12,fontWeight:700,color:T.ink }}>{seg.label}</div>
@@ -3580,7 +3667,7 @@ const PubReportView = ({ onToast, darkMode }) => {
               </h3>
               <div style={{ marginBottom:10 }}>
                 <div style={{ fontSize:11,fontWeight:700,color:T.ink3,marginBottom:4 }}>書籍・イベント名</div>
-                <input value={dmBook} onChange={e=>setDmBook(e.target.value)}
+                <input aria-label="書籍・イベント名" value={dmBook} onChange={e=>setDmBook(e.target.value)}
                   placeholder="例：改正労働契約法の実務対応"
                   style={{ width:"100%",padding:"8px 10px",borderRadius:6,
                     border:"1.5px solid "+T.rule,fontSize:12,outline:"none",boxSizing:"border-box" }} />
@@ -3637,8 +3724,8 @@ const PubReportView = ({ onToast, darkMode }) => {
 const MailView = ({ mode, onToast, globalMembers, updateMember, darkMode }) => {
   var T = darkMode ? T_DARK : T_LIGHT;
   const [tab, setTab] = useState(mode==="ma"?"blastengine":"tx");
-  const members = globalMembers || MEMBERS_DATA;
-  const _updateMember = updateMember || function(){ console.warn("updateMember not provided"); };
+  const members = globalMembers || MOCK_MEMBERS;
+  const _updateMember = updateMember || function(){ /* console.warn("updateMember not provided"); */ };
 
   return (
     <div>
@@ -3673,7 +3760,7 @@ const MailView = ({ mode, onToast, globalMembers, updateMember, darkMode }) => {
             </div>
           </div>
           <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
-            {ALERT_QUEUE.map((a,i)=>(
+            {MOCK_ALERT_QUEUE.map((a,i)=>(
               <Card key={i} style={{ padding:"18px 22px" }}>
                 <div style={{ display:"flex", justifyContent:"space-between",
                   alignItems:"flex-start", gap:16, flexWrap:"wrap" }}>
@@ -3778,7 +3865,7 @@ const MailView = ({ mode, onToast, globalMembers, updateMember, darkMode }) => {
                   <Btn variant="ghost" small onClick={()=>onToast("blastengine 送信ログで確認")}>詳細</Btn>
                 )},
               ]}
-              rows={BLASTENGINE_CAMPAIGNS}
+              rows={MOCK_BLASTENGINE}
             />
           </Card>
         </div>
@@ -4135,7 +4222,7 @@ const PointsView = ({ onToast, darkMode }) => {
               )},
               { key:"balance",label:"残高", render:r=><span style={{ fontFamily:"'Inter'",fontWeight:600 }}>{r.balance}pt</span> },
             ]}
-            rows={POINTS_LOG} />
+            rows={MOCK_POINTS_LOG} />
         </Card>
       )}
       {tab==="expire" && (
@@ -4274,7 +4361,7 @@ const ReminderTemplateEditor = ({ corp, onToast }) => {
             <div key={i} style={{ display:"flex",gap:10,alignItems:"center",
               padding:"8px 14px",background:s.enabled?T.okPale:T.bg,borderRadius:7,
               border:"1px solid "+(s.enabled?T.ok+"40":T.rule) }}>
-              <input type="checkbox" checked={s.enabled}
+              <input aria-label="ステップの有効/無効" type="checkbox" checked={s.enabled}
                 onChange={()=>setSteps(prev=>prev.map((x,j)=>j===i?Object.assign({},x,{enabled:!x.enabled}):x))}
                 style={{ width:14,height:14,cursor:"pointer" }} />
               <span style={{ fontSize:13,fontWeight:700,
@@ -4325,7 +4412,7 @@ const ReminderTemplateEditor = ({ corp, onToast }) => {
       {/* 件名入力 */}
       <div style={{ marginBottom:12 }}>
         <div style={{ fontSize:11,fontWeight:700,color:T.ink3,marginBottom:4 }}>件名</div>
-        <input value={subject} onChange={e=>setSubject(e.target.value)}
+        <input aria-label="件名" value={subject} onChange={e=>setSubject(e.target.value)}
           style={{ width:"100%",padding:"8px 10px",borderRadius:6,
             border:"1.5px solid "+T.rule,fontSize:12,outline:"none",
             boxSizing:"border-box" }} />
@@ -4334,7 +4421,7 @@ const ReminderTemplateEditor = ({ corp, onToast }) => {
       {/* 本文入力 */}
       <div style={{ marginBottom:14 }}>
         <div style={{ fontSize:11,fontWeight:700,color:T.ink3,marginBottom:4 }}>本文</div>
-        <textarea value={body} onChange={e=>setBody(e.target.value)}
+        <textarea aria-label="本文" value={body} onChange={e=>setBody(e.target.value)}
           style={{ width:"100%",height:220,padding:"10px 12px",borderRadius:7,
             border:"1.5px solid "+T.rule,fontSize:12,fontFamily:"'Noto Sans JP',sans-serif",
             outline:"none",resize:"vertical",lineHeight:1.7,boxSizing:"border-box" }} />
@@ -4376,7 +4463,7 @@ const ReminderTemplateEditor = ({ corp, onToast }) => {
 
 const CorporateView = ({ onToast, globalOrders, updateOrder, globalAddrHistory, globalCorps, setGlobalCorps, darkMode }) => {
   var T = darkMode ? T_DARK : T_LIGHT;
-  const [corps, setCorps] = useState(globalCorps ? globalCorps : CORP_ACCOUNTS.map(c => Object.assign({}, c)));
+  const [corps, setCorps] = useState(globalCorps ? globalCorps : MOCK_CORPS.map(c => Object.assign({}, c)));
   // globalCorps が更新されたら corps を同期
   React.useEffect(function(){ if(globalCorps) setCorps(globalCorps); }, [globalCorps]);
   // corps が変わったら globalCorps も更新
@@ -4435,40 +4522,128 @@ const CorporateView = ({ onToast, globalOrders, updateOrder, globalAddrHistory, 
   const CLOSING_LABEL = (day) => day===31?"月末締め":day===15?"15日締め":day+"日締め";
 
   // 締め日集計：対象期間の注文を集計してドラフト生成
+  // ── 締め請求書：対象注文の検索 ──
+  var findCorpOrders = function(c) {
+    var orders = globalOrders || [];
+    var mIds = c.memberIds || [];
+    // corpIdが一致する注文 OR 紐づき会員の名前が含まれる注文
+    var memberNames = mIds.map(function(mid) {
+      var m = MOCK_MEMBERS.find(function(x){ return x.id===mid; });
+      return m ? m.name : "";
+    }).filter(Boolean);
+    return orders.filter(function(o) {
+      if (o.corpId === c.id) return true;
+      // 既に別の法人に請求済みならスキップ
+      if (o.corpId && o.corpId !== c.id) return false;
+      // 紐づき会員名が注文者名に含まれるか
+      return memberNames.some(function(name) {
+        return o.member && o.member.indexOf(name.split(" ")[0]) >= 0;
+      });
+    });
+  };
+
+  // 締め請求書モーダルを開く時に対象注文を検索
+  var openGenModal = function(c) {
+    var matched = findCorpOrders(c);
+    // 既に請求済みの注文を除外
+    var existingInvOrderIds = (c.invoices || []).reduce(function(acc, inv) {
+      return acc.concat(inv.orders || []);
+    }, []);
+    var unreinvoiced = matched.filter(function(o) {
+      return existingInvOrderIds.indexOf(o.id) < 0;
+    });
+    // デフォルト: corpIdが設定されている注文は「法人」、それ以外は「要確認」
+    var scopeMap = {};
+    unreinvoiced.forEach(function(o) {
+      scopeMap[o.id] = o.corpId === c.id ? "corporate" : "personal";
+    });
+    setGenOrders(unreinvoiced);
+    setGenOrderScope(scopeMap);
+    setGenTarget(c);
+    setGenModal(true);
+  };
+
+  const [genOrders,      setGenOrders]      = useState([]);
+  const [genOrderScope,  setGenOrderScope]  = useState({});
+
+  var toggleOrderScope = function(orderId) {
+    setGenOrderScope(function(prev) {
+      var updated = Object.assign({}, prev);
+      updated[orderId] = prev[orderId] === "corporate" ? "personal" : "corporate";
+      return updated;
+    });
+  };
+
   const generateInvoice = (c) => {
-    const today = new Date("2026-03-27");
-    const closingDay = c.closingDay||31;
-    const periodEnd = new Date(today.getFullYear(), today.getMonth(), closingDay>28?28:closingDay);
-    const periodStart = new Date(periodEnd.getFullYear(), periodEnd.getMonth()-1, closingDay+1);
-    const periodLabel = periodStart.toISOString().slice(0,10)+"〜"+periodEnd.toISOString().slice(0,10);
-    const dueDate = new Date(periodEnd.getFullYear(), periodEnd.getMonth()+1, c.paymentDueDays||30);
+    var today = new Date("2026-03-27");
+    var closingDay = c.closingDay || 31;
+    var periodEnd = new Date(today.getFullYear(), today.getMonth(), closingDay > 28 ? 28 : closingDay);
+    var periodStart = new Date(periodEnd.getFullYear(), periodEnd.getMonth() - 1, closingDay + 1);
+    var periodLabel = periodStart.toISOString().slice(0, 10) + "〜" + periodEnd.toISOString().slice(0, 10);
+    var dueDate = new Date(periodEnd.getFullYear(), periodEnd.getMonth() + 1, c.paymentDueDays || 30);
 
-    // globalOrdersから当法人会員の注文を集計
-    const orders = globalOrders || [];
-    const memberOrders = orders.filter(o=>c.memberIds.includes("m1")||c.memberIds.includes("m3")||c.memberIds.includes("m4")||c.memberIds.includes("m6"));
-    const amount = memberOrders.reduce((s,o)=>s+o.total,0) || 82400;
-    const taxAmt8 = Math.floor(amount*0.08/1.08);
-    const taxAmt10 = 0;
+    // 「法人」スコープの注文のみ集計
+    var corpOrders = genOrders.filter(function(o) {
+      return genOrderScope[o.id] === "corporate";
+    });
 
-    const newInv = {
-      id:"inv-NEW-"+Date.now().toString().slice(-6),
-      period:periodLabel,
-      closingDate:periodEnd.toISOString().slice(0,10),
-      dueDate:dueDate.toISOString().slice(0,10),
-      amount, taxAmt8, taxAmt10, status:"draft",
-      orders:memberOrders.map(o=>o.id),
+    if (corpOrders.length === 0) {
+      onToast("⚠ 法人請求の対象注文がありません");
+      return;
+    }
+
+    // 税額計算
+    var totalAmount = 0;
+    var tax8Total = 0;
+    var tax10Total = 0;
+    corpOrders.forEach(function(o) {
+      totalAmount += o.total;
+      (o.taxItems || []).forEach(function(ti) {
+        if (ti.taxRate === 8) tax8Total += Math.floor(ti.amount * 8 / 108);
+        if (ti.taxRate === 10) tax10Total += Math.floor(ti.amount * 10 / 110);
+      });
+    });
+    // taxItemsがない場合のフォールバック
+    if (tax8Total === 0 && tax10Total === 0) {
+      tax8Total = Math.floor(totalAmount * 8 / 108);
+    }
+
+    var newInv = {
+      id: "inv-NEW-" + Date.now().toString().slice(-6),
+      period: periodLabel,
+      closingDate: periodEnd.toISOString().slice(0, 10),
+      dueDate: dueDate.toISOString().slice(0, 10),
+      amount: totalAmount,
+      taxAmt8: tax8Total,
+      taxAmt10: tax10Total,
+      status: "draft",
+      orders: corpOrders.map(function(o) { return o.id; }),
     };
-    setCorps(prev=>prev.map(x=>x.id===c.id
-      ? Object.assign({},x,{invoices:[newInv].concat(x.invoices||[])})
-      : x
-    ));
-    setGenModal(false); setGenTarget(null);
-    onToast("✅ 請求書ドラフトを生成しました（"+newInv.id+"）");
+
+    // 法人請求にした注文のcorpIdを更新
+    corpOrders.forEach(function(o) {
+      if (!o.corpId) {
+        updateOrder(o.id, { corpId: c.id, paymentMethod: "invoice" });
+      }
+    });
+
+    setCorps(function(prev) {
+      return prev.map(function(x) {
+        return x.id === c.id
+          ? Object.assign({}, x, { invoices: [newInv].concat(x.invoices || []) })
+          : x;
+      });
+    });
+    setGenModal(false);
+    setGenTarget(null);
+    setGenOrders([]);
+    setGenOrderScope({});
+    onToast("✅ 請求書ドラフトを生成しました（" + newInv.id + "） — " + corpOrders.length + "件・¥" + totalAmount.toLocaleString());
   };
 
   // 会員紐づけ追加
   const linkMember = (corpId) => {
-    const m = MEMBERS_DATA.find(m=>m.id===addMember||m.name===addMember);
+    const m = MOCK_MEMBERS.find(m=>m.id===addMember||m.name===addMember);
     if(!m){ onToast("会員IDまたは氏名で検索してください"); return; }
     setCorps(prev=>prev.map(c=>c.id===corpId&&!c.memberIds.includes(m.id)
       ? Object.assign({},c,{memberIds:(c.memberIds||[]).concat([m.id])})
@@ -4511,7 +4686,7 @@ const CorporateView = ({ onToast, globalOrders, updateOrder, globalAddrHistory, 
   const [newInvMeta,    setNewInvMeta]   = useState({
     issueDate: new Date().toISOString().slice(0,10),
     dueDate:   "",
-    taxCalcMethod: selCorp.taxCalcMethod || "per_rate", // "per_line" | "per_rate"
+    taxCalcMethod: "per_rate", // 新規作成モーダルを開く時に selCorp.taxCalcMethod で上書き
     description: "",
     note: "",
   });
@@ -4670,12 +4845,12 @@ const CorporateView = ({ onToast, globalOrders, updateOrder, globalAddrHistory, 
               </div>
               <Btn small onClick={()=>{
                 const c = corps.find(x=>x.id===a.corpId);
-                if(c){ setGenTarget(c); setGenModal(true); }
+                if(c){ openGenModal(c); }
                 setCronAlerts(prev=>prev.filter(x=>x.corpId!==a.corpId));
               }}>今すぐ生成</Btn>
               <button onClick={()=>setCronAlerts(prev=>prev.filter(x=>x.corpId!==a.corpId))}
                 style={{ background:"none",border:"none",cursor:"pointer",
-                  color:T.ink4,fontSize:16,padding:"0 4px" }}>✕</button>
+                  color:T.ink4,fontSize:16,padding:"0 4px" }} aria-label="閉じる">✕</button>
             </div>
           ))}
         </div>
@@ -4763,7 +4938,7 @@ const CorporateView = ({ onToast, globalOrders, updateOrder, globalAddrHistory, 
                   {corpTab==="invoices" && (
                     <div style={{ padding:"16px 20px" }}>
                       <div style={{ display:"flex",gap:8,marginBottom:14,flexWrap:"wrap" }}>
-                        <Btn icon="➕" onClick={function(){ setGenTarget(c); setGenModal(true); }}>
+                        <Btn icon="➕" onClick={function(){ openGenModal(c); }}>
                           締め請求書を生成
                         </Btn>
                         <Btn variant="secondary" icon="📝" onClick={function(){
@@ -4777,7 +4952,13 @@ const CorporateView = ({ onToast, globalOrders, updateOrder, globalAddrHistory, 
                             description: "", note: "",
                           }); });
                           setNewInvLines([{ id:1, desc:"書籍代", qty:1, unitPrice:0, taxRate:8 }]);
-                          setNewInvModal(true);
+                          setNewInvMeta(function(prev){
+                  return Object.assign({},prev,{
+                    issueDate: new Date().toISOString().slice(0,10),
+                    taxCalcMethod: selCorp ? (selCorp.taxCalcMethod||"per_rate") : "per_rate",
+                  });
+                });
+                setNewInvModal(true);
                         }}>
                           新規請求書を作成
                         </Btn>
@@ -4875,7 +5056,7 @@ const CorporateView = ({ onToast, globalOrders, updateOrder, globalAddrHistory, 
                   {corpTab==="members" && (
                     <div style={{ padding:"16px 20px" }}>
                       <div style={{ display:"flex",gap:8,marginBottom:14 }}>
-                        <input value={addMember} onChange={e=>setAddMember(e.target.value)}
+                        <input aria-label="会員検索" value={addMember} onChange={e=>setAddMember(e.target.value)}
                           placeholder="会員ID（m1〜m6）または氏名で検索"
                           style={{ flex:1,padding:"7px 10px",borderRadius:6,border:"1.5px solid "+T.rule,
                             fontSize:12,outline:"none" }} />
@@ -4888,7 +5069,7 @@ const CorporateView = ({ onToast, globalOrders, updateOrder, globalAddrHistory, 
                       )}
                       <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
                         {(c.memberIds||[]).map(mid=>{
-                          const m = MEMBERS_DATA.find(x=>x.id===mid);
+                          const m = MOCK_MEMBERS.find(x=>x.id===mid);
                           if(!m) return null;
                           return (
                             <div key={mid} style={{ display:"flex",gap:10,alignItems:"center",
@@ -5171,7 +5352,7 @@ const CorporateView = ({ onToast, globalOrders, updateOrder, globalAddrHistory, 
                                     padding:"7px 12px",borderRadius:6,cursor:"pointer",
                                     background:editData.billingType===opt.val?T.okPale:T.bg,
                                     border:"1.5px solid "+(editData.billingType===opt.val?T.ok:T.rule) }}>
-                                    <input type="radio" name="billingType" value={opt.val}
+                                    <input aria-label={opt.label} type="radio" name="billingType" value={opt.val}
                                       checked={editData.billingType===opt.val}
                                       onChange={()=>setEditData(function(prev){ return Object.assign({},prev,{billingType:opt.val}); })} />
                                     <span style={{ fontSize:12,fontWeight:700 }}>{opt.label}</span>
@@ -5201,7 +5382,7 @@ const CorporateView = ({ onToast, globalOrders, updateOrder, globalAddrHistory, 
                             ].map((f,i)=>(
                               <div key={i} style={{ marginBottom:12 }}>
                                 <div style={{ fontSize:11,fontWeight:700,color:T.ink3,marginBottom:4 }}>{f.label}</div>
-                                <input value={editData[f.key]||""} type={f.type}
+                                <input aria-label={f.label} value={editData[f.key]||""} type={f.type}
                                   onChange={e=>setEditData(function(prev){ return Object.assign({},prev,Object.fromEntries([[f.key,e.target.value]])); })}
                                   style={{ width:"100%",padding:"7px 10px",borderRadius:6,
                                     border:"1.5px solid "+T.rule,fontSize:12,outline:"none",boxSizing:"border-box" }} />
@@ -5215,7 +5396,7 @@ const CorporateView = ({ onToast, globalOrders, updateOrder, globalAddrHistory, 
                                     padding:"6px 12px",borderRadius:6,cursor:"pointer",
                                     background:editData.taxDisplay===opt.v?T.navyPale:T.bg,
                                     border:"1.5px solid "+(editData.taxDisplay===opt.v?T.navy:T.rule) }}>
-                                    <input type="radio" name="taxDisplay" value={opt.v}
+                                    <input aria-label={opt.label} type="radio" name="taxDisplay" value={opt.v}
                                       checked={editData.taxDisplay===opt.v}
                                       onChange={()=>setEditData(function(prev){ return Object.assign({},prev,{taxDisplay:opt.v}); })} />
                                     <span style={{ fontSize:12 }}>{opt.l}</span>
@@ -5244,7 +5425,7 @@ const CorporateView = ({ onToast, globalOrders, updateOrder, globalAddrHistory, 
                                         flex:1,
                                         background:editData.taxCalcMethod===opt.v?T.navyPale:T.bg,
                                         border:"1.5px solid "+(editData.taxCalcMethod===opt.v?T.navy:T.rule) }}>
-                                      <input type="radio" name="taxCalcMethod" value={opt.v}
+                                      <input aria-label={opt.label} type="radio" name="taxCalcMethod" value={opt.v}
                                         checked={editData.taxCalcMethod===opt.v}
                                         onChange={function(){ setEditData(function(prev){ return Object.assign({},prev,{taxCalcMethod:opt.v}); }); }} />
                                       <span style={{ fontSize:11 }}>{opt.l}</span>
@@ -5300,7 +5481,7 @@ const CorporateView = ({ onToast, globalOrders, updateOrder, globalAddrHistory, 
                 }}>🖨 印刷</Btn>
                 <button onClick={()=>{ setPreviewInv(null); setPreviewCorp(null); }}
                   style={{ background:T.bg,border:"1px solid "+T.rule,borderRadius:6,
-                    padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12 }}>✕</button>
+                    padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12 }} aria-label="閉じる">✕</button>
               </div>
             </div>
 
@@ -5421,34 +5602,137 @@ const CorporateView = ({ onToast, globalOrders, updateOrder, globalAddrHistory, 
       )}
 
       {/* 締め請求書生成モーダル */}
-      {genModal && genTarget && (
+      {genModal && genTarget && (function(){
+        var corpCount = genOrders.filter(function(o){ return genOrderScope[o.id]==="corporate"; }).length;
+        var corpTotal = genOrders.filter(function(o){ return genOrderScope[o.id]==="corporate"; }).reduce(function(s,o){ return s+o.total; },0);
+        var personalCount = genOrders.filter(function(o){ return genOrderScope[o.id]==="personal"; }).length;
+        return (
         <div onClick={()=>{ setGenModal(false); setGenTarget(null); }}
           style={{ position:"fixed",inset:0,background:"rgba(15,51,32,.55)",zIndex:1200,
             display:"flex",alignItems:"center",justifyContent:"center",padding:20 }}>
           <div onClick={e=>e.stopPropagation()} style={{ background:T.white,borderRadius:14,
-            width:"100%",maxWidth:480,padding:"24px",boxShadow:"0 8px 48px rgba(0,0,0,.22)" }}>
-            <div style={{ fontSize:15,fontWeight:800,color:T.ink,marginBottom:16 }}>
-              📄 締め請求書を生成：{genTarget.name}
+            width:"100%",maxWidth:620,maxHeight:"90vh",overflowY:"auto",
+            boxShadow:"0 8px 48px rgba(0,0,0,.22)" }}>
+            {/* ヘッダー */}
+            <div style={{ padding:"16px 22px",borderBottom:"1px solid "+T.rule,
+              display:"flex",justifyContent:"space-between",alignItems:"center",
+              position:"sticky",top:0,background:T.white,zIndex:10,borderRadius:"14px 14px 0 0" }}>
+              <div style={{ fontSize:15,fontWeight:800,color:T.ink }}>
+                📄 締め請求書を生成：{genTarget.name}
+              </div>
+              <button onClick={()=>{ setGenModal(false); setGenTarget(null); }}
+                style={{ background:T.bg,border:"1px solid "+T.rule,borderRadius:6,
+                  padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12 }} aria-label="閉じる">✕</button>
             </div>
-            <div style={{ background:T.navyPale,borderRadius:8,padding:"12px 14px",
-              marginBottom:16,fontSize:12,color:T.ink3,lineHeight:1.8 }}>
-              <strong style={{ color:T.navy }}>集計内容：</strong><br/>
-              締め日：{genTarget.closingDay===31?"月末":genTarget.closingDay+"日"}（{CLOSING_LABEL(genTarget.closingDay)}）<br/>
-              支払期限：締め後{genTarget.paymentDueDays}日<br/>
-              紐づき会員：{(genTarget.memberIds||[]).map(mid=>{const m=MEMBERS_DATA.find(x=>x.id===mid);return m?m.name:"?";}).join("、")||"（なし）"}<br/>
-              消費税表示：{genTarget.taxDisplay==="exclusive"?"外税（税抜）":"内税（税込）"}
-            </div>
-            <div style={{ background:T.amberPale,borderRadius:7,padding:"8px 12px",
-              marginBottom:16,fontSize:11,color:T.amber,lineHeight:1.6 }}>
-              ⚠ 生成後はドラフト状態です。内容を確認してから「送付」してください。
-            </div>
-            <div style={{ display:"flex",gap:8,justifyContent:"flex-end" }}>
-              <Btn variant="ghost" onClick={()=>{ setGenModal(false); setGenTarget(null); }}>キャンセル</Btn>
-              <Btn icon="📄" onClick={()=>generateInvoice(genTarget)}>ドラフトを生成</Btn>
+            <div style={{ padding:"18px 22px" }}>
+              {/* 集計情報 */}
+              <div style={{ background:T.navyPale,borderRadius:8,padding:"12px 14px",
+                marginBottom:16,fontSize:12,color:T.ink3,lineHeight:1.8 }}>
+                <strong style={{ color:T.navy }}>集計内容：</strong><br/>
+                締め日：{genTarget.closingDay===31?"月末":genTarget.closingDay+"日"}（{CLOSING_LABEL(genTarget.closingDay)}）<br/>
+                支払期限：締め後{genTarget.paymentDueDays}日<br/>
+                紐づき会員：{(genTarget.memberIds||[]).map(mid=>{const m=MOCK_MEMBERS.find(x=>x.id===mid);return m?m.name:"?";}).join("、")||"（なし）"}<br/>
+                消費税表示：{genTarget.taxDisplay==="exclusive"?"外税（税抜）":"内税（税込）"}
+              </div>
+
+              {/* 対象注文プレビュー */}
+              <div style={{ marginBottom:16 }}>
+                <div style={{ fontSize:13,fontWeight:800,color:T.ink,marginBottom:10 }}>
+                  📋 対象注文（{genOrders.length}件）
+                </div>
+                {genOrders.length===0 ? (
+                  <div style={{ padding:"20px",textAlign:"center",color:T.ink4,fontSize:12,
+                    background:T.bg,borderRadius:8,border:"1px solid "+T.rule }}>
+                    未請求の対象注文がありません
+                  </div>
+                ) : (
+                  <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
+                    {genOrders.map(function(o) {
+                      var isCorp = genOrderScope[o.id] === "corporate";
+                      return (
+                        <div key={o.id} style={{
+                          display:"flex",alignItems:"center",gap:10,
+                          padding:"10px 12px",borderRadius:8,
+                          background:isCorp ? T.okPale : T.bg,
+                          border:"1.5px solid "+(isCorp ? T.g2+"60" : T.rule),
+                          transition:"all .15s" }}>
+                          {/* 法人/個人トグル */}
+                          <button
+                            onClick={function(){ toggleOrderScope(o.id); }}
+                            aria-label={isCorp?"個人に変更":"法人に変更"}
+                            style={{
+                              padding:"4px 8px",borderRadius:5,fontSize:10,fontWeight:800,
+                              cursor:"pointer",fontFamily:"inherit",flexShrink:0,
+                              border:"1.5px solid "+(isCorp ? T.g2 : T.amber),
+                              background:isCorp ? T.g2 : T.amberPale,
+                              color:isCorp ? "#fff" : T.amber }}>
+                            {isCorp ? "🏢 法人" : "👤 個人"}
+                          </button>
+                          {/* 注文情報 */}
+                          <div style={{ flex:1,minWidth:0 }}>
+                            <div style={{ display:"flex",gap:6,alignItems:"center",flexWrap:"wrap" }}>
+                              <span style={{ fontSize:11,fontWeight:700,color:T.ink3,fontFamily:"'Inter',monospace" }}>{o.id}</span>
+                              <span style={{ fontSize:11,color:T.ink4 }}>{o.member}</span>
+                              {o.corpId===genTarget.id && (
+                                <span style={{ fontSize:9,padding:"1px 5px",borderRadius:3,
+                                  background:T.g2+"18",color:T.g2,fontWeight:700 }}>corpID一致</span>
+                              )}
+                            </div>
+                            <div style={{ fontSize:11,color:T.ink4,marginTop:2 }}>
+                              {o.items} ・ {o.date ? o.date.slice(0,10) : ""}
+                            </div>
+                          </div>
+                          {/* 金額 */}
+                          <div style={{ fontSize:13,fontWeight:800,flexShrink:0,
+                            color:isCorp ? T.ink : T.ink4,
+                            textDecoration:isCorp ? "none" : "line-through" }}>
+                            ¥{o.total.toLocaleString()}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* 集計サマリ */}
+              <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:16 }}>
+                <div style={{ background:T.okPale,borderRadius:8,padding:"10px 14px",
+                  border:"1px solid "+T.g2+"30" }}>
+                  <div style={{ fontSize:10,fontWeight:700,color:T.g2,marginBottom:4 }}>🏢 法人請求に含める</div>
+                  <div style={{ fontSize:18,fontWeight:800,color:T.g2 }}>
+                    {corpCount}件 ・ ¥{corpTotal.toLocaleString()}
+                  </div>
+                </div>
+                <div style={{ background:T.bg,borderRadius:8,padding:"10px 14px",
+                  border:"1px solid "+T.rule }}>
+                  <div style={{ fontSize:10,fontWeight:700,color:T.ink4,marginBottom:4 }}>👤 個人（除外）</div>
+                  <div style={{ fontSize:18,fontWeight:800,color:T.ink4 }}>
+                    {personalCount}件
+                  </div>
+                </div>
+              </div>
+
+              {/* 注意書き */}
+              <div style={{ background:T.amberPale,borderRadius:7,padding:"8px 12px",
+                marginBottom:16,fontSize:11,color:T.amber,lineHeight:1.6 }}>
+                ⚠ 生成後はドラフト状態です。内容を確認してから「送付」してください。<br/>
+                👤 個人に設定した注文は法人請求書に含まれません。
+              </div>
+
+              {/* アクション */}
+              <div style={{ display:"flex",gap:8,justifyContent:"flex-end" }}>
+                <Btn variant="ghost" onClick={()=>{ setGenModal(false); setGenTarget(null); }}>キャンセル</Btn>
+                <Btn icon="📄" onClick={()=>generateInvoice(genTarget)}
+                  disabled={corpCount===0}>
+                  {"ドラフトを生成（"+corpCount+"件 ¥"+corpTotal.toLocaleString()+"）"}
+                </Btn>
+              </div>
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* ── 新規請求書作成モーダル ── */}
       {newInvModal && newInvTarget && (
@@ -5468,7 +5752,7 @@ const CorporateView = ({ onToast, globalOrders, updateOrder, globalAddrHistory, 
                 <Btn small onClick={createNewInvoice}>{"💾 ドラフト保存（"+genInvoiceNo()+"）"}</Btn>
                 <button onClick={function(){ setNewInvModal(false); }}
                   style={{ background:T.bg,border:"1px solid "+T.rule,borderRadius:6,
-                    padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12 }}>✕</button>
+                    padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12 }} aria-label="閉じる">✕</button>
               </div>
             </div>
             <div style={{ padding:"20px 24px" }}>
@@ -5482,7 +5766,7 @@ const CorporateView = ({ onToast, globalOrders, updateOrder, globalAddrHistory, 
                   return (
                     <div key={f.key}>
                       <div style={{ fontSize:11,fontWeight:700,color:T.ink3,marginBottom:4 }}>{f.label}</div>
-                      <input type={f.type} value={newInvMeta[f.key]}
+                      <input aria-label={f.label} type={f.type} value={newInvMeta[f.key]}
                         placeholder={f.ph||""}
                         onChange={function(e){ var v=e.target.value; setNewInvMeta(function(p){ var patch={}; patch[f.key]=v; return Object.assign({},p,patch); }); }}
                         style={{ width:"100%",padding:"7px 10px",borderRadius:6,border:"1px solid "+T.rule,
@@ -5536,20 +5820,20 @@ const CorporateView = ({ onToast, globalOrders, updateOrder, globalAddrHistory, 
                     <div key={line.id} style={{ display:"grid",
                       gridTemplateColumns:"1fr 60px 110px 80px 28px",
                       gap:6,padding:"7px 0",borderBottom:"1px solid "+T.rule,alignItems:"center" }}>
-                      <input value={line.desc}
+                      <input aria-label="品名" value={line.desc}
                         onChange={function(e){ var v=e.target.value; setNewInvLines(function(prev){ return prev.map(function(l){ return l.id===line.id?Object.assign({},l,{desc:v}):l; }); }); }}
                         placeholder="書名・サービス名"
                         style={{ padding:"5px 8px",borderRadius:5,border:"1px solid "+T.rule,
                           fontSize:12,width:"100%",boxSizing:"border-box" }} />
-                      <input type="number" min="1" value={line.qty}
+                      <input aria-label="数量" type="number" min="1" value={line.qty}
                         onChange={function(e){ var v=parseInt(e.target.value)||1; setNewInvLines(function(prev){ return prev.map(function(l){ return l.id===line.id?Object.assign({},l,{qty:v}):l; }); }); }}
                         style={{ padding:"5px 4px",borderRadius:5,border:"1px solid "+T.rule,
                           fontSize:12,textAlign:"center",width:"100%" }} />
-                      <input type="number" min="0" value={line.unitPrice}
+                      <input aria-label="単価" type="number" min="0" value={line.unitPrice}
                         onChange={function(e){ var v=parseInt(e.target.value)||0; setNewInvLines(function(prev){ return prev.map(function(l){ return l.id===line.id?Object.assign({},l,{unitPrice:v}):l; }); }); }}
                         style={{ padding:"5px 8px",borderRadius:5,border:"1px solid "+T.rule,
                           fontSize:12,textAlign:"right",width:"100%" }} />
-                      <select value={line.taxRate}
+                      <select aria-label="税率" value={line.taxRate}
                         onChange={function(e){ var v=parseInt(e.target.value); setNewInvLines(function(prev){ return prev.map(function(l){ return l.id===line.id?Object.assign({},l,{taxRate:v}):l; }); }); }}
                         style={{ padding:"5px 3px",borderRadius:5,border:"1px solid "+T.rule,
                           fontSize:11,width:"100%" }}>
@@ -5561,7 +5845,7 @@ const CorporateView = ({ onToast, globalOrders, updateOrder, globalAddrHistory, 
                         disabled={newInvLines.length<=1}
                         style={{ border:"none",background:"transparent",
                           color:newInvLines.length<=1?T.rule:T.ink4,
-                          cursor:newInvLines.length<=1?"default":"pointer",fontSize:18,padding:0,lineHeight:1 }}>×</button>
+                          cursor:newInvLines.length<=1?"default":"pointer",fontSize:18,padding:0,lineHeight:1 }} aria-label="行を削除">×</button>
                     </div>
                   );
                 })}
@@ -5632,7 +5916,7 @@ const CorporateView = ({ onToast, globalOrders, updateOrder, globalAddrHistory, 
             </div>
             <div style={{ marginBottom:14 }}>
               <div style={{ fontSize:11,fontWeight:700,color:T.ink3,marginBottom:6 }}>訂正理由</div>
-              <textarea value={corrReason}
+              <textarea aria-label="訂正理由" value={corrReason}
                 onChange={function(e){ setCorrReason(e.target.value); }}
                 placeholder="例：金額の計算ミスを修正 / 品目の追加 / 消費税の誤り"
                 rows={3}
@@ -5801,7 +6085,7 @@ const BookDetailModal = ({ book, onClose, onToast }) => {
           <button onClick={onClose}
             style={{ background:"rgba(255,255,255,.15)", border:"none", color:"#fff",
               width:32, height:32, borderRadius:"50%", cursor:"pointer", fontSize:16,
-              display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>✕</button>
+              display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }} aria-label="閉じる">✕</button>
         </div>
 
         <div style={{ padding:"24px 28px" }}>
@@ -5934,8 +6218,8 @@ const BooksView = ({ onToast, sentRevisions, markRevisionSent, darkMode }) => {
   const [selected,setSelected] = useState(null);
   const _sentRevisions    = sentRevisions    || [];
   const _markRevisionSent = markRevisionSent || function(){ };
-  const rows = BOOKS_DATA.filter(function(b){ return b.title.includes(q)||b.author.includes(q); });
-  const revisionBooks = BOOKS_DATA.filter(function(b){ return b.prevEditionId&&b.prevBuyerCount>0; });
+  const rows = MOCK_BOOKS.filter(function(b){ return b.title.includes(q)||b.author.includes(q); });
+  const revisionBooks = MOCK_BOOKS.filter(function(b){ return b.prevEditionId&&b.prevBuyerCount>0; });
 
   return (
     <div>
@@ -5943,7 +6227,7 @@ const BooksView = ({ onToast, sentRevisions, markRevisionSent, darkMode }) => {
         <div style={{display:"flex",gap:8}}>
           <Btn variant="ghost" small onClick={function(){
             const rs=[["書籍ID","タイトル","著者","出版社","定価","在庫","月販","掛率","電子化Req","PV","ステータス"],
-              ...BOOKS_DATA.map(function(b){ return [b.id,b.title,b.author,b.pub,b.price,b.stock,b.sales,b.rate,b.elecReq,b.views,b.status]; })
+              ...MOCK_BOOKS.map(function(b){ return [b.id,b.title,b.author,b.pub,b.price,b.stock,b.sales,b.rate,b.elecReq,b.views,b.status]; })
             ];
             const csv=rs.map(function(r){ return r.join(","); }).join("\n");
             const a=document.createElement("a");
@@ -5967,7 +6251,7 @@ const BooksView = ({ onToast, sentRevisions, markRevisionSent, darkMode }) => {
       {bkTab==="list" && (
         <Card>
           <div style={{padding:"12px 20px",borderBottom:"1px solid "+T.rule}}>
-            <input value={q} onChange={function(e){ setQ(e.target.value); }}
+            <input aria-label="書名・著者で検索" value={q} onChange={function(e){ setQ(e.target.value); }}
               placeholder="書名・著者で検索..."
               style={{width:"100%",maxWidth:360,padding:"8px 14px",
                 border:"1px solid "+T.rule,borderRadius:6,fontSize:13,
@@ -6242,9 +6526,9 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
 
   // ── 拠点・ピックアップ定数 ─────────────────────────────
   var SHIP_FROM_META = {
-    kasumigaseki: { label:"霞が関店", short:"霞が関", color:"#01579b", bg:"#e3f2fd", icon:"⚖" },
+    kasumigaseki: { label:"霞が関店", short:"霞が関", color:T.navy, bg:T.navyPale, icon:"⚖" },
     honsha:       { label:"本社",     short:"本社",   color:T.g2,      bg:T.okPale,  icon:"🏢" },
-    elec:         { label:"電子配信", short:"電子",   color:"#6a1b9a", bg:"#f3e5f5", icon:"📱" },
+    elec:         { label:"電子配信", short:"電子",   color:T.purple, bg:T.purplePale, icon:"📱" },
   };
 
   // 出荷拠点を自動判定（shipFromフィールドがあれば優先）
@@ -6279,7 +6563,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
     }
     // ① corpId直接参照（最優先・確実な照合）
     if(order.corpId) {
-      var directCorp = CORP_ACCOUNTS.find(function(c){ return c.id===order.corpId; });
+      var directCorp = MOCK_CORPS.find(function(c){ return c.id===order.corpId; });
       if(directCorp) {
         if(directCorp.creditRank==="A") return { ok:true,  reason:"法人与信A（"+directCorp.name+"）" };
         if(directCorp.creditRank==="B") return { ok:true,  reason:"法人与信B（"+directCorp.name+"）" };
@@ -6288,7 +6572,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
     }
     // ② 会員名からのフォールバック検索（globalMembersがあれば優先）
     var memberList = (typeof globalMembers !== "undefined" && globalMembers && globalMembers.length)
-      ? globalMembers : MEMBERS_DATA;
+      ? globalMembers : MOCK_MEMBERS;
     var member = memberList.find(function(m){
       return m.name===order.member || order.member.includes(m.name);
     });
@@ -6298,7 +6582,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
     }
     // 会員のcorpIdから法人を参照
     if(member && member.corpId) {
-      var memCorp = CORP_ACCOUNTS.find(function(c){ return c.id===member.corpId; });
+      var memCorp = MOCK_CORPS.find(function(c){ return c.id===member.corpId; });
       if(memCorp) {
         if(memCorp.creditRank==="A") return { ok:true,  reason:"法人与信A（"+memCorp.name+"）" };
         if(memCorp.creditRank==="B") return { ok:true,  reason:"法人与信B（"+memCorp.name+"）" };
@@ -6306,7 +6590,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
       }
     }
     // 旧形式：memberIds検索（互換性維持）
-    var legacyCorp = CORP_ACCOUNTS.find(function(c){
+    var legacyCorp = MOCK_CORPS.find(function(c){
       return c.memberIds && member && c.memberIds.indexOf(member.id)>=0;
     });
     if(legacyCorp) {
@@ -6323,7 +6607,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
     transfer: { label:"振込",  icon:"🏦", color:T.navy,  bg:T.navyPale },
     invoice:  { label:"請求書",icon:"📄", color:T.amber, bg:T.amberPale},
     cod:      { label:"代引き",icon:"📦", color:T.ink3,  bg:T.bg       },
-    kakeuri:  { label:"掛売り",icon:"📋", color:"#7b1fa2",bg:"#f3e5f5"  },
+    kakeuri:  { label:"掛売り",icon:"📋", color:"#7b1fa2",bg:T.purplePale  },
   };
 
   // グローバルstateを使用（消し込みと連動）
@@ -6365,7 +6649,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
     if(!memberName) return null;
     // globalMembersがあれば優先（リアルタイム反映）
     var memberList = (typeof globalOrders !== "undefined" && globalMembers && globalMembers.length)
-      ? globalMembers : MEMBERS_DATA;
+      ? globalMembers : MOCK_MEMBERS;
     var member = memberList.find(function(m){
       return m.name===memberName || memberName.includes(m.name);
     });
@@ -6385,7 +6669,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
         shipMethod = "direct"; // 外商はデフォルト直配
       } else if(detectedChannel === "ec" && corpId) {
         // 法人ECはsagawa_gaishoo（外商契約法人がECから注文）
-        var corpForCheck = CORP_ACCOUNTS.find(function(c){ return c.id===corpId; });
+        var corpForCheck = MOCK_CORPS.find(function(c){ return c.id===corpId; });
         shipMethod = (corpForCheck && corpForCheck.commerceType==="gaishoo")
           ? "sagawa_gaishoo" : "sagawa";
       } else {
@@ -6423,8 +6707,8 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
 
   // 注文から書籍在庫情報を取得するヘルパー
   function getOrderStock(order) {
-    // 注文商品名からBOOKS_DATAをキーワードマッチ
-    const results = BOOKS_DATA.filter(function(b){
+    // 注文商品名からMOCK_BOOKSをキーワードマッチ
+    const results = MOCK_BOOKS.filter(function(b){
       return order.items && order.items.includes(b.title.slice(0,8));
     });
     if(results.length === 0) return null;
@@ -6482,7 +6766,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
     const rows = targets.map(o => {
       const s = SAGAWA_SHIPPING_DATA[o.id] || { zip:"", addr1:"", addr2:"", name:o.member, tel:"", weight:"1", note:"" };
       // 会員データから配送先タイプを取得
-      const m = MEMBERS_DATA.find(x=>o.member.includes(x.name)||x.name===o.member);
+      const m = MOCK_MEMBERS.find(x=>o.member.includes(x.name)||x.name===o.member);
       const defaultAddr = m && m.deliveryAddrs ? m.deliveryAddrs.find(a=>a.isDefault) : null;
       const addrType = defaultAddr ? defaultAddr.type : "office";
       return {
@@ -6626,7 +6910,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
     onToast("✅ FAX注文を登録しました ("+p.customer+")"+holdMsg);
   };
 
-  const statusColor=(s)=>s==="completed"?T.ok:s==="shipped"?T.g2:s==="pending"?T.amber:s==="invoiced"?T.navy:s==="returned"?T.purple:s==="partial_returned"?"#6a1b9a":s==="cancelled"?T.red:s==="delivered"?"#1a8f5e":s==="delivering"?"#0277bd":T.ink4;
+  const statusColor=(s)=>s==="completed"?T.ok:s==="shipped"?T.g2:s==="pending"?T.amber:s==="invoiced"?T.navy:s==="returned"?T.purple:s==="partial_returned"?T.purple:s==="cancelled"?T.red:s==="delivered"?T.g3:s==="delivering"?"#0277bd":T.ink4;
   const statusLabel=(s)=>s==="completed"?"完了":s==="shipped"?"発送済":s==="pending"?"確認待":s==="invoiced"?"請求済":s==="returned"?"返品済":s==="partial_returned"?"一部返品":s==="cancelled"?"ｷｬﾝｾﾙ":s==="delivered"?"配達済":s==="delivering"?"配達中":"不明";
 
   // 注文ステータス変更（返品時は在庫戻し）
@@ -6806,7 +7090,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
           return o.status==="delivered" && chk===todayStr;
         }).length;
         var tdDone = transitRecord && transitRecord.done;
-        var barBg  = isOver?"#b71c1c":isUrgent?"#e65100":T.g1;
+        var barBg  = isOver?T.red:isUrgent?T.amber:T.g1;
         var weekdays = ["日","月","火","水","木","金","土"];
         return (
           <div style={{ background:"linear-gradient(135deg,"+barBg+","+barBg+"cc)",
@@ -6820,7 +7104,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
               <div style={{ marginLeft:"auto",display:"flex",alignItems:"center",gap:6 }}>
                 <span style={{ fontSize:10,color:"rgba(255,255,255,.6)" }}>佐川集荷（{sagawaDeadline||"16:30"}）まで</span>
                 <span style={{ fontFamily:"'Inter'",fontSize:17,fontWeight:900,
-                  color:isOver?"#ff8a80":isUrgent?"#ffcc02":"#e8f5e9" }}>
+                  color:isOver?"#ff8a80":isUrgent?"#ffcc02":T.okPale }}>
                   {isOver?"超過":Math.floor(mins/60)+"h "+(mins%60)+"m"}
                 </span>
               </div>
@@ -6908,7 +7192,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
               return o.fmt==="paper" && !getCachedApproval(o).ok && o.status==="pending";
             }).length;
             const filterOpts = [
-              { key:"hold",    label:"🔒 発送保留",   count:holdCount,                                                                  color:"#e65100"},
+              { key:"hold",    label:"🔒 発送保留",   count:holdCount,                                                                  color:T.amber},
               { key:"urgent",  label:"🚨 急ぎ",       count:orders.filter(function(o){ return o.urgent&&o.status==="pending"; }).length, color:T.red   },
               { key:"active",  label:"処理中",        count:orders.filter(function(o){ return ["pending","shipped","invoiced"].includes(o.status); }).length, color:T.amber },
               { key:"done",    label:"完了",          count:orders.filter(function(o){ return o.status==="completed"; }).length,        color:T.ok    },
@@ -6943,7 +7227,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                 </div>
                 {/* 商流・担当・品切れフィルター */}
                 <div style={{ display:"flex",gap:6,padding:"8px 12px",
-                  background:"#fafaf8",borderBottom:"1px solid "+T.rule,flexWrap:"wrap",alignItems:"center" }}>
+                  background:T.surface,borderBottom:"1px solid "+T.rule,flexWrap:"wrap",alignItems:"center" }}>
                   <span style={{ fontSize:10,color:T.ink4,fontWeight:700 }}>絞込：</span>
                   {[
                     { val:"all",     label:"全商流" },
@@ -6985,7 +7269,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                       })}
                     </div>
                   ) : (
-                    <select value={salesRepFilter}
+                    <select aria-label="担当者フィルター" value={salesRepFilter}
                       onChange={function(e){ setSalesRepFilter(e.target.value); setOrderPage(1); }}
                       style={{ padding:"3px 8px",borderRadius:4,fontSize:11,border:"1px solid "+T.rule,
                         background:"transparent",cursor:"pointer",color:T.ink3,fontFamily:"inherit" }}>
@@ -7035,7 +7319,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
           <div style={{ padding:"10px 16px", borderBottom:`1px solid ${T.rule}`,
             display:"flex", alignItems:"center", gap:12, background:T.bg,
             borderRadius:"8px 8px 0 0" }}>
-            <input type="checkbox"
+            <input aria-label="すべて選択" type="checkbox"
               checked={selected.length===orders.filter(o=>o.fmt==="paper").length && orders.filter(o=>o.fmt==="paper").length>0}
               onChange={e => setSelected(e.target.checked ? orders.filter(o=>o.fmt==="paper").map(o=>o.id) : [])}
               style={{ width:14, height:14, cursor:"pointer" }} />
@@ -7056,7 +7340,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
               {key:"id_mob", label:"注文", render:function(r){
                 var ap=getCachedApproval(r); var isDr=r.shipMethod==="direct";
                 var ch=autoChannel(r);
-                var ic=r.urgent?"#b71c1c":!ap.ok&&r.fmt==="paper"?"#e65100":ch==="gaishoo"?T.amber:T.g2;
+                var ic=r.urgent?T.red:!ap.ok&&r.fmt==="paper"?T.amber:ch==="gaishoo"?T.amber:T.g2;
                 return (
                   <div style={{ display:"flex",gap:6,alignItems:"center" }}>
                     <div style={{ width:4,borderRadius:2,background:ic,flexShrink:0,alignSelf:"stretch",minHeight:36 }} />
@@ -7065,7 +7349,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                       <div style={{ fontSize:12,fontWeight:600,color:T.ink }}>{r.member}</div>
                       <div style={{ display:"flex",gap:3,marginTop:2,flexWrap:"wrap" }}>
                         {r.urgent&&<span style={{ fontSize:9,padding:"1px 4px",borderRadius:3,background:T.redPale,color:T.red,fontWeight:800 }}>🚨急ぎ</span>}
-                        {!ap.ok&&r.fmt==="paper"&&<span style={{ fontSize:9,padding:"1px 4px",borderRadius:3,background:"#fff3e0",color:"#e65100",fontWeight:800 }}>🔒保留</span>}
+                        {!ap.ok&&r.fmt==="paper"&&<span style={{ fontSize:9,padding:"1px 4px",borderRadius:3,background:T.amberPale,color:T.amber,fontWeight:800 }}>🔒保留</span>}
                         {r.staffMemo&&<span style={{ fontSize:9,color:T.ink4 }}>📝</span>}
                       </div>
                     </div>
@@ -7074,7 +7358,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
               }},
               {key:"st_mob", label:"状態", render:function(r){
                 var lbl=r.status==="pending"?"待機":r.status==="shipped"?"発送済":r.status==="delivered"?"配達済":r.status==="completed"?"完了":"—";
-                var clr=r.status==="pending"?T.amber:r.status==="shipped"?T.g2:r.status==="delivered"?"#1a8f5e":r.status==="completed"?T.ok:T.ink4;
+                var clr=r.status==="pending"?T.amber:r.status==="shipped"?T.g2:r.status==="delivered"?T.g3:r.status==="completed"?T.ok:T.ink4;
                 return <span style={{ fontSize:11,fontWeight:700,color:clr }}>{lbl}</span>;
               }},
               {key:"act_mob", label:"", render:function(r){
@@ -7100,7 +7384,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
             ] : [
               {key:"_chk", label:"", render:r=>(
                 r.fmt==="paper" ? (
-                  <input type="checkbox" checked={selected.includes(r.id)}
+                  <input aria-label="注文を選択" type="checkbox" checked={selected.includes(r.id)}
                     onChange={e=>setSelected(prev=>e.target.checked?[...prev,r.id]:prev.filter(x=>x!==r.id))}
                     style={{ width:14, height:14, cursor:"pointer" }} />
                 ) : <span style={{ opacity:.3 }}>—</span>
@@ -7110,8 +7394,8 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                 const isGaishoo = ch==="gaishoo";
                 const approval = getCachedApproval(r);
                 const isHold = !approval.ok && r.fmt==="paper";
-                const indColor = r.urgent?"#b71c1c"
-                  : isHold?"#e65100"
+                const indColor = r.urgent?T.red
+                  : isHold?T.amber
                   : isGaishoo?T.amber
                   : T.g2;
                 const st = getOrderStock(r);
@@ -7154,7 +7438,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                         {isHold && (
                           <span style={{ fontSize:9,fontWeight:800,
                             padding:"1px 5px",borderRadius:3,
-                            background:"#fbe9e7",color:"#e65100",flexShrink:0 }}>
+                            background:"#fbe9e7",color:T.amber,flexShrink:0 }}>
                             🔒 発送保留
                           </span>
                         )}
@@ -7304,7 +7588,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                   ec:      { label:"EC",  bg:T.navyPale,  color:T.navy   },
                   gaishoo: { label:"外商", bg:T.okPale,    color:T.g2     },
                   phone:   { label:"TEL", bg:T.amberPale, color:T.amber  },
-                  fax:     { label:"FAX", bg:"#f3e5f5",   color:"#7b1fa2"},
+                  fax:     { label:"FAX", bg:T.purplePale,   color:"#7b1fa2"},
                 };
                 const m = meta[ch] || meta.ec;
                 return (
@@ -7326,7 +7610,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                 );
               }},
               {key:"addrType",label:"配送先", render:function(r){
-                const m = MEMBERS_DATA.find(function(x){ return x.name===r.member||r.member.includes(x.name); });
+                const m = MOCK_MEMBERS.find(function(x){ return x.name===r.member||r.member.includes(x.name); });
                 if(!m||r.fmt==="elec") return null;
                 const defaultAddr = m.deliveryAddrs ? m.deliveryAddrs.find(function(a){ return a.isDefault; }) : null;
                 if(!defaultAddr) return null;
@@ -7555,7 +7839,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                 <button onClick={function(){ setOrderPage(function(p){ return Math.max(1,p-1); }); }}
                   disabled={safePg2===1}
                   style={{ padding:"5px 12px",borderRadius:6,border:"1px solid #d8d4c8",
-                    background:safePg2===1?"#f4f3ef":"#fff",color:safePg2===1?"#aaa":"#1a1a14",
+                    background:safePg2===1?T.bg:"#fff",color:safePg2===1?"#aaa":T.ink,
                     cursor:safePg2===1?"default":"pointer",fontFamily:"inherit",fontSize:12 }}>
                   ← 前
                 </button>
@@ -7567,9 +7851,9 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                   return (
                     <button key={pg} onClick={function(){ setOrderPage(pg); }}
                       style={{ padding:"5px 10px",borderRadius:6,
-                        border:"1px solid "+(pg===safePg2?"#1a5c38":"#d8d4c8"),
-                        background:pg===safePg2?"#1a5c38":"#fff",
-                        color:pg===safePg2?"#fff":"#1a1a14",
+                        border:"1px solid "+(pg===safePg2?T.g2:T.rule),
+                        background:pg===safePg2?T.g2:"#fff",
+                        color:pg===safePg2?"#fff":T.ink,
                         cursor:"pointer",fontFamily:"'Inter'",fontSize:12,fontWeight:700 }}>
                       {pg}
                     </button>
@@ -7578,11 +7862,11 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                 <button onClick={function(){ setOrderPage(function(p){ return Math.min(totalPg,p+1); }); }}
                   disabled={safePg2===totalPg}
                   style={{ padding:"5px 12px",borderRadius:6,border:"1px solid #d8d4c8",
-                    background:safePg2===totalPg?"#f4f3ef":"#fff",color:safePg2===totalPg?"#aaa":"#1a1a14",
+                    background:safePg2===totalPg?T.bg:"#fff",color:safePg2===totalPg?"#aaa":T.ink,
                     cursor:safePg2===totalPg?"default":"pointer",fontFamily:"inherit",fontSize:12 }}>
                   次 →
                 </button>
-                <span style={{ fontSize:11,color:"#8a8a78",marginLeft:4 }}>
+                <span style={{ fontSize:11,color:T.ink4,marginLeft:4 }}>
                   {total}件中 {(safePg2-1)*ORDER_PAGE_SIZE+1}〜{Math.min(total,safePg2*ORDER_PAGE_SIZE)}件表示
                 </span>
               </div>
@@ -7751,7 +8035,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                                     <label key={bi}
                                       style={{ display:"flex",alignItems:"flex-start",
                                         gap:6,marginBottom:4,cursor:"pointer" }}>
-                                      <input type="checkbox"
+                                      <input aria-label="品目選択" type="checkbox"
                                         style={{ width:14,height:14,marginTop:1,
                                           flexShrink:0,cursor:"pointer",accentColor:m.color }} />
                                       <span style={{ fontSize:11,color:T.ink,lineHeight:1.4 }}>
@@ -7842,7 +8126,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
               </div>
             </div>
             <div style={{ display:"flex",gap:8,alignItems:"center" }}>
-              <select value={deliverySort} onChange={function(e){ setDeliverySort(e.target.value); }}
+              <select aria-label="配送ソート" value={deliverySort} onChange={function(e){ setDeliverySort(e.target.value); }}
                 style={{ padding:"6px 10px",borderRadius:6,fontSize:12,
                   border:"1px solid "+T.rule,background:"#fff",
                   color:T.ink,cursor:"pointer",fontFamily:"inherit" }}>
@@ -7871,9 +8155,9 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                 return (a.assignedTo||"").localeCompare(b.assignedTo||"");
               }
               if(deliverySort==="zip") {
-                // 配達先の郵便番号でソート（MEMBERS_DATAから取得）
+                // 配達先の郵便番号でソート（MOCK_MEMBERSから取得）
                 var getMemberZip = function(order){
-                  var m = MEMBERS_DATA.find(function(x){ return x.name===order.member||order.member.includes(x.name); });
+                  var m = MOCK_MEMBERS.find(function(x){ return x.name===order.member||order.member.includes(x.name); });
                   var addr = m&&m.deliveryAddrs ? m.deliveryAddrs.find(function(a){ return a.isDefault; }) : null;
                   return addr ? (addr.zip||"999-9999") : "999-9999";
                 };
@@ -7947,7 +8231,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                         </div>
                         {repOrds.map(function(o,i){
                           var isDeliv = o.status==="delivering";
-                          var memberInfo = MEMBERS_DATA.find(function(m){
+                          var memberInfo = MOCK_MEMBERS.find(function(m){
                             return m.name===o.member || o.member.includes(m.name);
                           });
                           var addr = memberInfo&&memberInfo.deliveryAddrs
@@ -7956,7 +8240,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                           return (
                             <div key={i} style={{ padding:"14px 18px",
                               borderBottom:"1px solid "+T.rule,
-                              background:o.urgent?"#fff8f8":isDeliv?"#e8f5e9":"#fff" }}>
+                              background:o.urgent?"#fff8f8":isDeliv?T.okPale:"#fff" }}>
                               <div style={{ display:"flex",gap:10,alignItems:"flex-start" }}>
                                 {/* 優先度マーカー */}
                                 <div style={{ width:4,borderRadius:2,flexShrink:0,
@@ -7975,7 +8259,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                                     )}
                                     {isDeliv && (
                                       <span style={{ fontSize:9,fontWeight:700,padding:"1px 5px",
-                                        borderRadius:3,background:"#e3f2fd",color:"#0277bd" }}>
+                                        borderRadius:3,background:T.navyPale,color:"#0277bd" }}>
                                         🚴 配達中
                                       </span>
                                     )}
@@ -8077,7 +8361,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                   )}
                 </div>
                 {kasOrds.length>0 && !tdDone && (
-                  <div style={{ padding:"8px 16px",background:"#fff3e0",fontSize:11,color:"#e65100" }}>
+                  <div style={{ padding:"8px 16px",background:T.amberPale,fontSize:11,color:T.amber }}>
                     未確認 {kasOrds.length}件 → {kasOrds.map(function(o){ return o.id; }).join("　")}
                   </div>
                 )}
@@ -8134,7 +8418,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                     padding:"10px 14px", borderRadius:7,
                     background:selected.includes(o.id)?T.okPale:T.bg,
                     border:`1px solid ${selected.includes(o.id)?T.ok+"40":T.rule}` }}>
-                    <input type="checkbox" checked={selected.includes(o.id)}
+                    <input aria-label="注文を選択" type="checkbox" checked={selected.includes(o.id)}
                       onChange={e=>setSelected(prev=>e.target.checked?[...prev,o.id]:prev.filter(x=>x!==o.id))}
                       style={{ width:14, height:14, cursor:"pointer" }} />
                     <div style={{ flex:1 }}>
@@ -8167,7 +8451,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
               e飛伝IIIの「出荷履歴データ出力」で取得したCSVの内容を貼り付けてください。<br/>
               フォーマット：<code style={{ background:T.bg, padding:"1px 5px", borderRadius:3 }}>注文ID,追跡番号</code>（1行1件）
             </div>
-            <textarea value={trackingInput} onChange={e=>setTrackingInput(e.target.value)}
+            <textarea aria-label="追跡番号CSV入力" value={trackingInput} onChange={e=>setTrackingInput(e.target.value)}
               placeholder={"ORD-2841,123456789012\nORD-2839,234567890123\nORD-2837,345678901234"}
               style={{ width:"100%", height:100, padding:"8px 10px", borderRadius:7,
                 border:`1.5px solid ${T.rule}`, fontSize:12, fontFamily:"monospace",
@@ -8363,14 +8647,14 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
               </div>
               <button onClick={function(){ setFaxEditId(null); }}
                 style={{ background:T.bg,border:"1px solid "+T.rule,borderRadius:6,
-                  padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12 }}>✕</button>
+                  padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12 }} aria-label="閉じる">✕</button>
             </div>
             <div style={{ padding:"18px 20px" }}>
               <div style={{ display:"flex",flexDirection:"column",gap:12 }}>
                 {/* 注文者 */}
                 <div>
                   <div style={{ fontSize:11,fontWeight:700,color:T.ink3,marginBottom:4 }}>注文者・事務所名</div>
-                  <input value={faxEditData.customer||""}
+                  <input aria-label="注文者名" value={faxEditData.customer||""}
                     onChange={function(e){ setFaxEditData(function(p){ return Object.assign({},p,{customer:e.target.value}); }); }}
                     style={{ width:"100%",padding:"8px 10px",borderRadius:7,
                       border:"1.5px solid "+T.rule,fontSize:13,fontFamily:"inherit",
@@ -8382,7 +8666,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                   <div style={{ fontSize:11,fontWeight:700,color:T.ink3,marginBottom:4 }}>
                     注文内容（1行1品目　例：民法改正と実務対応×2）
                   </div>
-                  <textarea value={faxEditData.items||""}
+                  <textarea aria-label="注文内容" value={faxEditData.items||""}
                     onChange={function(e){ setFaxEditData(function(p){ return Object.assign({},p,{items:e.target.value}); }); }}
                     rows={3}
                     style={{ width:"100%",padding:"8px 10px",borderRadius:7,
@@ -8464,12 +8748,12 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
               </div>
               <button onClick={function(){ setFaxEditId(null); }}
                 style={{ background:T.bg,border:"1px solid "+T.rule,borderRadius:6,
-                  padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12 }}>✕</button>
+                  padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12 }} aria-label="閉じる">✕</button>
             </div>
             <div style={{ padding:"18px 20px",display:"flex",flexDirection:"column",gap:12 }}>
               <div>
                 <div style={{ fontSize:11,fontWeight:700,color:T.ink3,marginBottom:5 }}>注文者名</div>
-                <input value={faxEditData.customer||""}
+                <input aria-label="注文者名" value={faxEditData.customer||""}
                   onChange={function(e){ setFaxEditData(function(p){ return Object.assign({},p,{customer:e.target.value}); }); }}
                   style={{ width:"100%",padding:"8px 10px",borderRadius:7,
                     border:"1.5px solid "+T.rule,fontSize:13,fontFamily:"inherit",
@@ -8479,7 +8763,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                 <div style={{ fontSize:11,fontWeight:700,color:T.ink3,marginBottom:5 }}>
                   注文内容（1行1品目：書名 ×数量）
                 </div>
-                <textarea value={faxEditData.items||""}
+                <textarea aria-label="注文内容" value={faxEditData.items||""}
                   onChange={function(e){ setFaxEditData(function(p){ return Object.assign({},p,{items:e.target.value}); }); }}
                   rows={4}
                   style={{ width:"100%",padding:"8px 10px",borderRadius:7,
@@ -8504,7 +8788,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                         padding:"6px 12px",borderRadius:7,cursor:"pointer",flex:1,
                         background:isSel?T.okPale:T.bg,
                         border:"1.5px solid "+(isSel?T.g2:T.rule) }}>
-                        <input type="radio" name="faxPayment" value={opt.v}
+                        <input aria-label={opt.label} type="radio" name="faxPayment" value={opt.v}
                           checked={isSel}
                           onChange={function(){ setFaxEditData(function(p){ return Object.assign({},p,{payment:opt.v}); }); }} />
                         <span style={{ fontSize:12 }}>{opt.l}</span>
@@ -8674,7 +8958,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                   <div style={{ fontSize:11,fontWeight:700,color:T.ink3,marginBottom:6 }}>
                     生成された通知文（編集可能）
                   </div>
-                  <textarea
+                  <textarea aria-label="通知文"
                     value={noticeDraft}
                     onChange={function(e){ setNoticeDraft(e.target.value); }}
                     rows={12}
@@ -8720,7 +9004,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
               </div>
             </div>
             <div style={{ padding:"16px 18px" }}>
-              <textarea
+              <textarea aria-label="メモ入力"
                 value={memoInput}
                 onChange={function(e){ setMemoInput(e.target.value); }}
                 placeholder={"例：霞が関地裁3Fに直接持参 / 月末まとめて請求 / 配達前に電話を入れること"}
@@ -8844,7 +9128,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
               </div>
               <button onClick={()=>{setSagawaModal(false);setSagawaStep("confirm");}}
                 style={{ background:T.bg,border:`1px solid ${T.rule}`,borderRadius:6,
-                  padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12 }}>✕</button>
+                  padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12 }} aria-label="閉じる">✕</button>
             </div>
 
             <div style={{ padding:"18px 22px" }}>
@@ -8946,7 +9230,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                       <tbody>
                         {sagawaRows.map((r,i)=>{
                           const inp = (field, w, placeholder) => (
-                            <input value={r[field]}
+                            <input aria-label={placeholder||field} value={r[field]}
                               onChange={e=>updateSagawaRow(i,field,e.target.value)}
                               placeholder={placeholder||""}
                               style={{ width:w||"100%",padding:"4px 6px",borderRadius:4,
@@ -8954,7 +9238,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                                 fontFamily:"inherit",outline:"none",boxSizing:"border-box" }} />
                           );
                           const sel = (field, opts) => (
-                            <select value={r[field]} onChange={e=>updateSagawaRow(i,field,e.target.value)}
+                            <select aria-label="佐川CSV項目" value={r[field]} onChange={e=>updateSagawaRow(i,field,e.target.value)}
                               style={{ padding:"4px 6px",borderRadius:4,border:`1.5px solid ${T.rule}`,
                                 fontSize:11,outline:"none",background:T.white }}>
                               {opts.map(o=><option key={o} value={o}>{o}</option>)}
@@ -8985,7 +9269,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                                   var over=len>32;
                                   return (
                                     <div>
-                                      <input value={val} onChange={function(e){ updateSagawaRow(i,"addr1",e.target.value); }}
+                                      <input aria-label="住所1" value={val} onChange={function(e){ updateSagawaRow(i,"addr1",e.target.value); }}
                                         style={{ width:160,padding:"4px 6px",borderRadius:4,
                                           border:"1.5px solid "+(over?T.red:T.rule),
                                           fontSize:11,fontFamily:"inherit",outline:"none",
@@ -9002,7 +9286,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                                   var over=len>32;
                                   return (
                                     <div>
-                                      <input value={val} onChange={function(e){ updateSagawaRow(i,"addr2",e.target.value); }}
+                                      <input aria-label="住所2" value={val} onChange={function(e){ updateSagawaRow(i,"addr2",e.target.value); }}
                                         style={{ width:120,padding:"4px 6px",borderRadius:4,
                                           border:"1.5px solid "+(over?T.red:T.rule),
                                           fontSize:11,fontFamily:"inherit",outline:"none",
@@ -9032,7 +9316,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                                   var over=len>32;
                                   return (
                                     <div>
-                                      <input value={val}
+                                      <input aria-label="配送メモ" value={val}
                                         onChange={function(e){ updateSagawaRow(i,"note",e.target.value); }}
                                         style={{ width:100,padding:"4px 6px",borderRadius:4,
                                           border:"1.5px solid "+(over?T.red:T.rule),
@@ -9172,7 +9456,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
               </div>
               <button onClick={()=>{ setActionTarget(null); setReturnStep(1); }}
                 style={{ background:T.bg,border:`1px solid ${T.rule}`,borderRadius:6,
-                  padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12 }}>✕</button>
+                  padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12 }} aria-label="閉じる">✕</button>
             </div>
 
             <div style={{ padding:"18px 22px" }}>
@@ -9222,9 +9506,9 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                   {actionTarget.status==="completed" &&
                     (staffRole==="admin"||staffRole==="owner") && (
                     <div style={{ marginTop:12,padding:"12px 14px",
-                      background:"#fff3e0",borderRadius:8,
+                      background:T.amberPale,borderRadius:8,
                       border:"1.5px solid #e65100" }}>
-                      <div style={{ fontSize:11,fontWeight:700,color:"#e65100",marginBottom:6 }}>
+                      <div style={{ fontSize:11,fontWeight:700,color:T.amber,marginBottom:6 }}>
                         ⚠ 管理者権限：完了ステータスの取り消し
                       </div>
                       <div style={{ fontSize:10,color:T.ink4,marginBottom:8,lineHeight:1.6 }}>
@@ -9232,7 +9516,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                         入金済みの場合は入金消し込みの修正も合わせて行ってください。
                       </div>
                       <Btn variant="ghost"
-                        style={{ color:"#e65100",borderColor:"#e65100",fontSize:11 }}
+                        style={{ color:T.amber,borderColor:T.amber,fontSize:11 }}
                         onClick={function(){
                           updateOrderWithUndo(actionTarget.id,
                             {status:"pending"},
@@ -9393,13 +9677,13 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                           padding:"8px 12px",borderRadius:7,cursor:"pointer",
                           background:returnReason===r?T.purplePale:T.bg,
                           border:`1.5px solid ${returnReason===r?T.purple:T.rule}` }}>
-                          <input type="radio" name="returnReason" value={r}
+                          <input aria-label={r} type="radio" name="returnReason" value={r}
                             checked={returnReason===r} onChange={()=>setReturnReason(r)} />
                           <span style={{ fontSize:12,color:T.ink }}>{r}</span>
                         </label>
                       ))}
                     </div>
-                    <textarea value={returnReason==="その他"?"":returnReason}
+                    <textarea aria-label="返品理由" value={returnReason==="その他"?"":returnReason}
                       onChange={e=>setReturnReason(e.target.value)}
                       placeholder="詳細メモ（任意）"
                       style={{ width:"100%",height:60,padding:"8px 10px",borderRadius:6,
@@ -9542,7 +9826,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                 }}>🖨 印刷</Btn>
                 <button onClick={()=>{ setActionTarget(null); setPrintMode(null); setReceiptName(""); }}
                   style={{ background:T.bg,border:`1px solid ${T.rule}`,borderRadius:6,
-                    padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12 }}>✕</button>
+                    padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12 }} aria-label="閉じる">✕</button>
               </div>
             </div>
 
@@ -9551,7 +9835,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
               {printMode==="receipt" && (
                 <div style={{ marginBottom:16,display:"flex",gap:8,alignItems:"center" }}>
                   <div style={{ fontSize:12,fontWeight:700,color:T.ink3,flexShrink:0 }}>宛名：</div>
-                  <input value={receiptName} onChange={e=>setReceiptName(e.target.value)}
+                  <input aria-label="領収書宛名" value={receiptName} onChange={e=>setReceiptName(e.target.value)}
                     style={{ flex:1,padding:"7px 10px",borderRadius:6,border:`1.5px solid ${T.rule}`,
                       fontSize:13,outline:"none" }} />
                   <span style={{ fontSize:12,color:T.ink4,flexShrink:0 }}>御中 / 様</span>
@@ -9773,7 +10057,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                 }}>🖨 印刷</Btn>
                 <button onClick={() => setMergeInvModal(false)}
                   style={{ background:T.bg,border:"1px solid "+T.rule,borderRadius:6,
-                    padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12 }}>✕</button>
+                    padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12 }} aria-label="閉じる">✕</button>
               </div>
             </div>
             {/* 設定エリア */}
@@ -9782,11 +10066,11 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                 <div>
                   <div style={{ fontSize:10,fontWeight:700,color:T.ink4,marginBottom:4 }}>宛名</div>
                   <div style={{ display:"flex",gap:6 }}>
-                    <input value={mergeInvMeta.recipientName}
+                    <input aria-label="統合請求書宛名" value={mergeInvMeta.recipientName}
                       onChange={e => setMergeInvMeta(p => Object.assign({},p,{recipientName:e.target.value}))}
                       placeholder={mergeInvOrders[0]?.member||""}
                       style={{ flex:1,padding:"6px 9px",borderRadius:5,border:"1px solid "+T.rule,fontSize:12 }} />
-                    <select value={mergeInvMeta.recipientTitle}
+                    <select aria-label="宛名敬称" value={mergeInvMeta.recipientTitle}
                       onChange={e => setMergeInvMeta(p => Object.assign({},p,{recipientTitle:e.target.value}))}
                       style={{ padding:"6px",borderRadius:5,border:"1px solid "+T.rule,fontSize:12,width:72 }}>
                       <option>御中</option><option>様</option>
@@ -9795,7 +10079,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                 </div>
                 <div>
                   <div style={{ fontSize:10,fontWeight:700,color:T.ink4,marginBottom:4 }}>支払期限</div>
-                  <input type="date" value={mergeInvMeta.dueDate}
+                  <input aria-label="支払期限" type="date" value={mergeInvMeta.dueDate}
                     onChange={e => setMergeInvMeta(p => Object.assign({},p,{dueDate:e.target.value}))}
                     style={{ width:"100%",padding:"6px 9px",borderRadius:5,border:"1px solid "+T.rule,fontSize:12,boxSizing:"border-box" }} />
                 </div>
@@ -9925,7 +10209,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                 )}
                 <button onClick={function(){ setOrderInvModal(false); }}
                   style={{ background:T.bg,border:"1px solid "+T.rule,borderRadius:6,
-                    padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12 }}>✕</button>
+                    padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12 }} aria-label="閉じる">✕</button>
               </div>
             </div>
 
@@ -9935,10 +10219,10 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                 <div>
                   <div style={{ fontSize:10,fontWeight:700,color:T.ink4,marginBottom:4 }}>宛名</div>
                   <div style={{ display:"flex",gap:6 }}>
-                    <input value={orderInvMeta.recipientName}
+                    <input aria-label="注文請求書宛名" value={orderInvMeta.recipientName}
                       onChange={function(e){ var v=e.target.value; setOrderInvMeta(function(p){ return Object.assign({},p,{recipientName:v}); }); }}
                       style={{ flex:1,padding:"6px 9px",borderRadius:5,border:"1px solid "+T.rule,fontSize:12 }} />
-                    <select value={orderInvMeta.recipientTitle}
+                    <select aria-label="宛名敬称" value={orderInvMeta.recipientTitle}
                       onChange={function(e){ var v=e.target.value; setOrderInvMeta(function(p){ return Object.assign({},p,{recipientTitle:v}); }); }}
                       style={{ padding:"6px 8px",borderRadius:5,border:"1px solid "+T.rule,fontSize:12,width:72 }}>
                       <option>御中</option><option>様</option><option>殿</option>
@@ -9947,19 +10231,19 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                 </div>
                 <div>
                   <div style={{ fontSize:10,fontWeight:700,color:T.ink4,marginBottom:4 }}>支払期限</div>
-                  <input type="date" value={orderInvMeta.dueDate}
+                  <input aria-label="支払期限" type="date" value={orderInvMeta.dueDate}
                     onChange={function(e){ var v=e.target.value; setOrderInvMeta(function(p){ return Object.assign({},p,{dueDate:v}); }); }}
                     style={{ width:"100%",padding:"6px 9px",borderRadius:5,border:"1px solid "+T.rule,fontSize:12,boxSizing:"border-box" }} />
                 </div>
                 <div>
                   <div style={{ fontSize:10,fontWeight:700,color:T.ink4,marginBottom:4 }}>但し書き</div>
-                  <input value={orderInvMeta.note}
+                  <input aria-label="但し書き" value={orderInvMeta.note}
                     onChange={function(e){ var v=e.target.value; setOrderInvMeta(function(p){ return Object.assign({},p,{note:v}); }); }}
                     style={{ width:"100%",padding:"6px 9px",borderRadius:5,border:"1px solid "+T.rule,fontSize:12,boxSizing:"border-box" }} />
                 </div>
                 <div>
                   <div style={{ fontSize:10,fontWeight:700,color:T.ink4,marginBottom:4 }}>消費税計算方式</div>
-                  <select value={orderInvMeta.taxCalcMethod}
+                  <select aria-label="消費税計算方式" value={orderInvMeta.taxCalcMethod}
                     onChange={function(e){ var v=e.target.value; setOrderInvMeta(function(p){ return Object.assign({},p,{taxCalcMethod:v}); }); }}
                     style={{ width:"100%",padding:"6px 9px",borderRadius:5,border:"1px solid "+T.rule,fontSize:12,boxSizing:"border-box" }}>
                     <option value="grouped">合算計算（インボイス準拠・推奨）</option>
@@ -9980,7 +10264,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                       padding:"4px 10px",borderRadius:6,
                       background:orderInvMeta[opt.key]?T.okPale:T.bg,
                       border:"1px solid "+(orderInvMeta[opt.key]?T.g2:T.rule) }}>
-                      <input type="checkbox" checked={!!orderInvMeta[opt.key]}
+                      <input aria-label="オプション選択" type="checkbox" checked={!!orderInvMeta[opt.key]}
                         onChange={function(e){ var v=e.target.checked; setOrderInvMeta(function(p){ return Object.assign({},p,Object.fromEntries([[opt.key,v]])); }); }} />
                       {opt.label}
                     </label>
@@ -9989,9 +10273,9 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
               </div>
               {/* 官公庁追加フィールド */}
               {orderInvMeta.govMode && (
-                <div style={{ marginTop:10,padding:"12px 14px",background:"#e3f2fd",
+                <div style={{ marginTop:10,padding:"12px 14px",background:T.navyPale,
                   borderRadius:8,border:"1px solid #01579b30" }}>
-                  <div style={{ fontSize:10,fontWeight:700,color:"#01579b",marginBottom:8 }}>
+                  <div style={{ fontSize:10,fontWeight:700,color:T.navy,marginBottom:8 }}>
                     🏛 官公庁・裁判所向け追加記載事項
                   </div>
                   <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:8 }}>
@@ -10002,8 +10286,8 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                     ].map(function(f){
                       return (
                         <div key={f.key} style={{ gridColumn:f.key==="govProjectName"?"span 2":"auto" }}>
-                          <div style={{ fontSize:10,fontWeight:700,color:"#01579b",marginBottom:3 }}>{f.label}</div>
-                          <input value={orderInvMeta[f.key]||""}
+                          <div style={{ fontSize:10,fontWeight:700,color:T.navy,marginBottom:3 }}>{f.label}</div>
+                          <input aria-label={f.label} value={orderInvMeta[f.key]||""}
                             onChange={function(e){ var v=e.target.value; setOrderInvMeta(function(p){ return Object.assign({},p,Object.fromEntries([[f.key,v]])); }); }}
                             placeholder={f.ph}
                             style={{ width:"100%",padding:"5px 8px",borderRadius:5,
@@ -10080,25 +10364,25 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                     {orderInvMeta.govMode && (orderInvMeta.govProjectName||orderInvMeta.govContractNo||orderInvMeta.govBudgetItem) && (
                       <div style={{ marginBottom:14,padding:"11px 14px",
                         border:"2px solid #01579b",borderRadius:8 }}>
-                        <div style={{ fontSize:10,fontWeight:700,color:"#01579b",marginBottom:6 }}>
+                        <div style={{ fontSize:10,fontWeight:700,color:T.navy,marginBottom:6 }}>
                           ■ 請求内容
                         </div>
                         {orderInvMeta.govProjectName && (
                           <div style={{ display:"flex",gap:12,marginBottom:4,fontSize:12 }}>
-                            <span style={{ minWidth:140,color:"#5a5a4c" }}>件名（支出負担行為）</span>
-                            <span style={{ fontWeight:700,color:"#1a1a14" }}>{orderInvMeta.govProjectName}</span>
+                            <span style={{ minWidth:140,color:T.ink3 }}>件名（支出負担行為）</span>
+                            <span style={{ fontWeight:700,color:T.ink }}>{orderInvMeta.govProjectName}</span>
                           </div>
                         )}
                         {orderInvMeta.govContractNo && (
                           <div style={{ display:"flex",gap:12,marginBottom:4,fontSize:12 }}>
-                            <span style={{ minWidth:140,color:"#5a5a4c" }}>契約番号・注文番号</span>
-                            <span style={{ fontWeight:700,color:"#1a1a14" }}>{orderInvMeta.govContractNo}</span>
+                            <span style={{ minWidth:140,color:T.ink3 }}>契約番号・注文番号</span>
+                            <span style={{ fontWeight:700,color:T.ink }}>{orderInvMeta.govContractNo}</span>
                           </div>
                         )}
                         {orderInvMeta.govBudgetItem && (
                           <div style={{ display:"flex",gap:12,marginBottom:4,fontSize:12 }}>
-                            <span style={{ minWidth:140,color:"#5a5a4c" }}>予算科目</span>
-                            <span style={{ fontWeight:700,color:"#1a1a14" }}>{orderInvMeta.govBudgetItem}</span>
+                            <span style={{ minWidth:140,color:T.ink3 }}>予算科目</span>
+                            <span style={{ fontWeight:700,color:T.ink }}>{orderInvMeta.govBudgetItem}</span>
                           </div>
                         )}
                       </div>
@@ -10270,7 +10554,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                 }}>🖨 印刷</Btn>
                 <button onClick={function(){ setReturnSlipTarget(null); }}
                   style={{ background:T.bg,border:"1px solid "+T.rule,borderRadius:6,
-                    padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12 }}>✕</button>
+                    padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12 }} aria-label="閉じる">✕</button>
               </div>
             </div>
             {/* 返品伝票本体 */}
@@ -10392,7 +10676,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
               <div style={{ fontSize:15,fontWeight:800,color:T.ink }}>📊 CSV一括注文</div>
               <button onClick={()=>{setCsvModal(false);setCsvPreview([]);}} style={{ background:T.bg,
                 border:`1px solid ${T.rule}`,borderRadius:6,padding:"4px 10px",
-                cursor:"pointer",color:T.ink4,fontSize:12 }}>✕</button>
+                cursor:"pointer",color:T.ink4,fontSize:12 }} aria-label="閉じる">✕</button>
             </div>
             <div style={{ padding:"18px 22px" }}>
               {csvPreview.length===0 ? (
@@ -10406,7 +10690,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                     </div>
                     <Btn variant="secondary" onClick={()=>onToast("ファイル選択（デモ）")}>ファイルを選択</Btn>
                   </div>
-                  <textarea value={csvRaw} onChange={e=>setCsvRaw(e.target.value)}
+                  <textarea aria-label="CSV入力" value={csvRaw} onChange={e=>setCsvRaw(e.target.value)}
                     placeholder={"order_date,customer_name,book_id,qty,format,payment\n2026-03-15,山田司法書士事務所,b1,5,paper,bank_transfer\n..."}
                     style={{ width:"100%",height:120,padding:"8px 10px",borderRadius:7,
                       border:`1.5px solid ${T.rule}`,fontSize:12,fontFamily:"monospace",
@@ -10467,14 +10751,14 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
               </div>
               <button onClick={()=>{setEmailModal(false);setEmailParsed(null);setEmailText("");}}
                 style={{ background:T.bg,border:`1px solid ${T.rule}`,borderRadius:6,
-                  padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12 }}>✕</button>
+                  padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12 }} aria-label="閉じる">✕</button>
             </div>
             <div style={{ padding:"18px 22px" }}>
               <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:14 }}>
                 {/* 左：テキスト入力 */}
                 <div>
                   <div style={{ fontSize:12,fontWeight:700,color:T.ink,marginBottom:6 }}>メール本文を貼り付け</div>
-                  <textarea value={emailText} onChange={e=>setEmailText(e.target.value)}
+                  <textarea aria-label="メール本文貼り付け" value={emailText} onChange={e=>setEmailText(e.target.value)}
                     placeholder={"件名：書籍注文のお願い\n\nお世話になっております。\n東京合同法律事務所の田中です。\n\n以下の書籍を注文させてください。\n・民法改正と実務対応【第3版】 3冊\n・会社法実務ハンドブック 1冊\n\n支払い方法：請求書払い\n届け先：東京都千代田区…"}
                     style={{ width:"100%",height:260,padding:"10px",borderRadius:8,
                       border:`1.5px solid ${T.rule}`,fontSize:12,fontFamily:"inherit",
@@ -10636,9 +10920,9 @@ const ElecReqView = ({ onToast, darkMode }) => {
 const InventoryView = ({ onToast, darkMode }) => {
   var T = darkMode ? T_DARK : T_LIGHT;
   const [tab, setTab] = useState("list");
-  const outOfStock = BOOKS_DATA.filter(b => b.stock === 0 && !b.pod);
-  const lowStock   = BOOKS_DATA.filter(b => b.stock > 0 && b.stock < 40 && !b.pod);
-  const podBooks   = BOOKS_DATA.filter(b => b.pod);
+  const outOfStock = MOCK_BOOKS.filter(b => b.stock === 0 && !b.pod);
+  const lowStock   = MOCK_BOOKS.filter(b => b.stock > 0 && b.stock < 40 && !b.pod);
+  const podBooks   = MOCK_BOOKS.filter(b => b.pod);
 
   return (
     <div>
@@ -10663,7 +10947,7 @@ const InventoryView = ({ onToast, darkMode }) => {
       {/* KPI */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12, marginBottom:20 }}>
         {[
-          { label:"総在庫冊数",       value:`${BOOKS_DATA.reduce((s,b)=>s+b.stock,0).toLocaleString()}冊`, icon:"📚", color:T.g2 },
+          { label:"総在庫冊数",       value:`${MOCK_BOOKS.reduce((s,b)=>s+b.stock,0).toLocaleString()}冊`, icon:"📚", color:T.g2 },
           { label:"在庫切れ",         value:`${outOfStock.length}冊`,  icon:"⚠", color:T.red   },
           { label:"在庫少（40冊以下）",value:`${lowStock.length}冊`,   icon:"🔶", color:T.amber },
           { label:"POD対応書籍",       value:`${podBooks.length}冊`,   icon:"🖨", color:T.navy  },
@@ -10731,7 +11015,7 @@ const InventoryView = ({ onToast, darkMode }) => {
                 </div>
               )},
             ]}
-            rows={BOOKS_DATA} />
+            rows={MOCK_BOOKS} />
         </Card>
       )}
 
@@ -10771,7 +11055,7 @@ const InventoryView = ({ onToast, darkMode }) => {
             <div style={{ fontSize:12, color:T.ink3, lineHeight:1.7, marginBottom:12 }}>
               在庫切れ・補充コスト高・低回転の書籍はPOD化を検討してください。
             </div>
-            {BOOKS_DATA.filter(b=>!b.pod && b.stock<30).map((b,i)=>(
+            {MOCK_BOOKS.filter(b=>!b.pod && b.stock<30).map((b,i)=>(
               <div key={i} style={{ display:"flex", justifyContent:"space-between",
                 alignItems:"center", padding:"10px 14px", background:T.bg,
                 borderRadius:6, border:`1px solid ${T.rule}`, marginBottom:6 }}>
@@ -10821,7 +11105,7 @@ const InventoryView = ({ onToast, darkMode }) => {
             <h3 style={{ fontSize:13, fontWeight:700, color:T.ink, marginBottom:14 }}>
               📦 発注推奨リスト（在庫週数8週以下）
             </h3>
-            {BOOKS_DATA.filter(b => !b.pod && b.sales > 0 && (b.stock / (b.sales / 4.3)) < 8)
+            {MOCK_BOOKS.filter(b => !b.pod && b.sales > 0 && (b.stock / (b.sales / 4.3)) < 8)
               .map((b,i)=>{
                 const weeks = Math.floor(b.stock / (b.sales / 4.3));
                 const suggested = Math.ceil(b.sales * 2);
@@ -10867,7 +11151,7 @@ const MembersView = ({ onToast, globalMembers, updateMember, darkMode }) => {
   const [sel, setSel] = useState(null);
 
   // globalMembersが渡されていればそちらを使用（リアルタイム更新対応）
-  const members = globalMembers || MEMBERS_DATA;
+  const members = globalMembers || MOCK_MEMBERS;
 
   const rows = members.filter(function(m){
     return m.name.includes(q) || m.email.includes(q) || m.type.includes(q);
@@ -10875,7 +11159,6 @@ const MembersView = ({ onToast, globalMembers, updateMember, darkMode }) => {
 
   // 集中管理関数フォールバック
   const _updateMember = updateMember || function(id, patch){
-    console.warn("updateMember not provided");
   };
 
   const [confirmModal, setConfirmModal] = useState(null);
@@ -10938,7 +11221,7 @@ const MembersView = ({ onToast, globalMembers, updateMember, darkMode }) => {
                   <button onClick={()=>setSel(null)}
                     style={{ background:"rgba(255,255,255,.15)", border:"none", color:"#fff",
                       width:32, height:32, borderRadius:"50%", cursor:"pointer", fontSize:16,
-                      display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
+                      display:"flex", alignItems:"center", justifyContent:"center" }} aria-label="閉じる">✕</button>
                 </div>
                 <div style={{ padding:"24px 28px" }}>
                   <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:10, marginBottom:20 }}>
@@ -10975,7 +11258,7 @@ const MembersView = ({ onToast, globalMembers, updateMember, darkMode }) => {
           <Card>
             <div style={{ padding:"12px 20px", borderBottom:`1px solid ${T.rule}`,
               display:"flex", gap:12, alignItems:"center" }}>
-              <input value={q} onChange={e=>setQ(e.target.value)} placeholder="氏名・メール・職種で検索..."
+              <input aria-label="氏名・メール・職種で検索" value={q} onChange={e=>setQ(e.target.value)} placeholder="氏名・メール・職種で検索..."
                 style={{ width:"100%", maxWidth:360, padding:"8px 14px", border:`1px solid ${T.rule}`,
                   borderRadius:6, fontSize:13, background:T.bg, outline:"none" }} />
               <span style={{ fontSize:12, color:T.ink4, whiteSpace:"nowrap" }}>
@@ -11459,7 +11742,7 @@ const MembersView = ({ onToast, globalMembers, updateMember, darkMode }) => {
                 <div style={{ fontSize:11,fontWeight:700,color:T.ink3,marginBottom:6 }}>
                   弁護士登録番号 <span style={{ color:T.red }}>*</span>
                 </div>
-                <input
+                <input aria-label="弁護士登録番号"
                   value={barNoInput}
                   onChange={function(e){ setBarNoInput(e.target.value); }}
                   placeholder="例：第70123号"
@@ -11544,17 +11827,17 @@ const SalesView = ({ onToast, darkMode }) => {
   const fmtM = v => `¥${(v/10000).toFixed(0)}万`;
 
   // 粗利計算（EC書籍）— calcPaperBook エンジンを使用
-  const ecGross = BOOKS_DATA.reduce((s,b)=> {
+  const ecGross = MOCK_BOOKS.reduce((s,b)=> {
     if (b.sales===0) return s;
     return s + calcPaperBook({ listPrice:b.price, qty:b.sales, pubId:b.pub,
       paymentId:"credit_card" }).grossProfit;
   }, 0);
-  const ecElecGrossInSales = BOOKS_DATA.reduce((s,b)=> {
+  const ecElecGrossInSales = MOCK_BOOKS.reduce((s,b)=> {
     if (!b.elec || !b.elecSales) return s;
     return s + calcElecBook({ salePrice:b.price*0.9, qty:b.elecSales,
       pubId:b.pub, paymentId:"credit_card" }).grossProfit;
   }, 0);
-  const ecRev   = BOOKS_DATA.reduce((s,b)=> s + b.price * b.sales, 0);
+  const ecRev   = MOCK_BOOKS.reduce((s,b)=> s + b.price * b.sales, 0);
   const ecGrossRate = ecRev > 0 ? ecGross / ecRev : 0;
 
   // グラフ用ミニバーチャート（ツールチップ対応）
@@ -11939,7 +12222,7 @@ const SalesView = ({ onToast, darkMode }) => {
                   return <span style={{fontFamily:"'Inter'",fontWeight:800,color:T.ok}}>¥{g.toLocaleString()}</span>;
                 }},
               ]}
-              rows={BOOKS_DATA.filter(b=>b.status==="published")} />
+              rows={MOCK_BOOKS.filter(b=>b.status==="published")} />
             <div style={{ padding:"12px 20px", background:T.bg, borderTop:`1px solid ${T.rule}`,
               display:"flex", gap:24, fontSize:12 }}>
               <span style={{color:T.ink4}}>合計売上：</span>
@@ -12439,7 +12722,7 @@ const BannerAdView = ({ onToast, darkMode }) => {
               <div style={{ fontSize:12,color:T.ink4,marginTop:2 }}>クライアント: {a.client}</div>
             </div>
             <button onClick={onClose} style={{ background:T.bg,border:`1px solid ${T.rule}`,
-              borderRadius:6,padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12,fontWeight:700 }}>✕</button>
+              borderRadius:6,padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12,fontWeight:700 }} aria-label="閉じる">✕</button>
           </div>
           <div style={{ padding:"18px 22px" }}>
             {editing?(
@@ -12454,7 +12737,7 @@ const BannerAdView = ({ onToast, darkMode }) => {
                 ].map((f,i)=>(
                   <div key={i}>
                     <div style={{ fontSize:11,color:T.ink4,marginBottom:3 }}>{f.label}</div>
-                    <input type={f.type} value={(form)[f.key]}
+                    <input aria-label={f.label} type={f.type} value={(form)[f.key]}
                       onChange={e=>setForm((p)=>(Object.assign({},p,{[f.key]:f.type==="number"?+e.target.value:e.target.value})))}
                       style={{ width:"100%",padding:"7px 10px",borderRadius:7,
                         border:`1.5px solid ${T.rule}`,fontSize:13,fontFamily:"inherit",
@@ -12519,7 +12802,7 @@ const BannerAdView = ({ onToast, darkMode }) => {
           display:"flex",justifyContent:"space-between",alignItems:"center" }}>
           <div style={{ fontSize:15,fontWeight:800,color:T.ink }}>🆕 新規バナー広告登録</div>
           <button onClick={onClose} style={{ background:T.bg,border:`1px solid ${T.rule}`,
-            borderRadius:6,padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12 }}>✕</button>
+            borderRadius:6,padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12 }} aria-label="閉じる">✕</button>
         </div>
         <div style={{ padding:"18px 22px",display:"flex",flexDirection:"column",gap:10 }}>
           {[
@@ -12537,7 +12820,7 @@ const BannerAdView = ({ onToast, darkMode }) => {
             <div key={i}>
               <div style={{ fontSize:11,color:T.ink4,marginBottom:3 }}>{f.label}</div>
               {f.type==="select"?(
-                <select value={(newAd)[f.key]}
+                <select aria-label={f.label} value={(newAd)[f.key]}
                   onChange={e=>setNewAd(p=>(Object.assign({},p,{[f.key]:e.target.value})))}
                   style={{ width:"100%",padding:"7px 10px",borderRadius:7,
                     border:`1.5px solid ${T.rule}`,fontSize:13,fontFamily:"inherit",
@@ -12546,7 +12829,7 @@ const BannerAdView = ({ onToast, darkMode }) => {
                     <option key={j} value={v}>{l}</option>)}
                 </select>
               ):(
-                <input type={f.type} placeholder={f.ph||""}
+                <input aria-label={f.label} type={f.type} placeholder={f.ph||""}
                   value={(newAd)[f.key]}
                   onChange={e=>setNewAd(p=>(Object.assign({},p,{[f.key]:f.type==="number"?+e.target.value:e.target.value})))}
                   style={{ width:"100%",padding:"7px 10px",borderRadius:7,
@@ -13049,8 +13332,6 @@ const MailAdView = ({ onToast, darkMode }) => {
   );
 };
 
-
-
 // ══════════════════════════════════════════════════════
 // 粗利分析ビュー（GrossProfitView）
 // ══════════════════════════════════════════════════════
@@ -13090,8 +13371,8 @@ const GrossProfitView = ({ onToast, darkMode }) => {
     bpoLaborCost: 4500,
   });
 
-  // ── 書籍別 粗利計算（全BOOKS_DATA）──────────────
-  const bookGross = BOOKS_DATA.filter(b=>b.sales>0||b.elecSales>0).map(b=>{
+  // ── 書籍別 粗利計算（全MOCK_BOOKS）──────────────
+  const bookGross = MOCK_BOOKS.filter(b=>b.sales>0||b.elecSales>0).map(b=>{
     const pub = pubs.find(p=>p.id===b.pub) || pubs[0];
     const pay = pays.find(p=>p.id==="credit_card");
     // 紙
@@ -13181,7 +13462,7 @@ const GrossProfitView = ({ onToast, darkMode }) => {
              paymentDays:"支払サイト（日）", elecShareRate:"電子シェア率（出版社取り分 0〜1）",
              negotiationNote:"交渉メモ"}[key] || key }
         </div>
-        <input type={type} value={form[key]}
+        <input aria-label="設定値" type={type} value={form[key]}
           onChange={e=>setForm((p)=>(Object.assign({},p,{[key]:type==="number"?parseFloat(e.target.value)||0:e.target.value})))}
           style={{ width:"100%", padding:"7px 10px", borderRadius:7,
             border:`1.5px solid ${T.rule}`, fontSize:13, fontFamily:"inherit",
@@ -13206,7 +13487,7 @@ const GrossProfitView = ({ onToast, darkMode }) => {
               </div>
             </div>
             <button onClick={onClose} style={{ background:T.bg,border:`1px solid ${T.rule}`,
-              borderRadius:6,padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12,fontWeight:700 }}>✕</button>
+              borderRadius:6,padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12,fontWeight:700 }} aria-label="閉じる">✕</button>
           </div>
           <div style={{ padding:"18px 22px" }}>
             {/* 掛率プレビュー */}
@@ -13630,7 +13911,7 @@ const GrossProfitView = ({ onToast, darkMode }) => {
                 ].map((f,i)=>(
                   <div key={i} style={{ marginBottom:10 }}>
                     <div style={{ fontSize:11,color:T.ink4,marginBottom:4 }}>{f.label}</div>
-                    <input type="number" value={(sim)[f.key]}
+                    <input aria-label={f.label} type="number" value={(sim)[f.key]}
                       onChange={e=>setSim(s=>(Object.assign({},s,{[f.key]:+e.target.value})))}
                       style={{ width:"100%",padding:"7px 10px",borderRadius:7,
                         border:`1.5px solid ${T.rule}`,fontSize:13,fontFamily:"inherit",
@@ -13644,7 +13925,7 @@ const GrossProfitView = ({ onToast, darkMode }) => {
                 {(sim.productType==="paper"||sim.productType==="elec")&&(
                   <div style={{ marginBottom:10 }}>
                     <div style={{ fontSize:11,color:T.ink4,marginBottom:4 }}>出版社</div>
-                    <select value={sim.pubId} onChange={e=>setSim(s=>(Object.assign({},s,{pubId:e.target.value})))}
+                    <select aria-label="出版社" value={sim.pubId} onChange={e=>setSim(s=>(Object.assign({},s,{pubId:e.target.value})))}
                       style={{ width:"100%",padding:"7px 10px",borderRadius:7,
                         border:`1.5px solid ${T.rule}`,fontSize:13,fontFamily:"inherit",
                         outline:"none",background:T.white }}>
@@ -13658,7 +13939,7 @@ const GrossProfitView = ({ onToast, darkMode }) => {
                 )}
                 <div style={{ marginBottom:10 }}>
                   <div style={{ fontSize:11,color:T.ink4,marginBottom:4 }}>決済方法</div>
-                  <select value={sim.paymentId} onChange={e=>setSim(s=>(Object.assign({},s,{paymentId:e.target.value})))}
+                  <select aria-label="決済方法" value={sim.paymentId} onChange={e=>setSim(s=>(Object.assign({},s,{paymentId:e.target.value})))}
                     style={{ width:"100%",padding:"7px 10px",borderRadius:7,
                       border:`1.5px solid ${T.rule}`,fontSize:13,fontFamily:"inherit",
                       outline:"none",background:T.white }}>
@@ -13675,7 +13956,7 @@ const GrossProfitView = ({ onToast, darkMode }) => {
                 ].map((f,i)=>(
                   <div key={i} style={{ marginBottom:10 }}>
                     <div style={{ fontSize:11,color:T.ink4,marginBottom:4 }}>{f.label}</div>
-                    <input type="number" value={(sim)[f.key]}
+                    <input aria-label={f.label} type="number" value={(sim)[f.key]}
                       onChange={e=>setSim(s=>(Object.assign({},s,{[f.key]:+e.target.value})))}
                       style={{ width:"100%",padding:"7px 10px",borderRadius:7,
                         border:`1.5px solid ${T.rule}`,fontSize:13,fontFamily:"inherit",
@@ -13687,7 +13968,7 @@ const GrossProfitView = ({ onToast, darkMode }) => {
                   <>
                     <div style={{ marginBottom:10 }}>
                       <label style={{ display:"flex",gap:8,alignItems:"center",cursor:"pointer" }}>
-                        <input type="checkbox" checked={sim.isCorpDisc}
+                        <input aria-label="法人割引適用" type="checkbox" checked={sim.isCorpDisc}
                           onChange={e=>setSim(s=>(Object.assign({},s,{isCorpDisc:e.target.checked})))} />
                         <span style={{ fontSize:12,color:T.ink }}>
                           法人割引を適用（{(sim.corpDiscRate*100).toFixed(0)}%引き）
@@ -13696,7 +13977,7 @@ const GrossProfitView = ({ onToast, darkMode }) => {
                     </div>
                     <div style={{ marginBottom:10 }}>
                       <div style={{ fontSize:11,color:T.ink4,marginBottom:4 }}>ポイント利用額（円）</div>
-                      <input type="number" value={sim.pointUsed}
+                      <input aria-label="ポイント利用額" type="number" value={sim.pointUsed}
                         onChange={e=>setSim(s=>(Object.assign({},s,{pointUsed:+e.target.value})))}
                         style={{ width:"100%",padding:"7px 10px",borderRadius:7,
                           border:`1.5px solid ${T.rule}`,fontSize:13,fontFamily:"inherit",
@@ -13707,7 +13988,7 @@ const GrossProfitView = ({ onToast, darkMode }) => {
                 {sim.productType==="pod" && (
                   <div style={{ marginBottom:10 }}>
                     <div style={{ fontSize:11,color:T.ink4,marginBottom:4 }}>印刷費（円/冊）</div>
-                    <input type="number" value={sim.podPrintCost}
+                    <input aria-label="印刷費" type="number" value={sim.podPrintCost}
                       onChange={e=>setSim(s=>(Object.assign({},s,{podPrintCost:+e.target.value})))}
                       style={{ width:"100%",padding:"7px 10px",borderRadius:7,
                         border:`1.5px solid ${T.rule}`,fontSize:13,fontFamily:"inherit",
@@ -13919,7 +14200,7 @@ const ReconciliationView = ({ onToast, globalOrders, setGlobalOrders, updateOrde
   const [tab,       setTab]       = useState("inbox");
   // globalDepositsが渡されていればそちらを使用（Sidebarバッジと連動）
   const [deposits, setDeposits] = useState(
-    globalDeposits ? globalDeposits : BANK_DEPOSITS_SAMPLE.map(d=>(Object.assign({}, d)))
+    globalDeposits ? globalDeposits : MOCK_DEPOSITS.map(d=>(Object.assign({}, d)))
   );
   // depositsが変わったらglobalDepositsにも反映
   React.useEffect(function(){
@@ -13939,7 +14220,7 @@ const ReconciliationView = ({ onToast, globalOrders, setGlobalOrders, updateOrde
   const matchedAmount = matched.reduce((s,d)=>s+d.amount,0);
 
   const statusColor = (s) =>
-    s==="matched"?"#1a7a4a":s==="unmatched"?"#b71c1c":s==="pending_ai"?"#c8a84b":"#5a5a4c";
+    s==="matched"?T.ok:s==="unmatched"?T.red:s==="pending_ai"?T.gold:T.ink3;
   const statusLabel = (s) =>
     s==="matched"?"✅ 照合済":s==="unmatched"?"❌ 未照合":s==="pending_ai"?"🤖 AI確認待":s;
 
@@ -14016,7 +14297,7 @@ const ReconciliationView = ({ onToast, globalOrders, setGlobalOrders, updateOrde
             💰 入金詳細 — {d.id}
           </div>
           <button onClick={onClose} style={{ background:T.bg,border:`1px solid ${T.rule}`,
-            borderRadius:6,padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12,fontWeight:700 }}>✕</button>
+            borderRadius:6,padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12,fontWeight:700 }} aria-label="閉じる">✕</button>
         </div>
         <div style={{ padding:"18px 22px" }}>
           <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14 }}>
@@ -14044,7 +14325,7 @@ const ReconciliationView = ({ onToast, globalOrders, setGlobalOrders, updateOrde
             <div style={{ marginBottom:10 }}>
               <div style={{ fontSize:12,fontWeight:700,color:T.ink,marginBottom:6 }}>手動照合：注文IDを入力</div>
               <div style={{ display:"flex",gap:8 }}>
-                <input id="manualOrderId" placeholder="例: ORD-2841"
+                <input aria-label="手動照合注文ID" id="manualOrderId" placeholder="例: ORD-2841"
                   style={{ flex:1,padding:"8px 10px",borderRadius:7,
                     border:`1.5px solid ${T.rule}`,fontSize:13,fontFamily:"inherit",outline:"none" }} />
                 <Btn onClick={()=>{
@@ -14373,7 +14654,7 @@ const ReconciliationView = ({ onToast, globalOrders, setGlobalOrders, updateOrde
               display:"flex",justifyContent:"space-between",alignItems:"center" }}>
               <div style={{ fontSize:15,fontWeight:800,color:T.ink }}>📂 全銀CSV取込</div>
               <button onClick={()=>setShowCsvModal(false)} style={{ background:T.bg,border:`1px solid ${T.rule}`,
-                borderRadius:6,padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12 }}>✕</button>
+                borderRadius:6,padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12 }} aria-label="閉じる">✕</button>
             </div>
             <div style={{ padding:"18px 22px" }}>
               <div style={{ padding:"10px 14px",background:T.navyPale,borderRadius:7,
@@ -14391,7 +14672,7 @@ const ReconciliationView = ({ onToast, globalOrders, setGlobalOrders, updateOrde
                   ファイルを選択
                 </Btn>
               </div>
-              <textarea value={csvText} onChange={e=>setCsvText(e.target.value)}
+              <textarea aria-label="振込CSV入力" value={csvText} onChange={e=>setCsvText(e.target.value)}
                 placeholder={"日付,金額,振込名義\n2026-03-11,32500,マルベニホウム\n..."}
                 style={{ width:"100%",height:100,padding:"8px 10px",borderRadius:7,
                   border:`1.5px solid ${T.rule}`,fontSize:12,fontFamily:"monospace",
@@ -14430,6 +14711,39 @@ const BADGE_PRESETS = [
   { id:"PICK",    label:"⭐ PICK",    color:T.navy },
   { id:null, label:"なし",        color:T.ink4 },
 ];
+
+// ── セクション内 書籍アイテム ──────────────
+const INIT_SECTION_ITEMS = {
+  bestseller: [
+    { id:"si-bs-1", bookId:"b1", title:"民法改正と実務対応【第3版】", author:"中田裕康", price:5800, sales:98,  rank:1, pinned:false },
+    { id:"si-bs-2", bookId:"b2", title:"会社法実務ハンドブック",       author:"江頭憲治郎", price:6500, sales:73,  rank:2, pinned:false },
+    { id:"si-bs-3", bookId:"b3", title:"労働法実務大全【第4版】",       author:"菅野和夫",   price:7200, sales:66,  rank:3, pinned:false },
+    { id:"si-bs-4", bookId:"b4", title:"企業法務の基礎【第2版】",       author:"田中亘",     price:5500, sales:41,  rank:4, pinned:false },
+    { id:"si-bs-5", bookId:"b6", title:"行政法実務テキスト",           author:"宇賀克也",   price:4800, sales:28,  rank:5, pinned:false },
+  ],
+  newbooks: [
+    { id:"si-nb-1", bookId:"b5", title:"個人情報保護法の解説【第5版】", author:"岡村久道",   price:5400, date:"2026-04-07", pinned:false },
+    { id:"si-nb-2", bookId:null,  title:"改正入管法 実務Q&A",           author:"山脇康嗣",   price:4200, date:"2026-04-07", pinned:false },
+    { id:"si-nb-3", bookId:null,  title:"金融商品取引法 判例百選",     author:"神田秀樹 編", price:3600, date:"2026-04-06", pinned:false },
+  ],
+  upcoming: [
+    { id:"si-up-1", bookId:null,  title:"新・破産法概説【第3版】",   author:"伊藤眞",     price:6800, pubDate:"2026-05-15", publisher:"有斐閣",   pinned:false },
+    { id:"si-up-2", bookId:null,  title:"知財法講義【第25版】",       author:"中山信弘",   price:5600, pubDate:"2026-05-20", publisher:"弘文堂",   pinned:false },
+    { id:"si-up-3", bookId:null,  title:"刑事訴訟法の争点",          author:"酒巻匡",     price:4900, pubDate:"2026-06-01", publisher:"有斐閣",   pinned:false },
+    { id:"si-up-4", bookId:null,  title:"実務解説 改正個人情報保護法", author:"宇賀克也",   price:5200, pubDate:"2026-06-10", publisher:"弘文堂",   pinned:false },
+  ],
+  recommend: [
+    { id:"si-rc-1", bookId:"b1", title:"民法改正と実務対応【第3版】", author:"中田裕康",   price:5800, staffNote:"今月の一押し。改正相続法を網羅。", pinned:true },
+    { id:"si-rc-2", bookId:"b2", title:"会社法実務ハンドブック",       author:"江頭憲治郎", price:6500, staffNote:"企業法務の定番。新任法務部員にも。", pinned:false },
+    { id:"si-rc-3", bookId:null,  title:"裁判官が語る民事訴訟の勘所", author:"加藤新太郎", price:3800, staffNote:"実務感覚を養うのに最適。",         pinned:false },
+  ],
+  seminar: [
+    { id:"si-sm-1", bookId:null,  title:"改正会社法 実務セミナー",     organizer:"商事法務",   date:"2026-04-25", type:"対面",     pinned:false },
+    { id:"si-sm-2", bookId:null,  title:"AI契約レビュー最前線",        organizer:"弁護士ドットコム", date:"2026-05-10", type:"オンライン", pinned:false },
+    { id:"si-sm-3", bookId:null,  title:"フリーランス保護法の実務",    organizer:"日本弁護士連合会", date:"2026-05-18", type:"ハイブリッド", pinned:false },
+  ],
+};
+
 // 至誠堂通信 記事候補サンプル
 const TSUSHIN_ARTICLES = [
   { id:"t1", title:"民法改正まるわかりガイド 2026年版",     cat:"解説",   date:"2026-03-08", selected:true  },
@@ -14454,6 +14768,71 @@ const ContentView = ({ onToast, darkMode }) => {
   const [tab,      setTab]      = useState("sections");
   const [tsushin,  setTsushin]  = useState(TSUSHIN_ARTICLES.map(function(a){ return Object.assign({}, a); }));
   const [artTab,   setArtTab]   = useState("all"); // 編集記事のサブタブ
+  const [expandedSec, setExpandedSec] = useState(null);
+  const [secItems,    setSecItems]    = useState(function(){
+    var copy = {};
+    Object.keys(INIT_SECTION_ITEMS).forEach(function(k){
+      copy[k] = INIT_SECTION_ITEMS[k].map(function(item){ return Object.assign({}, item); });
+    });
+    return copy;
+  });
+  const [innerDragIdx, setInnerDragIdx] = useState(null);
+  const [innerOverIdx, setInnerOverIdx] = useState(null);
+
+  // セクション内アイテムD&D
+  var onInnerDragStart = function(e, secId, idx) {
+    e.stopPropagation();
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", String(idx));
+    setInnerDragIdx(idx);
+  };
+  var onInnerDragOver = function(e, idx) {
+    e.preventDefault();
+    e.stopPropagation();
+    setInnerOverIdx(idx);
+  };
+  var onInnerDrop = function(e, secId, toIdx) {
+    e.preventDefault();
+    e.stopPropagation();
+    var fromIdx = parseInt(e.dataTransfer.getData("text/plain"));
+    if (fromIdx === toIdx || isNaN(fromIdx)) { setInnerDragIdx(null); setInnerOverIdx(null); return; }
+    setSecItems(function(prev) {
+      var arr = prev[secId].slice();
+      var moved = arr.splice(fromIdx, 1)[0];
+      arr.splice(toIdx, 0, moved);
+      var updated = Object.assign({}, prev);
+      updated[secId] = arr;
+      return updated;
+    });
+    setInnerDragIdx(null);
+    setInnerOverIdx(null);
+    onToast("掲載順を変更しました");
+  };
+  var onInnerDragEnd = function() { setInnerDragIdx(null); setInnerOverIdx(null); };
+
+  // ピン留め切替
+  var togglePin = function(secId, itemId) {
+    setSecItems(function(prev) {
+      var arr = prev[secId].map(function(item) {
+        return item.id === itemId ? Object.assign({}, item, { pinned: !item.pinned }) : item;
+      });
+      var updated = Object.assign({}, prev);
+      updated[secId] = arr;
+      return updated;
+    });
+    onToast("ピン留めを切り替えました");
+  };
+
+  // アイテム削除
+  var removeSecItem = function(secId, itemId) {
+    setSecItems(function(prev) {
+      var arr = prev[secId].filter(function(item) { return item.id !== itemId; });
+      var updated = Object.assign({}, prev);
+      updated[secId] = arr;
+      return updated;
+    });
+    onToast("アイテムを除外しました");
+  };
 
   // D&D 並び替え
   const onDragStart = (e, i) => {
@@ -14508,7 +14887,7 @@ const ContentView = ({ onToast, darkMode }) => {
             {sec.icon} {sec.label} — 設定
           </div>
           <button onClick={onClose} style={{ background:T.bg,border:`1px solid ${T.rule}`,
-            borderRadius:6,padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12 }}>✕</button>
+            borderRadius:6,padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12 }} aria-label="閉じる">✕</button>
         </div>
         <div style={{ padding:"18px 22px" }}>
           <div style={{ fontSize:12,color:T.ink4,marginBottom:16 }}>{sec.desc}</div>
@@ -14680,7 +15059,115 @@ const ContentView = ({ onToast, darkMode }) => {
                         background:T.bg,color:T.ink4,fontSize:11,cursor:"pointer",fontFamily:"inherit" }}>
                       ⚙
                     </button>
+                    <button onClick={function(e){ e.stopPropagation(); setExpandedSec(expandedSec===sec.id?null:sec.id); }}
+                      aria-label="掲載順を編集"
+                      style={{ padding:"4px 8px",borderRadius:6,border:"1px solid "+(expandedSec===sec.id?T.g2:T.rule),
+                        background:expandedSec===sec.id?T.okPale:T.bg,color:expandedSec===sec.id?T.g2:T.ink4,
+                        fontSize:11,cursor:"pointer",fontFamily:"inherit",fontWeight:expandedSec===sec.id?700:400 }}>
+                      {expandedSec===sec.id?"▲ 閉じる":"▼ 掲載順"}
+                    </button>
                   </div>
+                  {/* ── セクション内書籍リスト（展開時）── */}
+                  {expandedSec===sec.id && secItems[sec.id] && (
+                    <div style={{ marginTop:12,borderTop:"1px solid "+T.rule,paddingTop:12 }}
+                      onClick={function(e){ e.stopPropagation(); }}>
+                      <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8 }}>
+                        <div style={{ fontSize:11,fontWeight:700,color:T.ink3 }}>
+                          📚 掲載中のアイテム（{secItems[sec.id].length}件）
+                        </div>
+                        <div style={{ display:"flex",gap:6 }}>
+                          {sec.id==="recommend" && (
+                            <button onClick={function(){ onToast("書籍追加モーダル（実装予定）"); }}
+                              style={{ padding:"3px 8px",borderRadius:5,border:"1px solid "+T.g2,
+                                background:T.okPale,color:T.g2,fontSize:10,fontWeight:700,
+                                cursor:"pointer",fontFamily:"inherit" }}>
+                              ＋ 書籍を追加
+                            </button>
+                          )}
+                          <span style={{ fontSize:10,color:T.ink4,padding:"3px 6px",
+                            background:T.bg,borderRadius:4,border:"1px solid "+T.rule }}>
+                            {sec.type==="auto"?"⚡ 自動生成（手動並替可）":"✏ 手動管理"}
+                          </span>
+                        </div>
+                      </div>
+                      <div style={{ display:"flex",flexDirection:"column",gap:4 }}>
+                        {secItems[sec.id].map(function(item, itemIdx){
+                          var isItemDragging = innerDragIdx===itemIdx;
+                          var isItemOver     = innerOverIdx===itemIdx;
+                          return (
+                            <div key={item.id}
+                              draggable
+                              onDragStart={function(e){ onInnerDragStart(e, sec.id, itemIdx); }}
+                              onDragOver={function(e){ onInnerDragOver(e, itemIdx); }}
+                              onDrop={function(e){ onInnerDrop(e, sec.id, itemIdx); }}
+                              onDragEnd={onInnerDragEnd}
+                              style={{
+                                display:"flex",alignItems:"center",gap:8,
+                                padding:"8px 10px",borderRadius:7,
+                                background:isItemOver?T.okPale:item.pinned?T.goldPale:T.bg,
+                                border:"1.5px solid "+(isItemOver?T.g2:item.pinned?T.gold:T.rule),
+                                opacity:isItemDragging?0.4:1,
+                                cursor:"grab",transition:"all .15s",fontSize:12 }}>
+                              {/* ハンドル */}
+                              <span style={{ color:T.ink4,fontSize:14,flexShrink:0,cursor:"grab",userSelect:"none" }}>⠿</span>
+                              {/* 順番 */}
+                              <span style={{ width:20,height:20,borderRadius:5,flexShrink:0,
+                                background:T.rule,display:"flex",alignItems:"center",justifyContent:"center",
+                                fontSize:10,fontWeight:800,color:T.ink3 }}>
+                                {itemIdx+1}
+                              </span>
+                              {/* 書籍情報 */}
+                              <div style={{ flex:1,minWidth:0 }}>
+                                <div style={{ fontWeight:700,color:T.ink,whiteSpace:"nowrap",
+                                  overflow:"hidden",textOverflow:"ellipsis" }}>
+                                  {item.title}
+                                </div>
+                                <div style={{ fontSize:10,color:T.ink4,marginTop:1 }}>
+                                  {item.author}
+                                  {item.sales!=null&&(" ・ "+item.sales+"部")}
+                                  {item.date&&(" ・ "+item.date)}
+                                  {item.pubDate&&(" ・ 刊行: "+item.pubDate)}
+                                  {item.organizer&&(" ・ "+item.organizer)}
+                                  {item.staffNote&&(" ・ 💬 "+item.staffNote)}
+                                </div>
+                              </div>
+                              {/* 価格（セミナー以外） */}
+                              {item.price && (
+                                <span style={{ fontSize:11,fontWeight:700,color:T.ink3,flexShrink:0 }}>
+                                  ¥{item.price.toLocaleString()}
+                                </span>
+                              )}
+                              {/* ピン留め */}
+                              <button onClick={function(e){ e.stopPropagation(); togglePin(sec.id, item.id); }}
+                                title={item.pinned?"ピン留め解除":"ピン留め（並替固定）"}
+                                aria-label={item.pinned?"ピン留め解除":"ピン留め"}
+                                style={{ padding:"2px 5px",borderRadius:4,border:"1px solid",
+                                  borderColor:item.pinned?T.gold:T.rule,
+                                  background:item.pinned?T.goldPale:T.white,
+                                  color:item.pinned?T.gold:T.ink4,
+                                  fontSize:12,cursor:"pointer",fontFamily:"inherit",flexShrink:0 }}>
+                                📌
+                              </button>
+                              {/* 削除 */}
+                              <button onClick={function(e){ e.stopPropagation(); removeSecItem(sec.id, item.id); }}
+                                aria-label="除外"
+                                title="このセクションから除外"
+                                style={{ padding:"2px 5px",borderRadius:4,border:"1px solid "+T.rule,
+                                  background:T.white,color:T.ink4,fontSize:11,
+                                  cursor:"pointer",fontFamily:"inherit",flexShrink:0 }}>
+                                ✕
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {secItems[sec.id].length===0 && (
+                        <div style={{ padding:"16px",textAlign:"center",color:T.ink4,fontSize:12 }}>
+                          アイテムがありません
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -14698,10 +15185,10 @@ const ContentView = ({ onToast, darkMode }) => {
       {tab==="articles" && (
         <div>
           <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:14,padding:"10px 14px",
-            background:"#f3e5f5",borderRadius:8,border:"1px solid #6a1b9a20" }}>
+            background:T.purplePale,borderRadius:8,border:"1px solid #6a1b9a20" }}>
             <span style={{ fontSize:16 }}>✍</span>
             <div>
-              <div style={{ fontSize:12,fontWeight:700,color:"#6a1b9a" }}>
+              <div style={{ fontSize:12,fontWeight:700,color:T.purple }}>
                 編集記事（文章・画像・タグを含む記事コンテンツ）
               </div>
               <div style={{ fontSize:11,color:T.ink4,marginTop:1 }}>
@@ -14719,7 +15206,7 @@ const ContentView = ({ onToast, darkMode }) => {
                     <div style={{ display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",marginBottom:6 }}>
                       <span style={{ fontSize:14,fontWeight:800,color:T.ink }}>{sec.label}</span>
                       <span style={{ fontSize:10,padding:"2px 7px",borderRadius:10,
-                        background:"#f3e5f5",color:"#6a1b9a",fontWeight:700 }}>✍ 編集記事</span>
+                        background:T.purplePale,color:T.purple,fontWeight:700 }}>✍ 編集記事</span>
                       {sec.shiseidotsushin && (
                         <span style={{ fontSize:10,padding:"2px 7px",borderRadius:10,
                           background:T.navyPale,color:T.navy,fontWeight:700 }}>📰 至誠堂通信</span>
@@ -15223,7 +15710,7 @@ const HeroSliderView = ({ onToast, darkMode }) => {
               <div style={{ fontSize:16,fontWeight:800,color:T.ink }}>{s.title}</div>
             </div>
             <button onClick={onClose} style={{ background:T.bg,border:`1px solid ${T.rule}`,
-              borderRadius:6,padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12,fontWeight:700 }}>✕</button>
+              borderRadius:6,padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12,fontWeight:700 }} aria-label="閉じる">✕</button>
           </div>
           <div style={{ padding:"18px 22px" }}>
             {editing ? (
@@ -15240,7 +15727,7 @@ const HeroSliderView = ({ onToast, darkMode }) => {
                 ].map((f,i)=>(
                   <div key={i}>
                     <div style={{ fontSize:11,color:T.ink4,marginBottom:3 }}>{f.label}</div>
-                    <input type={f.type}
+                    <input aria-label={f.label} type={f.type}
                       value={(form)[f.key]}
                       onChange={e=>setForm((prev)=>(Object.assign({},prev,{[f.key]:e.target.value})))}
                       style={{ width:"100%",padding:"7px 10px",borderRadius:7,
@@ -15308,7 +15795,7 @@ const HeroSliderView = ({ onToast, darkMode }) => {
           display:"flex",justifyContent:"space-between",alignItems:"center" }}>
           <div style={{ fontSize:15,fontWeight:800,color:T.ink }}>🆕 新規スライド登録</div>
           <button onClick={onClose} style={{ background:T.bg,border:`1px solid ${T.rule}`,
-            borderRadius:6,padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12 }}>✕</button>
+            borderRadius:6,padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12 }} aria-label="閉じる">✕</button>
         </div>
         <div style={{ padding:"18px 22px",display:"flex",flexDirection:"column",gap:10 }}>
           {[
@@ -15331,7 +15818,7 @@ const HeroSliderView = ({ onToast, darkMode }) => {
             <div key={i}>
               <div style={{ fontSize:11,color:T.ink4,marginBottom:3 }}>{f.label}</div>
               {f.type==="select" ? (
-                <select value={(newSlide)[f.key]}
+                <select aria-label={f.label} value={(newSlide)[f.key]}
                   onChange={e=>setNewSlide(prev=>(Object.assign({},prev,{[f.key]: isNaN(+e.target.value)?e.target.value:+e.target.value||e.target.value})))}
                   style={{ width:"100%",padding:"7px 10px",borderRadius:7,
                     border:`1.5px solid ${T.rule}`,fontSize:13,fontFamily:"inherit",
@@ -15341,7 +15828,7 @@ const HeroSliderView = ({ onToast, darkMode }) => {
                   ))}
                 </select>
               ) : (
-                <input type={f.type} placeholder={f.ph||""}
+                <input aria-label={f.label} type={f.type} placeholder={f.ph||""}
                   value={(newSlide)[f.key]}
                   onChange={e=>setNewSlide(prev=>(Object.assign({},prev,{[f.key]:f.type==="number"?+e.target.value:e.target.value})))}
                   style={{ width:"100%",padding:"7px 10px",borderRadius:7,
@@ -15651,7 +16138,7 @@ const DigitalProductsView = ({ onToast, initialTab="products", darkMode }) => {
                   color:"#fff" }}>{p.status==="published"?"公開中":"下書き"}</span>
                 <button onClick={onClose} style={{ background:"rgba(255,255,255,.2)",
                   border:"none", borderRadius:6, padding:"4px 10px", cursor:"pointer",
-                  color:"#fff", fontSize:12, fontWeight:700 }}>✕</button>
+                  color:"#fff", fontSize:12, fontWeight:700 }} aria-label="閉じる">✕</button>
               </div>
             </div>
           </div>
@@ -15814,7 +16301,7 @@ const DigitalProductsView = ({ onToast, initialTab="products", darkMode }) => {
       {tab==="products" && (
         <div>
           <div style={{ marginBottom:14, display:"flex", gap:10, alignItems:"center" }}>
-            <input value={searchQ} onChange={e=>setSearchQ(e.target.value)}
+            <input aria-label="商品名・タグで検索" value={searchQ} onChange={e=>setSearchQ(e.target.value)}
               placeholder="商品名・タグで検索..."
               style={{ flex:1, maxWidth:320, padding:"8px 14px", borderRadius:6,
                 border:`1px solid ${T.rule}`, fontSize:13, background:T.bg,
@@ -16485,7 +16972,7 @@ const Bpo72CheckView = ({ onToast, darkMode }) => {
         </div>
         <div style={{ padding:"16px 20px",background:T.bg,borderRadius:10,border:"1px solid "+T.rule }}>
           <div style={{ fontSize:11,color:T.ink3,marginBottom:6 }}>案件番号（任意）</div>
-          <input value={caseId} onChange={e=>setCaseId(e.target.value)}
+          <input aria-label="案件番号" value={caseId} onChange={e=>setCaseId(e.target.value)}
             placeholder="例：BPO-2026-001"
             style={{ width:"100%",padding:"7px 10px",borderRadius:6,border:"1.5px solid "+T.rule,
               fontSize:13,outline:"none",boxSizing:"border-box" }} />
@@ -16550,7 +17037,7 @@ const ReformCalView = ({ onToast, darkMode }) => {
 
   // 在庫連動アラート：法改正×関連書籍の在庫を照合
   const stockAlerts = events.filter(function(e){ return e.books&&e.books.length>0; }).map(function(e){
-    const relBooks = BOOKS_DATA.filter(function(b){
+    const relBooks = MOCK_BOOKS.filter(function(b){
       return e.books.indexOf(b.title)>=0;
     });
     const lowStock = relBooks.filter(function(b){ return !b.pod&&b.stock<30; });
@@ -16659,7 +17146,7 @@ const ReformCalView = ({ onToast, darkMode }) => {
             ].map((f,i)=>(
               <div key={i} style={{ marginBottom:12 }}>
                 <div style={{ fontSize:11,fontWeight:700,color:T.ink3,marginBottom:4 }}>{f.label}</div>
-                <input value={form[f.key]} onChange={e=>setForm(prev=>(Object.assign({},prev,{[f.key]:e.target.value})))}
+                <input aria-label={f.label} value={form[f.key]} onChange={e=>setForm(prev=>(Object.assign({},prev,{[f.key]:e.target.value})))}
                   type={f.type} placeholder={f.placeholder}
                   style={{ width:"100%",padding:"8px 10px",borderRadius:6,
                     border:"1.5px solid "+T.rule,fontSize:12,outline:"none",boxSizing:"border-box" }} />
@@ -16956,7 +17443,7 @@ const PublishersMasterView = ({ onToast, darkMode }) => {
                         ].map((f,i)=>(
                           <div key={i}>
                             <div style={{ fontSize:11,fontWeight:700,color:T.ink3,marginBottom:4 }}>{f.label}</div>
-                            <input value={editData[f.key]||""}
+                            <input aria-label={f.label} value={editData[f.key]||""}
                               onChange={e=>setEditData(function(prev){ return Object.assign({},prev,Object.fromEntries([[f.key,e.target.value]])); })}
                               style={{ width:"100%",padding:"6px 10px",borderRadius:5,
                                 border:"1.5px solid "+T.rule,fontSize:12,outline:"none",boxSizing:"border-box" }} />
@@ -17015,35 +17502,24 @@ const SHIP_STAFF = STAFF_DATA.filter(function(s){ return s.status==="active"; })
 
 // ── 支払い方法マスタ（注文管理用）────────────────────────
 const PAY_METHOD_META = {
-  credit:   { label:"クレジット", short:"CC",  icon:"💳", prepaid:true,  autoApprove:true,  color:"#01579b", bg:"#e3f2fd" },
-  transfer: { label:"銀行振込",   short:"振込", icon:"🏦", prepaid:true,  autoApprove:false, color:"#1a5c38", bg:"#e8f5e9" },
-  invoice:  { label:"請求書払い", short:"請求", icon:"📄", prepaid:false, autoApprove:false, color:"#e65100", bg:"#fff3e0" },
-  cod:      { label:"代金引換",   short:"代引", icon:"📦", prepaid:true,  autoApprove:true,  color:"#6a1b9a", bg:"#f3e5f5" },
-  kakuuri:  { label:"掛売り",     short:"掛売", icon:"📋", prepaid:false, autoApprove:true,  color:"#00695c", bg:"#e0f2f1" },
-  manual:   { label:"都度確認",   short:"確認", icon:"⚠",  prepaid:false, autoApprove:false, color:"#b71c1c", bg:"#ffebee" },
+  credit:   { label:"クレジット", short:"CC",  icon:"💳", prepaid:true,  autoApprove:true,  color:T.navy, bg:T.navyPale },
+  transfer: { label:"銀行振込",   short:"振込", icon:"🏦", prepaid:true,  autoApprove:false, color:T.g2, bg:T.okPale },
+  invoice:  { label:"請求書払い", short:"請求", icon:"📄", prepaid:false, autoApprove:false, color:T.amber, bg:T.amberPale },
+  cod:      { label:"代金引換",   short:"代引", icon:"📦", prepaid:true,  autoApprove:true,  color:T.purple, bg:T.purplePale },
+  kakuuri:  { label:"掛売り",     short:"掛売", icon:"📋", prepaid:false, autoApprove:true,  color:T.teal, bg:T.tealPale },
+  manual:   { label:"都度確認",   short:"確認", icon:"⚠",  prepaid:false, autoApprove:false, color:T.red, bg:"#ffebee" },
 };
 
 // 弁護士会員（登録番号確認済み）かどうかを判定
 function isVerifiedLawyer(memberName) {
-  var m = MEMBERS_DATA.find(function(x){
+  var m = MOCK_MEMBERS.find(function(x){
     return x.name === memberName || (memberName && memberName.includes(x.name));
   });
   return !!(m && m.type === "弁護士" && m.barNo && m.barNo.length > 2);
 }
 
 // 発送承認の自動判定
-function autoShipApprove(order) {
-  if(!order || order.fmt === "elec") return true;
-  var pm = order.paymentMethod;
-  if(!pm) return null;
-  var meta = PAY_METHOD_META[pm];
-  if(!meta) return null;
-  if(meta.autoApprove) return true;
-  if(pm === "transfer" && order.paymentStatus === "paid") return true;
-  if((pm === "invoice" || pm === "kakuuri") && isVerifiedLawyer(order.member)) return true;
-  if((pm === "invoice" || pm === "kakuuri") && order.channel === "gaishoo") return true;
-  return false;
-}
+// autoShipApprove: OrdersView内に統合済み（v22.55で削除）
 
 // ── ロール定義 ──────────────────────────────────────────
 // role: ロールキー
@@ -17091,7 +17567,7 @@ const ROLE_META = {
     desc:"注文処理・在庫・佐川出荷。財務データは非表示。",
   },
   content: {
-    label:"コンテンツ担当", icon:"✍", color:"#6a1b9a", bg:"#f3e5f5",
+    label:"コンテンツ担当", icon:"✍", color:T.purple, bg:T.purplePale,
     defaultPage:"articles", showFinance:false, showSettings:false,
     defaultFilter:"all",
     navAllow:["articles","mail_ma","banners","mail_ad","hero_slider",
@@ -17099,7 +17575,7 @@ const ROLE_META = {
     desc:"メルマガ・記事・バナー・法改正カレンダー。注文・財務は非表示。",
   },
   store: {
-    label:"店舗スタッフ", icon:"🏪", color:"#00695c", bg:"#e0f2f1",
+    label:"店舗スタッフ", icon:"🏪", color:T.teal, bg:T.tealPale,
     defaultPage:"stores", showFinance:false, showSettings:false,
     defaultFilter:"all",
     navAllow:["stores","inventory","feedback_mgmt"],
@@ -17194,7 +17670,7 @@ const StaffView = ({ onToast, darkMode }) => {
                       ))}
                     </div>
                     <div style={{ display:"flex",gap:8 }}>
-                      <select value={s.role} onChange={e=>{
+                      <select aria-label="ロール変更" value={s.role} onChange={e=>{
                         setMembers(prev=>prev.map(x=>x.id===s.id?Object.assign({},x,{role:e.target.value}):x));
                         onToast("権限を変更しました");
                       }} style={{ padding:"5px 8px",borderRadius:5,border:"1px solid "+T.rule,
@@ -17256,7 +17732,7 @@ const StaffView = ({ onToast, darkMode }) => {
                       </div>
                       <div style={{ display:"flex",gap:6,flexWrap:"wrap" }}>
                         <span style={{ fontSize:10,padding:"2px 8px",borderRadius:10,
-                          background:v.showFinance?"#e8f5e9":"#f5f5f5",
+                          background:v.showFinance?T.okPale:"#f5f5f5",
                           color:v.showFinance?"#2e7d32":"#9e9e9e",fontWeight:700 }}>
                           {v.showFinance?"💹 財務閲覧可":"💹 財務非表示"}
                         </span>
@@ -17336,14 +17812,14 @@ const StaffView = ({ onToast, darkMode }) => {
           <div style={{ fontSize:13,fontWeight:700,color:T.ink,marginBottom:16 }}>新しいスタッフを招待</div>
           <div style={{ marginBottom:12 }}>
             <div style={{ fontSize:11,fontWeight:700,color:T.ink3,marginBottom:4 }}>メールアドレス</div>
-            <input value={invEmail} onChange={e=>setInvEmail(e.target.value)}
+            <input aria-label="メールアドレス" value={invEmail} onChange={e=>setInvEmail(e.target.value)}
               placeholder="staff@shiseidoshoten.jp"
               style={{ width:"100%",padding:"8px 10px",borderRadius:6,
                 border:"1.5px solid "+T.rule,fontSize:12,outline:"none",boxSizing:"border-box" }} />
           </div>
           <div style={{ marginBottom:16 }}>
             <div style={{ fontSize:11,fontWeight:700,color:T.ink3,marginBottom:4 }}>権限</div>
-            <select value={invRole} onChange={e=>setInvRole(e.target.value)}
+            <select aria-label="招待権限" value={invRole} onChange={e=>setInvRole(e.target.value)}
               style={{ width:"100%",padding:"8px 10px",borderRadius:6,
                 border:"1.5px solid "+T.rule,fontSize:12,outline:"none" }}>
               {Object.entries(ROLE_META).map(([k,v])=>(
@@ -17375,7 +17851,7 @@ const StaffView = ({ onToast, darkMode }) => {
   );
 };
 
-const SettingsView = ({ onToast, onResetOrders, onResetDeposits, onResetMembers, onResetRevisions, sagawaDeadline, updateSagawaDeadline, darkMode }) => {
+const SettingsView = ({ onToast, onResetOrders, onResetDeposits, onResetMembers, onResetRevisions, sagawaDeadline, updateSagawaDeadline, darkMode, qaConfig, updateQaConfig }) => {
   var T = darkMode ? T_DARK : T_LIGHT;
   const [tab, setTab] = useState("general");
   const [saved, setSaved] = useState({
@@ -17390,6 +17866,14 @@ const SettingsView = ({ onToast, onResetOrders, onResetDeposits, onResetMembers,
   });
   const [form, setForm] = useState(Object.assign({}, saved));
 
+  // ── クイックアクション設定用 state（トップレベル）
+  var qaInitIds = qaConfig || QA_DEFAULT_IDS;
+  const [localOrder, setLocalOrder] = useState(qaInitIds.slice());
+  var qaDragRef = useRef(null);
+  var qaOverRef = useRef(null);
+  // qaConfig変更時に同期
+  React.useEffect(function(){ setLocalOrder((qaConfig || QA_DEFAULT_IDS).slice()); }, [(qaConfig||[]).join(",")]);
+
   const save = () => {
     setSaved(Object.assign({}, form));
     onToast("✅ 設定を保存しました");
@@ -17398,17 +17882,42 @@ const SettingsView = ({ onToast, onResetOrders, onResetDeposits, onResetMembers,
   const field = (label, key, type) => (
     <div style={{ marginBottom:14 }}>
       <div style={{ fontSize:11,fontWeight:700,color:T.ink3,marginBottom:4 }}>{label}</div>
-      <input value={form[key]||""} onChange={e=>setForm(prev=>(Object.assign({},prev,{[key]:e.target.value})))}
+      <input aria-label="設定値" value={form[key]||""} onChange={e=>setForm(prev=>(Object.assign({},prev,{[key]:e.target.value})))}
         type={type||"text"}
         style={{ width:"100%",padding:"8px 10px",borderRadius:6,
           border:"1.5px solid "+T.rule,fontSize:12,outline:"none",boxSizing:"border-box" }} />
     </div>
   );
 
+  var hasUnsaved = JSON.stringify(form) !== JSON.stringify(saved);
+
   return (
     <div>
+      {/* 未保存の変更バー */}
+      {hasUnsaved && (
+        <div style={{ position:"sticky",top:0,zIndex:50,
+          display:"flex",alignItems:"center",justifyContent:"space-between",
+          padding:"8px 16px",marginBottom:12,borderRadius:8,
+          background:"linear-gradient(90deg, #fff3e0, #ffe0b2)",
+          border:"1.5px solid #f9a825",boxShadow:"0 2px 8px rgba(249,168,37,.2)" }}>
+          <div style={{ display:"flex",alignItems:"center",gap:8 }}>
+            <span style={{ fontSize:16 }}>⚠</span>
+            <span style={{ fontSize:12,fontWeight:700,color:"#e65100" }}>未保存の変更があります</span>
+          </div>
+          <div style={{ display:"flex",gap:6 }}>
+            <button onClick={function(){ setForm(Object.assign({},saved)); }}
+              style={{ padding:"4px 10px",borderRadius:5,border:"1px solid #f9a825",
+                background:"#fff",color:"#e65100",fontSize:11,fontWeight:600,
+                cursor:"pointer",fontFamily:"inherit" }}>元に戻す</button>
+            <button onClick={save}
+              style={{ padding:"4px 12px",borderRadius:5,border:"none",
+                background:"#e65100",color:"#fff",fontSize:11,fontWeight:700,
+                cursor:"pointer",fontFamily:"inherit" }}>💾 保存</button>
+          </div>
+        </div>
+      )}
       <SectionHeader title="システム設定"
-        desc="店舗情報・税率・ポイント・外部サービスAPIキーを管理" />
+        desc="店舗情報・税率・ポイント・APIキー・クイックアクションを管理" />
 
       <Tabs tabs={[
         { id:"general",  icon:"🏪", label:"基本設定" },
@@ -17417,6 +17926,7 @@ const SettingsView = ({ onToast, onResetOrders, onResetDeposits, onResetMembers,
         { id:"api",      icon:"🔑", label:"APIキー管理" },
         { id:"cron",     icon:"⏰", label:"自動化・ジョブ" },
         { id:"danger",   icon:"⚠",  label:"危険操作" },
+        { id:"quickaction", icon:"⚡", label:"クイックアクション" },
       ]} active={tab} onChange={setTab} />
 
       {tab==="general" && (
@@ -17440,7 +17950,7 @@ const SettingsView = ({ onToast, onResetOrders, onResetDeposits, onResetMembers,
               佐川急便 集荷時刻（デフォルト）
             </div>
             <div style={{ display:"flex",gap:10,alignItems:"center" }}>
-              <input
+              <input aria-label="集荷時刻"
                 type="time"
                 value={sagawaDeadline||"16:30"}
                 onChange={function(e){
@@ -17528,7 +18038,7 @@ const SettingsView = ({ onToast, onResetOrders, onResetDeposits, onResetMembers,
             <div key={i} style={{ marginBottom:14 }}>
               <div style={{ fontSize:11,fontWeight:700,color:T.ink3,marginBottom:4 }}>{f.label}</div>
               <div style={{ display:"flex",gap:8 }}>
-                <input type="password" value={form[f.key]||""} readOnly
+                <input aria-label="APIキー" type="password" value={form[f.key]||""} readOnly
                   style={{ flex:1,padding:"8px 10px",borderRadius:6,
                     border:"1.5px solid "+T.rule,fontSize:12,outline:"none",
                     background:T.bg }} />
@@ -17654,6 +18164,162 @@ const SettingsView = ({ onToast, onResetOrders, onResetDeposits, onResetMembers,
         </div>
       )}
 
+
+      {tab==="quickaction" && (function(){
+
+        function handleDragStart(e, idx) {
+          qaDragRef.current = idx;
+          e.dataTransfer.effectAllowed = "move";
+        }
+        function handleDragOver(e, idx) {
+          e.preventDefault();
+          qaOverRef.current = idx;
+        }
+        function handleDrop(e, toIdx) {
+          e.preventDefault();
+          var fromIdx = qaDragRef.current;
+          if (fromIdx === null || fromIdx === toIdx) return;
+          var arr = localOrder.slice();
+          var moved = arr.splice(fromIdx, 1)[0];
+          arr.splice(toIdx, 0, moved);
+          setLocalOrder(arr);
+          updateQaConfig(arr);
+          qaDragRef.current = null;
+          qaOverRef.current = null;
+          onToast("クイックアクションの順序を変更しました");
+        }
+
+        function toggleAction(id) {
+          var arr = localOrder.slice();
+          var idx = arr.indexOf(id);
+          if (idx >= 0) {
+            arr.splice(idx, 1);
+          } else {
+            arr.push(id);
+          }
+          setLocalOrder(arr);
+          updateQaConfig(arr);
+        }
+
+        function resetToDefault() {
+          setLocalOrder(QA_DEFAULT_IDS.slice());
+          updateQaConfig(QA_DEFAULT_IDS.slice());
+          onToast("デフォルトに戻しました");
+        }
+
+        return (
+          <div style={{ maxWidth:520 }}>
+            <Card style={{ padding:"22px 24px",marginBottom:16 }}>
+              <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16 }}>
+                <div>
+                  <div style={{ fontSize:14,fontWeight:800,color:T.ink }}>⚡ クイックアクション設定</div>
+                  <div style={{ fontSize:11,color:T.ink4,marginTop:2 }}>画面右下の ⚡ ボタンに表示するメニュー項目を選択・並び替え</div>
+                </div>
+                <Btn variant="ghost" small onClick={resetToDefault}>🔄 デフォルトに戻す</Btn>
+              </div>
+
+              {/* 有効なアクション（D&D並び替え） */}
+              <div style={{ fontSize:11,fontWeight:700,color:T.g2,marginBottom:8 }}>✅ 有効（ドラッグで並び替え）</div>
+              <div style={{ display:"flex",flexDirection:"column",gap:4,marginBottom:16 }}>
+                {localOrder.map(function(qid, idx) {
+                  var m = QA_MASTER.find(function(x){ return x.id === qid; });
+                  if (!m) return null;
+                  return (
+                    <div key={qid}
+                      draggable
+                      onDragStart={function(e){ handleDragStart(e, idx); }}
+                      onDragOver={function(e){ handleDragOver(e, idx); }}
+                      onDrop={function(e){ handleDrop(e, idx); }}
+                      style={{
+                        display:"flex",alignItems:"center",gap:10,
+                        padding:"10px 12px",borderRadius:8,
+                        background:T.okPale,border:"1.5px solid "+T.g2+"40",
+                        cursor:"grab",transition:"all .15s" }}>
+                      <span style={{ color:T.ink4,fontSize:14,cursor:"grab",userSelect:"none" }}>⠿</span>
+                      <span style={{ width:22,height:22,borderRadius:6,flexShrink:0,
+                        background:T.g2,display:"flex",alignItems:"center",justifyContent:"center",
+                        fontSize:10,fontWeight:800,color:"#fff" }}>{idx+1}</span>
+                      <span style={{ fontSize:16,flexShrink:0 }}>{m.icon}</span>
+                      <span style={{ flex:1,fontSize:12,fontWeight:700,color:T.ink }}>{m.label}</span>
+                      <span style={{ fontSize:10,color:T.ink4 }}>{m.nav === "__search__" ? "モーダル" : m.nav}</span>
+                      <button onClick={function(){ toggleAction(qid); }}
+                        aria-label="無効にする"
+                        style={{ padding:"3px 8px",borderRadius:5,border:"1px solid "+T.red+"60",
+                          background:T.redPale,color:T.red,fontSize:10,fontWeight:700,
+                          cursor:"pointer",fontFamily:"inherit" }}>
+                        除外
+                      </button>
+                    </div>
+                  );
+                })}
+                {localOrder.length === 0 && (
+                  <div style={{ padding:"16px",textAlign:"center",color:T.ink4,fontSize:12,
+                    background:T.bg,borderRadius:8,border:"1px dashed "+T.rule }}>
+                    アクションが選択されていません
+                  </div>
+                )}
+              </div>
+
+              {/* 無効なアクション */}
+              {(function(){
+                var disabledItems = QA_MASTER.filter(function(m){ return localOrder.indexOf(m.id) < 0; });
+                if (disabledItems.length === 0) return null;
+                return (
+                  <div>
+                    <div style={{ fontSize:11,fontWeight:700,color:T.ink4,marginBottom:8 }}>⬜ 未選択（クリックで追加）</div>
+                    <div style={{ display:"flex",flexDirection:"column",gap:4 }}>
+                      {disabledItems.map(function(m) {
+                        return (
+                          <button key={m.id}
+                            onClick={function(){ toggleAction(m.id); }}
+                            style={{
+                              display:"flex",alignItems:"center",gap:10,
+                              padding:"10px 12px",borderRadius:8,width:"100%",
+                              background:T.bg,border:"1px dashed "+T.rule,
+                              cursor:"pointer",fontFamily:"inherit",textAlign:"left",
+                              transition:"all .15s" }}
+                            onMouseEnter={function(e){ e.currentTarget.style.background=T.okPale; e.currentTarget.style.borderColor=T.g2; }}
+                            onMouseLeave={function(e){ e.currentTarget.style.background=T.bg; e.currentTarget.style.borderColor=T.rule; }}>
+                            <span style={{ fontSize:16,flexShrink:0 }}>{m.icon}</span>
+                            <span style={{ flex:1,fontSize:12,fontWeight:600,color:T.ink3 }}>{m.label}</span>
+                            <span style={{ fontSize:10,color:T.g2,fontWeight:700 }}>＋ 追加</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+            </Card>
+
+            {/* プレビュー */}
+            <Card style={{ padding:"16px 20px" }}>
+              <div style={{ fontSize:12,fontWeight:700,color:T.ink3,marginBottom:10 }}>📱 プレビュー</div>
+              <div style={{ display:"flex",flexDirection:"column",gap:4,alignItems:"flex-end",
+                padding:"16px",background:T.bg,borderRadius:10,border:"1px solid "+T.rule }}>
+                {localOrder.map(function(qid) {
+                  var m = QA_MASTER.find(function(x){ return x.id === qid; });
+                  if (!m) return null;
+                  return (
+                    <div key={qid} style={{ padding:"6px 12px",borderRadius:7,
+                      background:T.white,border:"1px solid "+T.rule,
+                      fontSize:11,fontWeight:600,color:T.ink,
+                      boxShadow:"0 1px 4px rgba(0,0,0,.08)" }}>
+                      {m.icon} {m.label}
+                    </div>
+                  );
+                })}
+                <div style={{ width:40,height:40,borderRadius:"50%",
+                  background:T.g2,display:"flex",alignItems:"center",justifyContent:"center",
+                  color:"#fff",fontSize:16,boxShadow:"0 2px 8px rgba(26,92,56,.3)" }}>
+                  ⚡
+                </div>
+              </div>
+            </Card>
+          </div>
+        );
+      })()}
+
       {tab==="danger" && (
         <Card style={{ padding:"22px 24px",maxWidth:520,border:"2px solid "+T.red+"40" }}>
           {/* localStorage リセット（デモ・デバッグ用） */}
@@ -17665,6 +18331,41 @@ const SettingsView = ({ onToast, onResetOrders, onResetDeposits, onResetMembers,
             <div style={{ fontSize:11,color:T.ink3,marginBottom:10,lineHeight:1.7 }}>
               localStorageに保存されたデータをクリアし、初期サンプルデータに戻します。
               公開デモ・打ち合わせ前のリセットに使用してください。
+            </div>
+            {/* デモシナリオプリセット */}
+            <div style={{ marginBottom:14 }}>
+              <div style={{ fontSize:11,fontWeight:700,color:T.g2,marginBottom:8 }}>
+                🎬 デモシナリオ（ワンクリックで状態を切替え）
+              </div>
+              <div style={{ display:"flex",gap:6,flexWrap:"wrap" }}>
+                {[
+                  { id:"normal",   icon:"📦", label:"通常業務日",
+                    desc:"注文5件・出荷2件・入金3件の通常営業日" },
+                  { id:"closing",  icon:"📄", label:"月末締め",
+                    desc:"法人3社の締め請求書生成・入金催促" },
+                  { id:"reform",   icon:"⚖",  label:"法改正対応",
+                    desc:"法改正アラート配信・書籍レコメンド・改訂版通知" },
+                ].map(function(sc) {
+                  return (
+                    <button key={sc.id}
+                      onClick={function(){
+                        if (onResetOrders) onResetOrders();
+                        if (onResetDeposits) onResetDeposits();
+                        if (onResetMembers) onResetMembers();
+                        onToast("🎬 「"+sc.label+"」シナリオをセットしました");
+                      }}
+                      style={{ flex:"1 1 140px",padding:"10px 12px",borderRadius:8,
+                        border:"1.5px solid "+T.g2+"40",background:T.okPale,
+                        cursor:"pointer",fontFamily:"inherit",textAlign:"left" }}
+                      onMouseEnter={function(e){ e.currentTarget.style.borderColor=T.g2; }}
+                      onMouseLeave={function(e){ e.currentTarget.style.borderColor=T.g2+"40"; }}>
+                      <div style={{ fontSize:14,marginBottom:4 }}>{sc.icon}</div>
+                      <div style={{ fontSize:12,fontWeight:700,color:T.ink }}>{sc.label}</div>
+                      <div style={{ fontSize:10,color:T.ink4,marginTop:2 }}>{sc.desc}</div>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
             <div style={{ display:"flex",gap:8,flexWrap:"wrap" }}>
               <Btn variant="amber" small onClick={function(){
@@ -17710,9 +18411,9 @@ const SettingsView = ({ onToast, onResetOrders, onResetDeposits, onResetMembers,
 // TorikeshiView（契約内容・掛率・メモ・連絡先管理）
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const TORIKESHI_STATUS_META = {
-  active: { label:"契約中",   color:"#1a7a4a", bg:"#e8f5e9" },
-  review: { label:"要検討",   color:"#e65100", bg:"#fff3e0" },
-  ended:  { label:"取引終了", color:"#5a5a4c", bg:"#f4f3ef" },
+  active: { label:"契約中",   color:T.ok, bg:T.okPale },
+  review: { label:"要検討",   color:T.amber, bg:T.amberPale },
+  ended:  { label:"取引終了", color:T.ink3, bg:T.bg },
 };
 
 const TorikeshiView = ({ onToast, darkMode }) => {
@@ -17767,10 +18468,10 @@ const TorikeshiView = ({ onToast, darkMode }) => {
       {/* サマリーKPI */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:10, marginBottom:14 }}>
         {[
-          { label:"取引中",   val:items.filter(t=>t.status==="active").length+"社",  color:"#1a7a4a", bg:"#e8f5e9" },
-          { label:"要検討",   val:items.filter(t=>t.status==="review").length+"社",  color:"#e65100", bg:"#fff3e0" },
-          { label:"平均掛率", val:(items.filter(t=>t.status==="active").reduce((s,t)=>s+t.contractRate,0)/Math.max(1,items.filter(t=>t.status==="active").length)*100).toFixed(1)+"%", color:"#01579b", bg:"#e3f2fd" },
-          { label:"平均支払サイト", val:Math.round(items.filter(t=>t.status==="active").reduce((s,t)=>s+t.paymentDays,0)/Math.max(1,items.filter(t=>t.status==="active").length))+"日", color:"#6a1b9a", bg:"#f3e5f5" },
+          { label:"取引中",   val:items.filter(t=>t.status==="active").length+"社",  color:T.ok, bg:T.okPale },
+          { label:"要検討",   val:items.filter(t=>t.status==="review").length+"社",  color:T.amber, bg:T.amberPale },
+          { label:"平均掛率", val:(items.filter(t=>t.status==="active").reduce((s,t)=>s+t.contractRate,0)/Math.max(1,items.filter(t=>t.status==="active").length)*100).toFixed(1)+"%", color:T.navy, bg:T.navyPale },
+          { label:"平均支払サイト", val:Math.round(items.filter(t=>t.status==="active").reduce((s,t)=>s+t.paymentDays,0)/Math.max(1,items.filter(t=>t.status==="active").length))+"日", color:T.purple, bg:T.purplePale },
         ].map((s,i)=>(
           <div key={i} style={{ padding:"12px 14px", background:s.bg, borderRadius:8,
             border:"1px solid "+s.color+"30", textAlign:"center" }}>
@@ -17801,8 +18502,8 @@ const TorikeshiView = ({ onToast, darkMode }) => {
                     {t.short.slice(0,3)}
                   </div>
                   <div style={{ flex:1, minWidth:120 }}>
-                    <div style={{ fontSize:14, fontWeight:800, color:"#1a1a14" }}>{t.name}</div>
-                    <div style={{ fontSize:11, color:"#8a8a78", marginTop:1 }}>最終連絡：{t.lastContact}</div>
+                    <div style={{ fontSize:14, fontWeight:800, color:T.ink }}>{t.name}</div>
+                    <div style={{ fontSize:11, color:T.ink4, marginTop:1 }}>最終連絡：{t.lastContact}</div>
                   </div>
                   {/* ステータス */}
                   <span style={{ fontSize:10, fontWeight:700, padding:"3px 8px", borderRadius:4,
@@ -17813,22 +18514,22 @@ const TorikeshiView = ({ onToast, darkMode }) => {
                       <div style={{ fontFamily:"'Inter'", fontWeight:700, color:t.color, fontSize:15 }}>
                         {(t.contractRate*100).toFixed(0)}%
                       </div>
-                      <div style={{ fontSize:10, color:"#8a8a78" }}>掛率</div>
+                      <div style={{ fontSize:10, color:T.ink4 }}>掛率</div>
                     </div>
                     <div style={{ textAlign:"center" }}>
-                      <div style={{ fontFamily:"'Inter'", fontWeight:700, color:"#1a1a14", fontSize:15 }}>
+                      <div style={{ fontFamily:"'Inter'", fontWeight:700, color:T.ink, fontSize:15 }}>
                         {t.paymentDays}日
                       </div>
-                      <div style={{ fontSize:10, color:"#8a8a78" }}>支払サイト</div>
+                      <div style={{ fontSize:10, color:T.ink4 }}>支払サイト</div>
                     </div>
                     <div style={{ textAlign:"center" }}>
-                      <div style={{ fontFamily:"'Inter'", fontWeight:700, color:"#1a1a14", fontSize:15 }}>
+                      <div style={{ fontFamily:"'Inter'", fontWeight:700, color:T.ink, fontSize:15 }}>
                         {(t.returnLimit*100).toFixed(0)}%
                       </div>
-                      <div style={{ fontSize:10, color:"#8a8a78" }}>返品上限</div>
+                      <div style={{ fontSize:10, color:T.ink4 }}>返品上限</div>
                     </div>
                   </div>
-                  <span style={{ fontSize:13, color:"#8a8a78", marginLeft:"auto" }}>{isOpen?"▲":"▼"}</span>
+                  <span style={{ fontSize:13, color:T.ink4, marginLeft:"auto" }}>{isOpen?"▲":"▼"}</span>
                 </div>
               </div>
 
@@ -17848,8 +18549,8 @@ const TorikeshiView = ({ onToast, darkMode }) => {
                           { key:"contact",      label:"担当者・連絡先", type:"text" },
                         ].map((f,i)=>(
                           <div key={i}>
-                            <div style={{ fontSize:11, fontWeight:700, color:"#5a5a4c", marginBottom:4 }}>{f.label}</div>
-                            <input value={editData[f.key]||""}
+                            <div style={{ fontSize:11, fontWeight:700, color:T.ink3, marginBottom:4 }}>{f.label}</div>
+                            <input aria-label={f.label} value={editData[f.key]||""}
                               onChange={e=>setEditData(function(prev){ return Object.assign({},prev,Object.fromEntries([[f.key,e.target.value]])); })}
                               style={{ width:"100%", padding:"7px 10px", borderRadius:6,
                                 border:"1.5px solid #d8d4c8", fontSize:12, outline:"none",
@@ -17858,8 +18559,8 @@ const TorikeshiView = ({ onToast, darkMode }) => {
                         ))}
                       </div>
                       <div style={{ marginBottom:12 }}>
-                        <div style={{ fontSize:11, fontWeight:700, color:"#5a5a4c", marginBottom:4 }}>契約メモ</div>
-                        <textarea value={editData.memo||""}
+                        <div style={{ fontSize:11, fontWeight:700, color:T.ink3, marginBottom:4 }}>契約メモ</div>
+                        <textarea aria-label="契約メモ" value={editData.memo||""}
                           onChange={e=>setEditData(prev=>(Object.assign({},prev,{memo:e.target.value})))}
                           style={{ width:"100%", height:80, padding:"8px 10px", borderRadius:6,
                             border:"1.5px solid #d8d4c8", fontSize:12, fontFamily:"inherit",
@@ -17876,7 +18577,7 @@ const TorikeshiView = ({ onToast, darkMode }) => {
                       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16, marginBottom:16 }}>
                         {/* 基本情報 */}
                         <div>
-                          <div style={{ fontSize:11, fontWeight:700, color:"#5a5a4c", marginBottom:10 }}>
+                          <div style={{ fontSize:11, fontWeight:700, color:T.ink3, marginBottom:10 }}>
                             基本情報
                           </div>
                           {[
@@ -17886,14 +18587,14 @@ const TorikeshiView = ({ onToast, darkMode }) => {
                             { label:"取扱サービス", val:t.services.join("・") },
                           ].map((r,i)=>(
                             <div key={i} style={{ display:"flex", gap:8, marginBottom:8, fontSize:12 }}>
-                              <div style={{ minWidth:110, color:"#8a8a78", flexShrink:0 }}>{r.label}</div>
-                              <div style={{ color:"#1a1a14", fontWeight:600 }}>{r.val}</div>
+                              <div style={{ minWidth:110, color:T.ink4, flexShrink:0 }}>{r.label}</div>
+                              <div style={{ color:T.ink, fontWeight:600 }}>{r.val}</div>
                             </div>
                           ))}
                         </div>
                         {/* 契約条件 */}
                         <div>
-                          <div style={{ fontSize:11, fontWeight:700, color:"#5a5a4c", marginBottom:10 }}>
+                          <div style={{ fontSize:11, fontWeight:700, color:T.ink3, marginBottom:10 }}>
                             契約条件
                           </div>
                           {[
@@ -17903,40 +18604,40 @@ const TorikeshiView = ({ onToast, darkMode }) => {
                             { label:"ステータス", val:sm.label },
                           ].map((r,i)=>(
                             <div key={i} style={{ display:"flex", gap:8, marginBottom:8, fontSize:12 }}>
-                              <div style={{ minWidth:110, color:"#8a8a78", flexShrink:0 }}>{r.label}</div>
-                              <div style={{ color:"#1a1a14", fontWeight:600 }}>{r.val}</div>
+                              <div style={{ minWidth:110, color:T.ink4, flexShrink:0 }}>{r.label}</div>
+                              <div style={{ color:T.ink, fontWeight:600 }}>{r.val}</div>
                             </div>
                           ))}
                         </div>
                       </div>
 
                       {/* 契約メモ */}
-                      <div style={{ background:"#f4f3ef", borderRadius:8, padding:"12px 14px", marginBottom:16 }}>
-                        <div style={{ fontSize:11, fontWeight:700, color:"#5a5a4c", marginBottom:6 }}>📋 契約メモ</div>
-                        <div style={{ fontSize:12, color:"#2e2e24", lineHeight:1.8 }}>{t.memo||"（メモなし）"}</div>
+                      <div style={{ background:T.bg, borderRadius:8, padding:"12px 14px", marginBottom:16 }}>
+                        <div style={{ fontSize:11, fontWeight:700, color:T.ink3, marginBottom:6 }}>📋 契約メモ</div>
+                        <div style={{ fontSize:12, color:T.ink2, lineHeight:1.8 }}>{t.memo||"（メモなし）"}</div>
                       </div>
 
                       {/* 連絡履歴・メモ */}
                       <div style={{ marginBottom:14 }}>
-                        <div style={{ fontSize:11, fontWeight:700, color:"#5a5a4c", marginBottom:10 }}>
+                        <div style={{ fontSize:11, fontWeight:700, color:T.ink3, marginBottom:10 }}>
                           📝 連絡履歴・メモ
                         </div>
                         <div style={{ display:"flex", gap:8, marginBottom:10 }}>
-                          <input value={newNote} onChange={e=>setNewNote(e.target.value)}
+                          <input aria-label="新しいメモ" value={newNote} onChange={e=>setNewNote(e.target.value)}
                             placeholder="新しいメモを追加..."
                             style={{ flex:1, padding:"7px 10px", borderRadius:6,
                               border:"1.5px solid #d8d4c8", fontSize:12, outline:"none" }} />
                           <Btn small onClick={()=>addNote(t.id)}>追加</Btn>
                         </div>
                         {t.notes.length===0 && (
-                          <div style={{ fontSize:12, color:"#8a8a78" }}>メモはありません</div>
+                          <div style={{ fontSize:12, color:T.ink4 }}>メモはありません</div>
                         )}
                         <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
                           {t.notes.map((n,ni)=>(
                             <div key={ni} style={{ display:"flex", gap:10, padding:"8px 12px",
                               background:"#fff", borderRadius:7, border:"1px solid #d8d4c8" }}>
-                              <div style={{ fontSize:11, color:"#8a8a78", flexShrink:0, marginTop:1 }}>{n.date}</div>
-                              <div style={{ fontSize:12, color:"#1a1a14", lineHeight:1.7, flex:1 }}>{n.body}</div>
+                              <div style={{ fontSize:11, color:T.ink4, flexShrink:0, marginTop:1 }}>{n.date}</div>
+                              <div style={{ fontSize:12, color:T.ink, lineHeight:1.7, flex:1 }}>{n.body}</div>
                             </div>
                           ))}
                         </div>
@@ -17989,7 +18690,7 @@ const PhoneOrderEntry = ({ orders, setOrders, addOrder, onToast, setGlobalAddrHi
     { id:"m6", name:"伊藤 律子",   kana:"イトウ リツコ",    email:"ito@law.jp",     plan:"Pro",  addr:"大阪府大阪市北区梅田1-1",       tel:"06-3333-0003" },
   ];
 
-  const foundBooks = BOOKS_DATA.filter(b=>bookQuery&&(b.title.includes(bookQuery)||b.author.includes(bookQuery)));
+  const foundBooks = MOCK_BOOKS.filter(b=>bookQuery&&(b.title.includes(bookQuery)||b.author.includes(bookQuery)));
 
   const addToCart = (book) => {
     if(cartItems.find(c=>c.id===book.id)){ onToast("既にカートに追加済みです"); return; }
@@ -18054,7 +18755,7 @@ const PhoneOrderEntry = ({ orders, setOrders, addOrder, onToast, setGlobalAddrHi
               "「お届け先はいつものご住所でよろしいでしょうか？」",
               "「急ぎのご注文でしょうか？（期日がある場合は確認）」",
             ]},
-          { step:4, title:"④確認・登録スクリプト", color:T2.purple, bg:"#f3e5f5",
+          { step:4, title:"④確認・登録スクリプト", color:T2.purple, bg:T.purplePale,
             lines:[
               "「ご注文内容を確認いたします。（書籍名・金額・お届け先を読み上げ）」",
               "「以上でよろしいでしょうか？」",
@@ -18080,7 +18781,7 @@ const PhoneOrderEntry = ({ orders, setOrders, addOrder, onToast, setGlobalAddrHi
                   return (
                     <div key={s.step}
                       style={{ padding:"12px 14px",borderRadius:8,
-                        background:isCurrent?s.bg:"#fafaf8",
+                        background:isCurrent?s.bg:T.surface,
                         border:"1.5px solid "+(isCurrent?s.color:T2.rule),
                         opacity:isCurrent?1:0.7 }}>
                       <div style={{ fontSize:11,fontWeight:800,color:s.color,marginBottom:6 }}>
@@ -18125,7 +18826,7 @@ const PhoneOrderEntry = ({ orders, setOrders, addOrder, onToast, setGlobalAddrHi
             👤 会員を確認してください
           </div>
           <div style={{ display:"flex",gap:8,marginBottom:12 }}>
-            <input value={memberId} onChange={e=>setMemberId(e.target.value)}
+            <input aria-label="会員ID・カナ氏名・電話番号で検索" value={memberId} onChange={e=>setMemberId(e.target.value)}
               placeholder="会員ID・カナ氏名・電話番号"
               style={{ flex:1,padding:"9px 12px",borderRadius:6,
                 border:"1.5px solid "+T.rule,fontSize:13,outline:"none" }} />
@@ -18147,7 +18848,7 @@ const PhoneOrderEntry = ({ orders, setOrders, addOrder, onToast, setGlobalAddrHi
                 <div><span style={{ color:T.ink4 }}>TEL：</span>{foundMember.tel}</div>
               </div>
               {(()=>{
-                const fullMember = MEMBERS_DATA.find(m=>m.id===foundMember.id);
+                const fullMember = MOCK_MEMBERS.find(m=>m.id===foundMember.id);
                 if(!fullMember || !fullMember.barNo) return null;
                 return (
                   <div style={{ marginTop:8,paddingTop:8,borderTop:"1px solid "+T.ok+"40",
@@ -18174,7 +18875,7 @@ const PhoneOrderEntry = ({ orders, setOrders, addOrder, onToast, setGlobalAddrHi
         <Card style={{ padding:"20px 24px" }}>
           <div style={{ fontSize:13,fontWeight:700,color:T.ink,marginBottom:12 }}>📚 書籍を選択</div>
           <div style={{ display:"flex",gap:8,marginBottom:12 }}>
-            <input value={bookQuery} onChange={e=>setBookQuery(e.target.value)}
+            <input aria-label="書籍名・著者名で検索" value={bookQuery} onChange={e=>setBookQuery(e.target.value)}
               placeholder="書籍名・著者名で検索..."
               style={{ flex:1,padding:"8px 12px",borderRadius:6,
                 border:"1.5px solid "+T.rule,fontSize:12,outline:"none" }} />
@@ -18215,7 +18916,7 @@ const PhoneOrderEntry = ({ orders, setOrders, addOrder, onToast, setGlobalAddrHi
                     ¥{(c.price*c.qty).toLocaleString()}
                   </div>
                   <button onClick={()=>setCartItems(prev=>prev.filter((_,j)=>j!==i))}
-                    style={{ background:"none",border:"none",cursor:"pointer",color:T.ink4,fontSize:16 }}>✕</button>
+                    style={{ background:"none",border:"none",cursor:"pointer",color:T.ink4,fontSize:16 }} aria-label="閉じる">✕</button>
                 </div>
               ))}
               <div style={{ textAlign:"right",fontSize:13,fontWeight:700,color:T.g2,marginTop:6 }}>
@@ -18233,7 +18934,7 @@ const PhoneOrderEntry = ({ orders, setOrders, addOrder, onToast, setGlobalAddrHi
                 <div style={{ fontSize:11,fontWeight:700,color:T.ink3,marginBottom:4 }}>
                   事件番号
                 </div>
-                <input value={caseNo} onChange={e=>setCaseNo(e.target.value)}
+                <input aria-label="事件番号" value={caseNo} onChange={e=>setCaseNo(e.target.value)}
                   placeholder="例：2026-民-0341"
                   style={{ width:"100%",padding:"7px 10px",borderRadius:6,
                     border:"1.5px solid "+T.rule,fontSize:12,outline:"none",boxSizing:"border-box" }} />
@@ -18242,7 +18943,7 @@ const PhoneOrderEntry = ({ orders, setOrders, addOrder, onToast, setGlobalAddrHi
                 <div style={{ fontSize:11,fontWeight:700,color:T.ink3,marginBottom:4 }}>
                   事件名・案件名
                 </div>
-                <input value={caseName} onChange={e=>setCaseName(e.target.value)}
+                <input aria-label="事件名・案件名" value={caseName} onChange={e=>setCaseName(e.target.value)}
                   placeholder="例：○○ vs △△ 損害賠償請求"
                   style={{ width:"100%",padding:"7px 10px",borderRadius:6,
                     border:"1.5px solid "+T.rule,fontSize:12,outline:"none",boxSizing:"border-box" }} />
@@ -18253,7 +18954,7 @@ const PhoneOrderEntry = ({ orders, setOrders, addOrder, onToast, setGlobalAddrHi
             <div style={{ background:urgent?T.redPale:T.bg,borderRadius:8,
               padding:"10px 14px",border:"1.5px solid "+(urgent?T.red+"60":T.rule) }}>
               <label style={{ display:"flex",gap:10,alignItems:"center",cursor:"pointer",marginBottom:urgent?10:0 }}>
-                <input type="checkbox" checked={urgent} onChange={e=>setUrgent(e.target.checked)}
+                <input aria-label="急ぎ" type="checkbox" checked={urgent} onChange={e=>setUrgent(e.target.checked)}
                   style={{ width:16,height:16,cursor:"pointer" }} />
                 <div>
                   <div style={{ fontSize:13,fontWeight:700,color:urgent?T.red:T.ink }}>
@@ -18270,7 +18971,7 @@ const PhoneOrderEntry = ({ orders, setOrders, addOrder, onToast, setGlobalAddrHi
                     <div style={{ fontSize:11,fontWeight:700,color:T.red,marginBottom:4 }}>
                       必要期日（いつまでに届ければよいか）
                     </div>
-                    <input type="date" value={urgentBy} onChange={e=>setUrgentBy(e.target.value)}
+                    <input aria-label="必要期日" type="date" value={urgentBy} onChange={e=>setUrgentBy(e.target.value)}
                       style={{ width:"100%",padding:"7px 10px",borderRadius:6,
                         border:"1.5px solid "+T.red+"60",fontSize:12,outline:"none",
                         boxSizing:"border-box" }} />
@@ -18279,7 +18980,7 @@ const PhoneOrderEntry = ({ orders, setOrders, addOrder, onToast, setGlobalAddrHi
                     <div style={{ fontSize:11,fontWeight:700,color:T.red,marginBottom:4 }}>
                       急ぎ理由
                     </div>
-                    <input value={urgentNote} onChange={e=>setUrgentNote(e.target.value)}
+                    <input aria-label="急ぎ理由" value={urgentNote} onChange={e=>setUrgentNote(e.target.value)}
                       placeholder="例：口頭弁論期日の前日まで"
                       style={{ width:"100%",padding:"7px 10px",borderRadius:6,
                         border:"1.5px solid "+T.red+"60",fontSize:12,outline:"none",
@@ -18310,7 +19011,7 @@ const PhoneOrderEntry = ({ orders, setOrders, addOrder, onToast, setGlobalAddrHi
                 padding:"10px 12px",borderRadius:7,cursor:"pointer",marginBottom:6,
                 background:payment===pm.id?T.okPale:T.bg,
                 border:"1.5px solid "+(payment===pm.id?T.ok:T.rule) }}>
-                <input type="radio" name="payment" value={pm.id} checked={payment===pm.id}
+                <input aria-label={pm.label} type="radio" name="payment" value={pm.id} checked={payment===pm.id}
                   onChange={()=>setPayment(pm.id)} />
                 <span style={{ fontSize:14 }}>{pm.icon}</span>
                 <div style={{ flex:1 }}>
@@ -18362,7 +19063,7 @@ const PhoneOrderEntry = ({ orders, setOrders, addOrder, onToast, setGlobalAddrHi
                             setSelAddrId(addr.id);
                             setAddrWarnShown(false);
                           }}>
-                          <input type="radio" name="shipAddr" value={addr.id}
+                          <input aria-label={addr.label} type="radio" name="shipAddr" value={addr.id}
                             checked={isSel} onChange={()=>{}}
                             style={{ marginTop:2 }} />
                           <div style={{ flex:1 }}>
@@ -18429,7 +19130,7 @@ const PhoneOrderEntry = ({ orders, setOrders, addOrder, onToast, setGlobalAddrHi
 
           <div style={{ marginBottom:14 }}>
             <div style={{ fontSize:11,fontWeight:700,color:T.ink3,marginBottom:4 }}>備考</div>
-            <input value={note} onChange={e=>setNote(e.target.value)}
+            <input aria-label="備考" value={note} onChange={e=>setNote(e.target.value)}
               placeholder="例：急ぎ / 2階受付渡し"
               style={{ width:"100%",padding:"8px 10px",borderRadius:6,
                 border:"1.5px solid "+T.rule,fontSize:12,outline:"none",boxSizing:"border-box" }} />
@@ -18441,7 +19142,7 @@ const PhoneOrderEntry = ({ orders, setOrders, addOrder, onToast, setGlobalAddrHi
             const curSel = selAddrId ? addrs.find(a=>a.id===selAddrId) : defaultAddr;
             const sdCheck = curSel ? checkSameDayDelivery(curSel.zip) : { possible:false, zone:null };
             if(urgent && sdCheck.possible && !sameDayConfirm) return (
-              <div style={{ background:"#e8f5e9",border:"2px solid #2e7d32",
+              <div style={{ background:T.okPale,border:"2px solid #2e7d32",
                 borderRadius:10,padding:"14px 16px",marginBottom:12 }}>
                 <div style={{ fontSize:13,fontWeight:800,color:"#2e7d32",marginBottom:6 }}>
                   🚀 即日配送が可能なエリアです！
@@ -18539,21 +19240,21 @@ const PhoneOrderEntry = ({ orders, setOrders, addOrder, onToast, setGlobalAddrHi
 // FeedbackMgmtView（収集・ステータス管理・週次レポート・発注書変換）
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const FB_TYPE_META = {
-  bug:         { label:"バグ報告",   color:"#b71c1c", bg:"#fef2f2", icon:"🐛" },
-  improvement: { label:"機能改善",   color:"#01579b", bg:"#e3f2fd", icon:"✨" },
-  spec_change: { label:"仕様変更",   color:"#6a1b9a", bg:"#f3e5f5", icon:"📝" },
-  other:       { label:"その他",     color:"#5a5a4c", bg:"#f4f3ef", icon:"💬" },
+  bug:         { label:"バグ報告",   color:T.red, bg:T.redPale, icon:"🐛" },
+  improvement: { label:"機能改善",   color:T.navy, bg:T.navyPale, icon:"✨" },
+  spec_change: { label:"仕様変更",   color:T.purple, bg:T.purplePale, icon:"📝" },
+  other:       { label:"その他",     color:T.ink3, bg:T.bg, icon:"💬" },
 };
 const FB_STATUS_META = {
-  open:        { label:"未対応",   color:"#e65100", bg:"#fff3e0" },
-  in_progress: { label:"対応中",   color:"#01579b", bg:"#e3f2fd" },
-  done:        { label:"完了",     color:"#1a7a4a", bg:"#e8f5e9" },
-  rejected:    { label:"見送り",   color:"#5a5a4c", bg:"#f4f3ef" },
+  open:        { label:"未対応",   color:T.amber, bg:T.amberPale },
+  in_progress: { label:"対応中",   color:T.navy, bg:T.navyPale },
+  done:        { label:"完了",     color:T.ok, bg:T.okPale },
+  rejected:    { label:"見送り",   color:T.ink3, bg:T.bg },
 };
 const FB_PRIORITY_META = {
-  high:   { label:"🔴 業務が止まる",     color:"#b71c1c" },
-  medium: { label:"🟡 毎日不便",         color:"#e65100" },
-  low:    { label:"🟢 あれば嬉しい",     color:"#1a7a4a" },
+  high:   { label:"🔴 業務が止まる",     color:T.red },
+  medium: { label:"🟡 毎日不便",         color:T.amber },
+  low:    { label:"🟢 あれば嬉しい",     color:T.ok },
 };
 
 const FeedbackMgmtView = ({ onToast, fbItems, setFbItems, darkMode }) => {
@@ -18671,18 +19372,18 @@ const FeedbackMgmtView = ({ onToast, fbItems, setFbItems, darkMode }) => {
       {/* フィルターバー */}
       <Card style={{ padding:"10px 14px",marginBottom:12 }}>
         <div style={{ display:"flex",gap:10,flexWrap:"wrap",alignItems:"center" }}>
-          <input value={query} onChange={e=>setQuery(e.target.value)}
+          <input aria-label="キーワード検索" value={query} onChange={e=>setQuery(e.target.value)}
             placeholder="キーワード検索..."
             style={{ padding:"6px 12px",borderRadius:6,border:`1px solid ${T.rule}`,
               fontSize:12,outline:"none",width:180,background:T.bg }} />
-          <select value={typeF} onChange={e=>setTypeF(e.target.value)}
+          <select aria-label="種別フィルター" value={typeF} onChange={e=>setTypeF(e.target.value)}
             style={{ padding:"6px 10px",borderRadius:6,border:`1px solid ${T.rule}`,fontSize:12,outline:"none" }}>
             <option value="all">全種別</option>
             {Object.entries(FB_TYPE_META).map(([k,v])=>(
               <option key={k} value={k}>{v.icon} {v.label}</option>
             ))}
           </select>
-          <select value={priF} onChange={e=>setPriF(e.target.value)}
+          <select aria-label="優先度フィルター" value={priF} onChange={e=>setPriF(e.target.value)}
             style={{ padding:"6px 10px",borderRadius:6,border:`1px solid ${T.rule}`,fontSize:12,outline:"none" }}>
             <option value="all">全優先度</option>
             {Object.entries(FB_PRIORITY_META).map(([k,v])=>(
@@ -18732,7 +19433,7 @@ const FeedbackMgmtView = ({ onToast, fbItems, setFbItems, darkMode }) => {
                 </div>
                 {/* アクション */}
                 <div style={{ display:"flex",gap:6,flexShrink:0,flexWrap:"wrap" }}>
-                  <select value={f.status}
+                  <select aria-label="ステータス変更" value={f.status}
                     onChange={e=>updateStatus(f.id,e.target.value)}
                     style={{ padding:"4px 8px",borderRadius:5,border:`1px solid ${T.rule}`,
                       fontSize:11,outline:"none",background:T.white,cursor:"pointer" }}>
@@ -18761,7 +19462,7 @@ const FeedbackMgmtView = ({ onToast, fbItems, setFbItems, darkMode }) => {
                   <div style={{ fontSize:11,fontWeight:700,color:T.ink3,marginBottom:6 }}>
                     エンジニアへのメモ / 対応内容
                   </div>
-                  <textarea value={f.note}
+                  <textarea aria-label="エンジニアメモ" value={f.note}
                     onChange={e=>updateNote(f.id,e.target.value)}
                     placeholder="対応内容・メモを記録..."
                     style={{ width:"100%",height:70,padding:"8px 10px",borderRadius:6,
@@ -18796,7 +19497,7 @@ const FeedbackMgmtView = ({ onToast, fbItems, setFbItems, darkMode }) => {
               <div style={{ fontSize:15,fontWeight:800,color:T.ink }}>📊 週次レポート生成</div>
               <button onClick={()=>setReportOpen(false)}
                 style={{ background:T.bg,border:`1px solid ${T.rule}`,borderRadius:6,
-                  padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12 }}>✕</button>
+                  padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12 }} aria-label="閉じる">✕</button>
             </div>
             <div style={{ padding:"18px 22px" }}>
               <div style={{ background:T.navyPale,borderRadius:8,padding:"12px 16px",
@@ -18859,6 +19560,7 @@ const Sidebar = ({ active, onNav, collapsed, onCollapse, globalOrders, globalDep
   var T = darkMode ? T_DARK : T_LIGHT;
   var currentRole = staffRole || "admin";
   var rm = ROLE_META[currentRole] || ROLE_META.admin;
+  var [navExpanded, setNavExpanded] = React.useState(false);
   // NAV をロールでフィルタリング
   var filteredNav = NAV.map(function(group) {
     if (!group.items) return group;
@@ -18870,12 +19572,31 @@ const Sidebar = ({ active, onNav, collapsed, onCollapse, globalOrders, globalDep
     if (!group.items) return true;
     return group.items.length > 0;
   });
+  // admin/ownerは項目が多いため、折りたたみ表示
+  var totalItems = filteredNav.reduce(function(s, g) { return s + (g.items ? g.items.length : 0); }, 0);
+  var needCollapse = totalItems > 12 && !navExpanded;
+  var displayNav = filteredNav;
+  var hiddenCount = 0;
+  if (needCollapse) {
+    var count = 0;
+    displayNav = filteredNav.map(function(group) {
+      if (!group.items) return group;
+      var remaining = 10 - count;
+      if (remaining <= 0) { hiddenCount += group.items.length; return Object.assign({}, group, { items: [] }); }
+      if (group.items.length <= remaining) { count += group.items.length; return group; }
+      hiddenCount += group.items.length - remaining;
+      return Object.assign({}, group, { items: group.items.slice(0, remaining) });
+    }).filter(function(group) {
+      if (!group.items) return true;
+      return group.items.length > 0;
+    });
+  }
   // ─── 動的バッジ計算 ──────────────────────────────────
   const pendingOrders     = (globalOrders||[]).filter(o=>o.status==="pending").length;
   const unmatchedDeposits = (globalDeposits||[]).filter(d=>d.status==="unmatched"||d.status==="pending_ai").length;
   const activeBpo         = BPO_DATA.filter(b=>b.status==="in_progress"||b.status==="review"||b.status==="new").length;
   // 修習生ファネル：転換待ち（修習修了だが弁護士未登録）
-  const traineeGraduating = (globalMembers||MEMBERS_DATA).filter(function(m){
+  const traineeGraduating = (globalMembers||MOCK_MEMBERS).filter(function(m){
     return m.traineeStatus==="in_training";
   }).length;
 
@@ -18976,7 +19697,7 @@ const Sidebar = ({ active, onNav, collapsed, onCollapse, globalOrders, globalDep
               background:T.bg,cursor:'pointer',fontSize:11,color:T.ink3}}>↺ リセット</button>
             <button onClick={() => setEditMode(false)}
               style={{background:T.bg,border:'1px solid '+T.rule,
-                borderRadius:6,padding:'4px 10px',cursor:'pointer',color:T.ink4,fontSize:12}}>✕</button>
+                borderRadius:6,padding:'4px 10px',cursor:'pointer',color:T.ink4,fontSize:12}} aria-label="閉じる">✕</button>
           </div>
         </div>
         <div style={{padding:'14px 20px',display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
@@ -19137,7 +19858,7 @@ const Sidebar = ({ active, onNav, collapsed, onCollapse, globalOrders, globalDep
         )}
       </div>
       <nav style={{flex:1,padding:'6px 0'}}>
-        {filteredNav.map((sec, si) => {
+        {displayNav.map((sec, si) => {
           const isShortcut = !!sec.shortcutGroup;
 
           // ── ショートカット層（処理待ち）の描画 ──
@@ -19283,6 +20004,18 @@ const Sidebar = ({ active, onNav, collapsed, onCollapse, globalOrders, globalDep
             </div>
           );
         })}
+          {/* もっと見る / 折りたたむ */}
+          {totalItems > 12 && (
+            <button onClick={function(){ setNavExpanded(function(v){ return !v; }); }}
+              style={{ width:"100%",padding:"8px 12px",marginTop:4,
+                border:"1px solid "+(darkMode?"rgba(255,255,255,.15)":"rgba(0,0,0,.08)"),
+                borderRadius:6,cursor:"pointer",fontFamily:"inherit",
+                fontSize:10,fontWeight:700,textAlign:"center",
+                background:darkMode?"rgba(255,255,255,.06)":"rgba(0,0,0,.03)",
+                color:darkMode?"rgba(255,255,255,.5)":T.ink4 }}>
+              {navExpanded ? "△ 折りたたむ" : "▽ もっと見る（+"+hiddenCount+"項目）"}
+            </button>
+          )}
       </nav>
       <div style={{padding:'8px 6px',borderTop:'1px solid rgba(255,255,255,.08)',
         display:'flex',flexDirection:'column',gap:4}}>
@@ -19418,15 +20151,42 @@ const AI_DEFAULT_INSIGHT = [
 // SECTION 20: メインアプリ
 // AdminApp（ルーター・useState・renderPage・サイドバー）
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-const QuickActionFab = function({ navigateTo, setSearchOpen, setSearchQ, isMobile, darkMode }) {
+// ── クイックアクション マスタ定義 ──────────────────
+const QA_MASTER = [
+  { id:"qa_phone_order", icon:"🛒", label:"電話注文を入力", nav:"orders" },
+  { id:"qa_sagawa_csv",  icon:"📦", label:"佐川CSV出力",    nav:"orders" },
+  { id:"qa_inventory",   icon:"📋", label:"在庫管理",       nav:"inventory" },
+  { id:"qa_search",      icon:"🔍", label:"横断検索",       nav:"__search__" },
+  { id:"qa_dashboard",   icon:"📊", label:"ダッシュボード", nav:"dashboard" },
+  { id:"qa_members",     icon:"👤", label:"会員管理",       nav:"members" },
+  { id:"qa_corporate",   icon:"🏢", label:"法人アカウント", nav:"corporate" },
+  { id:"qa_books",       icon:"📚", label:"書籍管理",       nav:"books" },
+  { id:"qa_bpo",         icon:"⚖",  label:"BPO管理",       nav:"bpo" },
+  { id:"qa_sales",       icon:"💰", label:"売上管理",       nav:"sales" },
+  { id:"qa_content",     icon:"✍",  label:"コンテンツ管理", nav:"articles" },
+  { id:"qa_mail",        icon:"📧", label:"メルマガ配信",   nav:"mail_campaign" },
+];
+const QA_DEFAULT_IDS = ["qa_phone_order","qa_sagawa_csv","qa_inventory","qa_search","qa_dashboard"];
+
+const QuickActionFab = function({ navigateTo, setSearchOpen, setSearchQ, isMobile, darkMode, qaConfig }) {
   var [qaOpen, setQaOpen] = React.useState(false);
   var TC = darkMode ? T_DARK : T_LIGHT;
-  var actions = [
-    { label:"🛒 電話注文を入力", action:function(){ navigateTo("orders"); setQaOpen(false); } },
-    { label:"📦 佐川CSV出力",    action:function(){ navigateTo("orders"); setQaOpen(false); } },
-    { label:"🔍 横断検索",       action:function(){ setSearchOpen(true); setSearchQ(""); setQaOpen(false); } },
-    { label:"📊 ダッシュボード", action:function(){ navigateTo("dashboard"); setQaOpen(false); } },
-  ];
+  var enabledIds = (qaConfig && qaConfig.length > 0) ? qaConfig : QA_DEFAULT_IDS;
+  var actions = enabledIds.map(function(qid) {
+    var master = QA_MASTER.find(function(m){ return m.id === qid; });
+    if (!master) return null;
+    return {
+      label: master.icon + " " + master.label,
+      action: function() {
+        if (master.nav === "__search__") {
+          setSearchOpen(true); setSearchQ("");
+        } else {
+          navigateTo(master.nav);
+        }
+        setQaOpen(false);
+      }
+    };
+  }).filter(Boolean);
   return (
     <div style={{ position:"fixed",
       bottom:isMobile?20:28, right:isMobile?"50%":176,
@@ -19488,7 +20248,7 @@ const TourGuide = function() {
       justifyContent:"center",padding:"0 16px 40px" }}>
       <div style={{ background:"#fff",borderRadius:14,width:"100%",maxWidth:480,
         boxShadow:"0 8px 48px rgba(0,0,0,.3)",overflow:"hidden" }}>
-        <div style={{ background:"linear-gradient(135deg,#0f3320,#1a5c38)",
+        <div style={{ background:"linear-gradient(135deg,"+T.g1+","+T.g2+")",
           padding:"14px 18px",color:"#fff",
           display:"flex",justifyContent:"space-between",alignItems:"center" }}>
           <span style={{ fontSize:13,fontWeight:800 }}>操作ガイド {tourStep+1}/{steps.length}</span>
@@ -19499,14 +20259,14 @@ const TourGuide = function() {
             cursor:"pointer",fontSize:12,fontFamily:"inherit" }}>スキップ</button>
         </div>
         <div style={{ height:3,background:"#e0e0e0" }}>
-          <div style={{ height:"100%",background:"#1a5c38",
+          <div style={{ height:"100%",background:T.g2,
             width:((tourStep+1)/steps.length*100)+"%",transition:"width .3s" }} />
         </div>
         <div style={{ padding:"20px 20px 16px" }}>
-          <div style={{ fontSize:16,fontWeight:800,color:"#1a1a14",marginBottom:8 }}>{step.title}</div>
-          <div style={{ fontSize:13,color:"#5a5a4c",lineHeight:1.7,marginBottom:8 }}>{step.desc}</div>
+          <div style={{ fontSize:16,fontWeight:800,color:T.ink,marginBottom:8 }}>{step.title}</div>
+          <div style={{ fontSize:13,color:T.ink3,lineHeight:1.7,marginBottom:8 }}>{step.desc}</div>
           {step.hint && (
-            <div style={{ fontSize:11,color:"#1a5c38",background:"#e8f5e9",
+            <div style={{ fontSize:11,color:T.g2,background:T.okPale,
               borderRadius:6,padding:"6px 10px" }}>
               💡 {step.hint}
             </div>
@@ -19517,13 +20277,13 @@ const TourGuide = function() {
             <button onClick={function(){ setTourStep(function(s){ return s-1; }); }}
               style={{ padding:"8px 16px",borderRadius:7,border:"1px solid #d8d4c8",
                 background:"transparent",cursor:"pointer",fontSize:13,
-                color:"#5a5a4c",fontFamily:"inherit" }}>← 前へ</button>
+                color:T.ink3,fontFamily:"inherit" }}>← 前へ</button>
           )}
           <button onClick={function(){
             if(isLast){ setTourStep(-1); try{ localStorage.setItem(LS.tourDone,"1"); }catch(e){} }
             else { setTourStep(function(s){ return s+1; }); }
           }} style={{ padding:"8px 20px",borderRadius:7,border:"none",
-            background:"#1a5c38",color:"#fff",cursor:"pointer",
+            background:T.g2,color:"#fff",cursor:"pointer",
             fontSize:13,fontWeight:700,fontFamily:"inherit" }}>
             {isLast?"✅ 使い始める":"次へ →"}
           </button>
@@ -19533,7 +20293,7 @@ const TourGuide = function() {
   );
 };
 
-export default function AdminApp() {
+function AdminApp() {
   // ── 画面幅監視（レスポンシブ対応）
   const [windowWidth, setWindowWidth] = useState(function(){ return typeof window!=="undefined"?window.innerWidth:1200; });
   React.useEffect(function(){
@@ -19541,9 +20301,9 @@ export default function AdminApp() {
     window.addEventListener("resize", onResize);
     return function(){ window.removeEventListener("resize", onResize); };
   }, []);
-  var isMobile  = windowWidth < 768;
-  var isTablet  = windowWidth >= 768 && windowWidth < 1024;
-  var isNarrow  = windowWidth < 1024;
+  var isMobile  = windowWidth < BREAKPOINTS.mobile;
+  var isTablet  = windowWidth >= BREAKPOINTS.mobile && windowWidth < BREAKPOINTS.tablet;
+  var isNarrow  = windowWidth < BREAKPOINTS.tablet;
 
   // ── ダークモード
   const [darkMode, setDarkMode] = useState(function(){
@@ -19620,8 +20380,8 @@ export default function AdminApp() {
     try { localStorage.setItem("sld_font_scale", String(n)); } catch(e){}
   }
   // フォントスケールをCSS変数として適用
-  // フォントスケール: 1=小(14px) 2=中(17px) 3=大(20px) 4=特大(24px)
-  var fontBasePx = fontScale===1?14:fontScale===2?17:fontScale===3?20:fontScale===4?24:17;
+  // フォントスケール: 1=小(16px) 2=中(19px) 3=大(22px) 4=特大(26px)
+  var fontBasePx = fontScale===1?16:fontScale===2?19:fontScale===3?22:fontScale===4?26:19;
 
   // ── グローバル検索
   const [searchOpen, setSearchOpen] = useState(false);
@@ -19631,6 +20391,18 @@ export default function AdminApp() {
 
   // ── 通知センター
   const [notifOpen, setNotifOpen] = useState(false);
+
+  // ── クイックアクション設定
+  const [qaConfig, setQaConfig] = useState(function(){
+    try {
+      var s = localStorage.getItem(LS.quickActions);
+      return s ? JSON.parse(s) : QA_DEFAULT_IDS;
+    } catch(e){ return QA_DEFAULT_IDS; }
+  });
+  function updateQaConfig(newConfig) {
+    setQaConfig(newConfig);
+    try { localStorage.setItem(LS.quickActions, JSON.stringify(newConfig)); } catch(e){}
+  }
 
   // ── ブックマーク
   const [bookmarks, setBookmarks] = useState(function(){
@@ -19656,6 +20428,7 @@ export default function AdminApp() {
     } catch(e){ return "dashboard"; }
   });
   const [prevPage,  setPrevPage]  = useState(null);
+  const [pageLoading, setPageLoading] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
 
   // モバイル時はサイドバー自動折り畳み
@@ -19685,11 +20458,14 @@ export default function AdminApp() {
   // ページ遷移（前ページを記録）
   function navigateTo(nextPage) {
     setPrevPage(page);
+    setPageLoading(true);
     setPage(nextPage);
+    setTimeout(function(){ setPageLoading(false); }, 300);
   }
 
   // ダッシュボードに戻る
   function goBack() {
+    setPageLoading(true);
     if(prevPage) {
       setPage(prevPage);
       setPrevPage(null);
@@ -19697,6 +20473,7 @@ export default function AdminApp() {
       setPage("dashboard");
       setPrevPage(null);
     }
+    setTimeout(function(){ setPageLoading(false); }, 300);
   }
   const [toast,     setToast]     = useState("");
   const [undoState, setUndoState] = useState(null);
@@ -19707,18 +20484,18 @@ export default function AdminApp() {
   const [globalOrders, setGlobalOrders] = useState(function(){
     try {
       const saved = localStorage.getItem(LS.orders);
-      return saved ? JSON.parse(saved) : ORDERS_DATA.map(function(o){ return Object.assign({},o); });
+      return saved ? JSON.parse(saved) : MOCK_ORDERS.map(function(o){ return Object.assign({},o); });
     } catch(e) {
-      return ORDERS_DATA.map(function(o){ return Object.assign({},o); });
+      return MOCK_ORDERS.map(function(o){ return Object.assign({},o); });
     }
   });
 
   const [globalDeposits, setGlobalDeposits] = useState(function(){
     try {
       const saved = localStorage.getItem(LS.deposits);
-      return saved ? JSON.parse(saved) : BANK_DEPOSITS_SAMPLE.map(function(d){ return Object.assign({},d); });
+      return saved ? JSON.parse(saved) : MOCK_DEPOSITS.map(function(d){ return Object.assign({},d); });
     } catch(e) {
-      return BANK_DEPOSITS_SAMPLE.map(function(d){ return Object.assign({},d); });
+      return MOCK_DEPOSITS.map(function(d){ return Object.assign({},d); });
     }
   });
 
@@ -19726,8 +20503,8 @@ export default function AdminApp() {
   const [globalCorps, setGlobalCorps] = useState(function(){
     try {
       const saved = localStorage.getItem('sld_corps');
-      return saved ? JSON.parse(saved) : CORP_ACCOUNTS.map(c => Object.assign({}, c));
-    } catch(e) { return CORP_ACCOUNTS.map(c => Object.assign({}, c)); }
+      return saved ? JSON.parse(saved) : MOCK_CORPS.map(c => Object.assign({}, c));
+    } catch(e) { return MOCK_CORPS.map(c => Object.assign({}, c)); }
   });
 
   // globalCorps 変更時にlocalStorageへ保存
@@ -19755,9 +20532,9 @@ export default function AdminApp() {
   const [globalMembers, setGlobalMembers] = useState(function(){
     try {
       const saved = localStorage.getItem(LS.members);
-      return saved ? JSON.parse(saved) : MEMBERS_DATA.map(function(m){ return Object.assign({},m); });
+      return saved ? JSON.parse(saved) : MOCK_MEMBERS.map(function(m){ return Object.assign({},m); });
     } catch(e) {
-      return MEMBERS_DATA.map(function(m){ return Object.assign({},m); });
+      return MOCK_MEMBERS.map(function(m){ return Object.assign({},m); });
     }
   });
 
@@ -19844,13 +20621,13 @@ export default function AdminApp() {
   }
 
   function resetOrders() {
-    const fresh = ORDERS_DATA.map(function(o){ return Object.assign({},o); });
+    const fresh = MOCK_ORDERS.map(function(o){ return Object.assign({},o); });
     setGlobalOrders(fresh);
     try { localStorage.removeItem("sld_orders"); } catch(e){}
   }
 
   function resetDeposits() {
-    const fresh = BANK_DEPOSITS_SAMPLE.map(function(d){ return Object.assign({},d); });
+    const fresh = MOCK_DEPOSITS.map(function(d){ return Object.assign({},d); });
     setGlobalDeposits(fresh);
     try { localStorage.removeItem("sld_deposits"); } catch(e){}
   }
@@ -19866,7 +20643,7 @@ export default function AdminApp() {
   }
 
   function resetMembers() {
-    const fresh = MEMBERS_DATA.map(function(m){ return Object.assign({},m); });
+    const fresh = MOCK_MEMBERS.map(function(m){ return Object.assign({},m); });
     setGlobalMembers(fresh);
     try { localStorage.removeItem("sld_members"); } catch(e){}
   }
@@ -19974,6 +20751,10 @@ export default function AdminApp() {
   }, [globalOrders, globalDeposits]);
 
   const renderPage = () => {
+    if (pageLoading) {
+      if (page === "dashboard") return <SkeletonDashboard />;
+      return <SkeletonList />;
+    }
     switch(page) {
       case "dashboard":  return <DashboardView onNav={navigateTo} darkMode={darkMode} staffRole={staffRole} staffName={staffName} orders={globalOrders} deposits={globalDeposits} grossMarginMap={grossMarginMap} updateGrossMargin={updateGrossMargin} />;
       case "books":      return <BooksView onToast={showToast} sentRevisions={globalSentRevisions} markRevisionSent={markRevisionSent} darkMode={darkMode} />;
@@ -20010,7 +20791,7 @@ export default function AdminApp() {
       case "legalscape":            return <LegalscapeView onToast={showToast} darkMode={darkMode} />;
       case "publishers":            return <PublishersMasterView onToast={showToast} darkMode={darkMode} />;
       case "staff":                 return <StaffView onToast={showToast} darkMode={darkMode} />;
-      case "settings":              return <SettingsView onToast={showToast} darkMode={darkMode} />;
+      case "settings":              return <SettingsView onToast={showToast} darkMode={darkMode} qaConfig={qaConfig} updateQaConfig={updateQaConfig} />;
       case "feedback_mgmt":        return <FeedbackMgmtView onToast={showToast} fbItems={fbItems} setFbItems={setFbItems} darkMode={darkMode} />;
       default:                  return <PlaceholderView id={page} />;
     }
@@ -20023,6 +20804,7 @@ export default function AdminApp() {
         body{font-family:"Noto Sans JP","Hiragino Sans",sans-serif;background:${darkMode?T_DARK.bg:T_LIGHT.bg};color:${darkMode?T_DARK.ink:T_LIGHT.ink};font-size:${fontBasePx}px;}
         h2,h3{font-weight:inherit;}
         @keyframes slideIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+        @keyframes skeletonPulse{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
         button{font-family:inherit;}input{font-family:inherit;}
         @media print{
           nav,aside,.no-print,[data-noprint]{display:none!important;}
@@ -20046,7 +20828,7 @@ export default function AdminApp() {
               cursor:"pointer", color:T.ink4, fontSize:12 }}>
               {collapsed?"▶":"◀"}
             </button>
-            <input placeholder="書籍・会員・注文・案件を横断検索..."
+            <input aria-label="横断検索" placeholder="書籍・会員・注文・案件を横断検索..."
               style={{ width:"100%", maxWidth:340, padding:"7px 14px",
                 borderRadius:6, border:`1px solid ${T.rule}`,
                 fontSize:13, background:T.bg, outline:"none" }} />
@@ -20055,20 +20837,90 @@ export default function AdminApp() {
                 var kpi = kpiCounts || { urgentCount:0, holdCount:0, unmatch:0 };
                 var sentRevCount = (globalSentRevisions||[]).filter(function(r){ return !r.sent; }).length;
                 var notifBadge = kpi.urgentCount + kpi.holdCount + kpi.unmatch + sentRevCount;
+                var notifItems = [];
+                if (kpi.urgentCount > 0) notifItems.push({ icon:"🚨", label:"急ぎ注文", count:kpi.urgentCount, color:T.red, bg:T.redPale, nav:"orders" });
+                if (kpi.holdCount > 0)   notifItems.push({ icon:"🔒", label:"発送保留", count:kpi.holdCount, color:T.amber, bg:T.amberPale, nav:"orders" });
+                if (kpi.unmatch > 0)     notifItems.push({ icon:"🏦", label:"未照合入金", count:kpi.unmatch, color:T.amber, bg:T.amberPale, nav:"deposits" });
+                if (sentRevCount > 0)    notifItems.push({ icon:"🔄", label:"改訂版未送付", count:sentRevCount, color:T.navy, bg:T.navyPale, nav:"books" });
                 return (
-                  <button onClick={function(){ onSearchOpen(); }}
-                    title={"未処理: 急ぎ"+kpi.urgentCount+"件 / 保留"+kpi.holdCount+"件 / 未照合"+kpi.unmatch+"件"+(sentRevCount>0?" / 改訂未送付"+sentRevCount+"件":"")}
-                    style={{ position:"relative", background:"none", border:"none",
-                      cursor:"pointer", fontSize:18, padding:"4px 6px" }}>
-                    🔔
-                    {notifBadge>0 && (
-                      <span style={{ position:"absolute", top:0, right:0, background:T.red,
-                        color:"#fff", fontSize:9, fontWeight:700, width:16, height:16,
-                        borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                        {notifBadge}
-                      </span>
+                  <div style={{ position:"relative" }}>
+                    <button onClick={function(){ setNotifOpen(function(v){ return !v; }); }}
+                      aria-label="通知パネル"
+                      title={"未処理: 急ぎ"+kpi.urgentCount+"件 / 保留"+kpi.holdCount+"件 / 未照合"+kpi.unmatch+"件"+(sentRevCount>0?" / 改訂未送付"+sentRevCount+"件":"")}
+                      style={{ position:"relative", background:"none", border:"none",
+                        cursor:"pointer", fontSize:18, padding:"4px 6px" }}>
+                      🔔
+                      {notifBadge>0 && (
+                        <span style={{ position:"absolute", top:0, right:0, background:T.red,
+                          color:"#fff", fontSize:9, fontWeight:700, width:16, height:16,
+                          borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                          {notifBadge}
+                        </span>
+                      )}
+                    </button>
+                    {/* 通知パネル */}
+                    {notifOpen && (
+                      <div style={{ position:"absolute", top:"calc(100% + 8px)", right:0,
+                        width:320, background:T.white, borderRadius:12,
+                        border:"1px solid "+T.rule, boxShadow:"0 8px 32px rgba(0,0,0,.18)",
+                        zIndex:1300, overflow:"hidden" }}>
+                        {/* ヘッダー */}
+                        <div style={{ padding:"12px 16px", borderBottom:"1px solid "+T.rule,
+                          display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                          <span style={{ fontSize:13, fontWeight:800, color:T.ink }}>🔔 通知</span>
+                          <button onClick={function(){ setNotifOpen(false); }}
+                            aria-label="閉じる"
+                            style={{ background:"none", border:"none", cursor:"pointer",
+                              color:T.ink4, fontSize:12 }}>✕</button>
+                        </div>
+                        {/* 通知アイテム */}
+                        <div style={{ maxHeight:320, overflowY:"auto" }}>
+                          {notifItems.length === 0 ? (
+                            <div style={{ padding:"24px 16px", textAlign:"center",
+                              color:T.ink4, fontSize:12 }}>
+                              ✅ 未処理の通知はありません
+                            </div>
+                          ) : (
+                            notifItems.map(function(item, idx) {
+                              return (
+                                <button key={idx}
+                                  onClick={function(){ navigateTo(item.nav); setNotifOpen(false); }}
+                                  style={{ width:"100%", padding:"12px 16px", border:"none",
+                                    borderBottom:"1px solid "+T.rule, background:T.white,
+                                    cursor:"pointer", fontFamily:"inherit", textAlign:"left",
+                                    display:"flex", alignItems:"center", gap:10,
+                                    transition:"background .1s" }}
+                                  onMouseEnter={function(e){ e.currentTarget.style.background=item.bg; }}
+                                  onMouseLeave={function(e){ e.currentTarget.style.background=T.white; }}>
+                                  <span style={{ fontSize:18, flexShrink:0 }}>{item.icon}</span>
+                                  <div style={{ flex:1 }}>
+                                    <div style={{ fontSize:12, fontWeight:700, color:T.ink }}>{item.label}</div>
+                                    <div style={{ fontSize:10, color:T.ink4, marginTop:1 }}>クリックで該当画面へ</div>
+                                  </div>
+                                  <span style={{ fontSize:16, fontWeight:800, color:item.color,
+                                    background:item.bg, padding:"2px 10px", borderRadius:8,
+                                    fontFamily:"'Inter',sans-serif" }}>
+                                    {item.count}
+                                  </span>
+                                </button>
+                              );
+                            })
+                          )}
+                        </div>
+                        {/* フッター */}
+                        <div style={{ padding:"8px 16px", borderTop:"1px solid "+T.rule,
+                          background:T.bg }}>
+                          <button onClick={function(){ navigateTo("dashboard"); setNotifOpen(false); }}
+                            style={{ width:"100%", padding:"6px", borderRadius:6,
+                              border:"1px solid "+T.rule, background:T.white,
+                              cursor:"pointer", fontFamily:"inherit",
+                              fontSize:11, fontWeight:600, color:T.g2 }}>
+                            📊 ダッシュボードで全体を確認
+                          </button>
+                        </div>
+                      </div>
                     )}
-                  </button>
+                  </div>
                 );
               })()}
               {/* フォントサイズ調整 */}
@@ -20209,7 +21061,7 @@ export default function AdminApp() {
               padding:"14px 18px",
               borderBottom:"1px solid "+(darkMode?T_DARK.rule:T_LIGHT.rule) }}>
               <span style={{ fontSize:18,opacity:.5 }}>🔍</span>
-              <input autoFocus value={searchQ}
+              <input aria-label="全体検索" autoFocus value={searchQ}
                 onChange={function(e){ setSearchQ(e.target.value); }}
                 placeholder="注文ID・会員名・書名で検索…（2文字以上）"
                 style={{ flex:1,border:"none",outline:"none",fontSize:15,
@@ -20222,8 +21074,8 @@ export default function AdminApp() {
             {searchQ.length>=2 ? (function(){
               var TC=darkMode?T_DARK:T_LIGHT; var q=searchQ;
               var oh=globalOrders.filter(function(o){ return o.id.includes(q)||o.member.includes(q)||(o.items&&o.items.includes(q)); }).slice(0,5);
-              var mh=(globalMembers||MEMBERS_DATA).filter(function(m){ return m.name.includes(q); }).slice(0,3);
-              var bh=BOOKS_DATA.filter(function(b){ return b.title.includes(q)||b.author.includes(q); }).slice(0,3);
+              var mh=(globalMembers||MOCK_MEMBERS).filter(function(m){ return m.name.includes(q); }).slice(0,3);
+              var bh=MOCK_BOOKS.filter(function(b){ return b.title.includes(q)||b.author.includes(q); }).slice(0,3);
               var total=oh.length+mh.length+bh.length;
               if(total===0) return <div style={{ padding:"24px",textAlign:"center",color:TC.ink4,fontSize:13 }}>「{q}」の検索結果はありません</div>;
               return (
@@ -20260,7 +21112,7 @@ export default function AdminApp() {
       <Toast msg={toast} onUndo={undoState ? execUndo : null} />
 
       {/* ── クイックアクションFAB ── */}
-      <QuickActionFab navigateTo={navigateTo} setSearchOpen={setSearchOpen} setSearchQ={setSearchQ} isMobile={isMobile} darkMode={darkMode} />
+      <QuickActionFab navigateTo={navigateTo} setSearchOpen={setSearchOpen} setSearchQ={setSearchQ} isMobile={isMobile} darkMode={darkMode} qaConfig={qaConfig} />
 
       {/* ── 初回操作ガイド ── */}
       <TourGuide />
@@ -20286,7 +21138,7 @@ export default function AdminApp() {
               <button onClick={()=>setFbOpen(false)}
                 style={{ background:"rgba(255,255,255,.2)",border:"none",
                   borderRadius:6,padding:"4px 10px",cursor:"pointer",
-                  color:"#fff",fontSize:12,fontWeight:700 }}>✕</button>
+                  color:"#fff",fontSize:12,fontWeight:700 }} aria-label="閉じる">✕</button>
             </div>
 
             <div style={{ padding:"16px 18px" }}>
@@ -20342,7 +21194,7 @@ export default function AdminApp() {
                   ))}
                 </div>
                 {/* テキスト */}
-                <textarea value={fbContent} onChange={e=>setFbContent(e.target.value)}
+                <textarea aria-label="フィードバック内容" value={fbContent} onChange={e=>setFbContent(e.target.value)}
                   placeholder={"具体的な内容を書いてください…\n例：注文一覧の印刷ボタンを押すと確認画面が2回出る"}
                   style={{ width:"100%",height:90,padding:"8px 10px",borderRadius:7,
                     border:`1.5px solid ${T.rule}`,fontSize:12,fontFamily:"inherit",
@@ -20367,7 +21219,7 @@ export default function AdminApp() {
         {/* フィードバックボタン本体 */}
         <button onClick={()=>setFbOpen(!fbOpen)} style={{
           width:54,height:54,borderRadius:"50%",
-          background:fbOpen?"linear-gradient(135deg,#00695c,#0f3320)":"linear-gradient(135deg,#00695c,#1a8f5e)",
+          background:fbOpen?"linear-gradient(135deg,#00695c,"+T.g1+")":"linear-gradient(135deg,#00695c,"+T.g3+")",
           border:"none",cursor:"pointer",color:"#fff",
           fontSize:22,boxShadow:"0 4px 16px rgba(0,105,92,.45)",
           display:"flex",alignItems:"center",justifyContent:"center",
@@ -20417,7 +21269,7 @@ export default function AdminApp() {
               <button onClick={()=>setAiOpen(false)}
                 style={{ background:"rgba(255,255,255,.2)", border:"none",
                   borderRadius:6, padding:"4px 10px", cursor:"pointer",
-                  color:"#fff", fontSize:12, fontWeight:700 }}>✕</button>
+                  color:"#fff", fontSize:12, fontWeight:700 }} aria-label="閉じる">✕</button>
             </div>
             {/* インサイント本文 */}
             <div style={{ padding:"14px 16px", maxHeight:360, overflowY:"auto",
@@ -20478,3 +21330,5 @@ export default function AdminApp() {
     </>
   );
 }
+
+ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(AdminApp));
