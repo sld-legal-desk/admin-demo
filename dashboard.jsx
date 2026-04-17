@@ -94,6 +94,7 @@ const NAV = [
     { id:"books",          icon:"📚", label:"書籍管理"                       },
     { id:"inventory",      icon:"📦", label:"在庫・POD管理",      badge:"1"  },
     { id:"elec_req",       icon:"📱", label:"電子化リクエスト",   badge:"27" },
+    { id:"purchase_orders", icon:"📠", label:"発注記録",            badge:"2"  },
     { id:"reconciliation", icon:"🏦", label:"入金消し込み",        badge:"2"  },
     { id:"stripe",         icon:"💳", label:"決済・返金（Stripe）"            },
     { id:"stores",         icon:"🏪", label:"店舗管理（POS）"                },
@@ -118,6 +119,7 @@ const NAV = [
     { id:"sales",        icon:"💹", label:"売上管理"                    },
     { id:"gross_profit", icon:"🧮", label:"粗利分析",     badge:"NEW"  },
     { id:"reports",      icon:"📑", label:"レポート"                    },
+    { id:"search_analytics", icon:"🔍", label:"検索ログ分析",  badge:"NEW"  },
   ]},
   { group:"✍ コンテンツ制作", items:[
     { id:"reform_cal",       icon:"📅", label:"法改正カレンダー", badge:"1" },
@@ -957,37 +959,41 @@ const COMPANY = {
 
 const MOCK_ORDERS = [
   { id:"ORD-2841", member:"田中 弁護士事務所", items:"民法改正と実務対応 ×2",   total:11600, fmt:"paper", status:"pending",   date:"2026-03-10 14:32",
+    email:"tanaka@tanaka-law.jp", address:"東京都千代田区霞が関1-1-4 裁判所合同庁舎",
     caseNo:"2026-民-0341", caseName:"山田商事 vs 鈴木商会 損害賠償請求事件",
     urgent:true,  urgentBy:"2026-03-15", urgentNote:"期日3/15 口頭弁論前日までに必要",
     channel:"gaishoo", shipMethod:"direct", assignedTo:"田中", shipFrom:"kasumigaseki",
     corpId:null, shippedAt:null, deliveredAt:null,
     staffMemo:"期日前日必着。霞が関地裁に直接持参。",
     paymentMethod:"invoice", paymentStatus:"unpaid", shipApproved:true,
-    taxItems:[{ name:"民法改正と実務対応【第3版】×2", amount:11600, taxRate:8 }] },
+    taxItems:[{ name:"民法改正と実務対応【第3版】", amount:11600, taxRate:8, bookId:"b1", qty:2, isbn:"978-4-641-13456-7", publisher:"有斐閣", unitPrice:5800 }] },
   { id:"ORD-2840", member:"佐藤 雄介（個人）",  items:"労働法実務大全（電子書籍）", total:6840,  fmt:"elec",  status:"completed", date:"2026-03-10 12:18",
+    email:"y.sato@gmail.com", address:"",
     caseNo:"", caseName:"",
     urgent:false, urgentBy:"", urgentNote:"",
     channel:"ec", shipMethod:"sagawa", assignedTo:"", shipFrom:"elec",
     corpId:null, shippedAt:null, deliveredAt:null,
     staffMemo:"",
     paymentMethod:"credit", paymentStatus:"paid", shipApproved:true,
-    taxItems:[{ name:"労働法実務大全【第4版】（電子）", amount:6840, taxRate:10 }] },
+    taxItems:[{ name:"労働法実務大全【第4版】（電子）", amount:6840, taxRate:10, bookId:"b3", qty:1, isbn:"978-4-335-30812-3", publisher:"弘文堂", unitPrice:6840 }] },
   { id:"ORD-2839", member:"丸紅法務部",         items:"会社法実務 ×5",          total:32500, fmt:"paper", status:"invoiced",  date:"2026-03-10 10:05",
+    email:"houmu@marubeni.com", address:"東京都千代田区大手町1-4-2 丸紅本社",
     caseNo:"2026-商-0112", caseName:"M&A デューデリジェンス対応",
     urgent:false, urgentBy:"", urgentNote:"",
     channel:"gaishoo", shipMethod:"sagawa_gaishoo", assignedTo:"金子", shipFrom:"honsha",
     corpId:"corp-01", shippedAt:"2026-03-10 16:12", deliveredAt:null,
     staffMemo:"丸紅様は本社→佐川で対応。送料無料契約。",
     paymentMethod:"invoice", paymentStatus:"unpaid", shipApproved:true,
-    taxItems:[{ name:"会社法実務ハンドブック×5", amount:32500, taxRate:8 }] },
+    taxItems:[{ name:"会社法実務ハンドブック", amount:32500, taxRate:8, bookId:"b2", qty:5, isbn:"978-4-785-72734-5", publisher:"商事法務", unitPrice:6500 }] },
   { id:"ORD-2838", member:"山田 司法書士",       items:"企業法務の基礎",         total:5225,  fmt:"paper", status:"shipped",   date:"2026-03-09 17:44",
+    email:"yamada-shiho@nifty.com", address:"神奈川県横浜市中区日本大通34",
     caseNo:"", caseName:"",
     urgent:false, urgentBy:"", urgentNote:"",
     channel:"ec", shipMethod:"sagawa", assignedTo:"林", shipFrom:"honsha",
     corpId:null, shippedAt:"2026-03-09 16:45", deliveredAt:null,
     staffMemo:"",
     paymentMethod:"transfer", paymentStatus:"paid", shipApproved:true,
-    taxItems:[{ name:"企業法務の基礎【第2版】", amount:5225, taxRate:8 }] },
+    taxItems:[{ name:"企業法務の基礎【第2版】", amount:5225, taxRate:8, bookId:"b4", qty:1, isbn:"978-4-335-36054-1", publisher:"弘文堂", unitPrice:5225 }] },
   { id:"ORD-2837", member:"東京法律事務所",      items:"民法改正 ×10＋BPOサービス", total:55100, fmt:"paper", status:"pending",  date:"2026-03-09 16:20",
     caseNo:"", caseName:"法改正対応 所内研修用",
     urgent:true,  urgentBy:"2026-03-30", urgentNote:"4月施行前に全弁護士へ配布必要",
@@ -995,9 +1001,26 @@ const MOCK_ORDERS = [
     corpId:null, shippedAt:null, deliveredAt:null,
     staffMemo:"振込確認待ち。確認後すぐ出荷。",
     paymentMethod:"transfer", paymentStatus:"unpaid", shipApproved:false,
+    email:"info@tokyo-law.or.jp", address:"東京都千代田区霞が関3-2-1",
     taxItems:[
-      { name:"民法改正と実務対応【第3版】×10", amount:46000, taxRate:8  },
-      { name:"BPO書類整理サービス",             amount:9100,  taxRate:10 },
+      { name:"民法改正と実務対応【第3版】", amount:46000, taxRate:8, bookId:"b1", qty:10, isbn:"978-4-641-13456-7", publisher:"有斐閣", unitPrice:4600 },
+      { name:"BPO書類整理サービス",          amount:9100,  taxRate:10, bookId:null, qty:1, isbn:"", publisher:"", unitPrice:9100 },
+    ] },
+  { id:"ORD-2836", member:"シティユーワ法律事務所", items:"法改正対応書籍一括 ×18冊", total:118400, fmt:"paper", status:"pending", date:"2026-03-08 09:15",
+    caseNo:"", caseName:"所内ライブラリ 年度更新",
+    urgent:false, urgentBy:"", urgentNote:"",
+    email:"library@cityuwa.com", address:"東京都千代田区丸の内2-1-1 丸の内MY PLAZA",
+    channel:"gaishoo", shipMethod:"sagawa_gaishoo", assignedTo:"金子", shipFrom:"honsha",
+    corpId:null, shippedAt:null, deliveredAt:null,
+    staffMemo:"年度末の一括購入。分納可。",
+    paymentMethod:"invoice", paymentStatus:"unpaid", shipApproved:true,
+    taxItems:[
+      { name:"民法改正と実務対応【第3版】", amount:23200, taxRate:8, bookId:"b1", qty:4, isbn:"978-4-641-13456-7", publisher:"有斐閣", unitPrice:5800 },
+      { name:"会社法実務ハンドブック", amount:19500, taxRate:8, bookId:"b2", qty:3, isbn:"978-4-785-72734-5", publisher:"商事法務", unitPrice:6500 },
+      { name:"労働法実務大全【第4版】", amount:21600, taxRate:8, bookId:"b3", qty:3, isbn:"978-4-335-30812-3", publisher:"弘文堂", unitPrice:7200 },
+      { name:"企業法務の基礎【第2版】", amount:16500, taxRate:8, bookId:"b4", qty:3, isbn:"978-4-335-36054-1", publisher:"弘文堂", unitPrice:5500 },
+      { name:"個人情報保護法の解説【第5版】", amount:16200, taxRate:8, bookId:"b5", qty:3, isbn:"978-4-785-72890-1", publisher:"商事法務", unitPrice:5400 },
+      { name:"行政法実務テキスト", amount:9600, taxRate:8, bookId:"b6", qty:2, isbn:"978-4-641-01789-0", publisher:"有斐閣", unitPrice:4800 },
     ] },
 ];
 
@@ -1967,7 +1990,7 @@ const SkeletonList = () => (
   </div>
 );
 
-const Table = ({ cols, rows, onRow, expandedId, renderExpanded }) => (
+const Table = ({ cols, rows, onRow, expandedId, renderExpanded, expandAll }) => (
   <div style={{ overflowX:"auto" }}>
     <table style={{ width:"100%", borderCollapse:"collapse", fontSize:14 }}>
       <thead>
@@ -1981,7 +2004,7 @@ const Table = ({ cols, rows, onRow, expandedId, renderExpanded }) => (
       </thead>
       <tbody>
         {rows.map((row,ri)=>{
-          const isExpanded = expandedId && expandedId === (row.id||ri);
+          const isExpanded = expandAll || (expandedId && expandedId === (row.id||ri));
           return (
             <React.Fragment key={row.id||ri}>
               <tr onClick={()=>onRow&&onRow(row)}
@@ -6370,7 +6393,7 @@ const BooksView = ({ onToast, sentRevisions, markRevisionSent, darkMode }) => {
   );
 };
 
-const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOrder, globalAddrHistory, setGlobalAddrHistory, sagawaDeadline, transitRecord, confirmTransit, globalDeposits, globalCorps, setGlobalCorps, darkMode, staffRole, staffName, myOrdersOnly, setMyOrdersOnly }) => {
+const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOrder, globalAddrHistory, setGlobalAddrHistory, sagawaDeadline, transitRecord, confirmTransit, globalDeposits, globalCorps, setGlobalCorps, darkMode, staffRole, staffName, myOrdersOnly, setMyOrdersOnly, onPurchaseOrder }) => {
   var T = darkMode ? T_DARK : T_LIGHT;
   var currentRole = staffRole || "admin";
   var isGaishoo = currentRole === "gaishoo";
@@ -6395,6 +6418,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
   const [noticeLoading,  setNoticeLoading]  = useState(false);
   const [deliverySort,   setDeliverySort]   = useState("urgent"); // 配達リストソート順
   const [expandedOrderId, setExpandedOrderId] = useState(null);   // 行展開
+  const [expandAllOrders, setExpandAllOrders] = useState(true);  // 全展開デフォルトON
   const [returnSlipTarget, setReturnSlipTarget] = useState(null); // 返品伝票対象注文
   const [mergeInvModal,   setMergeInvModal]    = useState(false); // 合算請求書モーダル
   const [mergeInvOrders,  setMergeInvOrders]   = useState([]);    // 合算対象注文
@@ -7327,13 +7351,23 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
               紙書籍を全選択
               {selected.length>0 && <strong style={{ color:T.g2, marginLeft:6 }}>{selected.filter(id=>orders.find(o=>o.id===id&&o.fmt==="paper")).length}件選択中</strong>}
             </span>
-            {selected.filter(id=>orders.find(o=>o.id===id&&o.fmt==="paper")).length>0 && (
-              <Btn small icon="📦"
-                onClick={()=>{ setSagawaModal(true); setSagawaStep("confirm"); buildSagawaRows(); }}
-                style={{ marginLeft:"auto" }}>
-                e飛伝III CSV出力
-              </Btn>
-            )}
+            <div style={{ marginLeft:"auto",display:"flex",gap:6,alignItems:"center" }}>
+              <button onClick={function(){ setExpandAllOrders(function(v){ return !v; }); }}
+                aria-label={expandAllOrders?"一覧を折りたたむ":"一覧を全展開"}
+                style={{ padding:"4px 10px",borderRadius:5,fontSize:10,fontWeight:700,
+                  border:"1.5px solid "+(expandAllOrders?T.g2:T.rule),
+                  background:expandAllOrders?T.okPale:T.white,
+                  color:expandAllOrders?T.g2:T.ink4,
+                  cursor:"pointer",fontFamily:"inherit" }}>
+                {expandAllOrders?"▲ 折りたたむ":"▼ 全展開（在庫確認）"}
+              </button>
+              {selected.filter(id=>orders.find(o=>o.id===id&&o.fmt==="paper")).length>0 && (
+                <Btn small icon="📦"
+                  onClick={()=>{ setSagawaModal(true); setSagawaStep("confirm"); buildSagawaRows(); }}>
+                  e飛伝III CSV出力
+                </Btn>
+              )}
+            </div>
           </div>
           <Table
             cols={(isMobileOV ? [
@@ -7504,7 +7538,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                 };
                 var sm2 = smMeta2[r.shipMethod]||smMeta2.sagawa;
                 return (
-                  <div style={{ minWidth:140,maxWidth:220 }}>
+                  <div style={{ minWidth:160,maxWidth:320 }}>
                     {/* 会員名 */}
                     <div style={{ fontSize:12,fontWeight:700,color:T.ink,marginBottom:3,
                       overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
@@ -7534,20 +7568,60 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                         )}
                       </div>
                     )}
-                    {/* 書籍バッジ */}
+                    {/* 書籍バッジ＋在庫ステータス */}
                     {r.taxItems&&r.taxItems.length>0 ? (
-                      <div style={{ display:"flex",flexDirection:"column",gap:2 }}>
-                        {r.taxItems.map((it,i)=>(
-                          <div key={i} style={{ fontSize:10,padding:"2px 6px",borderRadius:4,
-                            lineHeight:1.4,whiteSpace:"normal",
-                            background:it.taxRate===8?T.okPale:T.amberPale,
-                            color:it.taxRate===8?T.g2:T.amber }}>
-                            {it.name}
-                            <span style={{marginLeft:3,opacity:.6,fontSize:9}}>
-                              {it.taxRate===8?"※8%":"10%"}
-                            </span>
+                      <div style={{ display:"flex",flexDirection:"column",gap:3 }}>
+                        {/* 品目数サマリ */}
+                        {r.taxItems.length>1 && (
+                          <div style={{ fontSize:9,fontWeight:700,color:T.ink3,marginBottom:1 }}>
+                            📦 {r.taxItems.length}品目・計{r.taxItems.reduce(function(s,it){return s+(it.qty||1);},0)}冊
                           </div>
-                        ))}
+                        )}
+                        {r.taxItems.map(function(it,i){
+                          var book = it.bookId ? MOCK_BOOKS.find(function(b){return b.id===it.bookId;}) : null;
+                          var qty = it.qty || 1;
+                          var stockOk = book ? book.stock >= qty : true;
+                          var stockZero = book ? book.stock === 0 : false;
+                          var isPod = book ? book.pod : false;
+                          var isService = !it.bookId;
+                          var loc = book && book.stockByLocation ? book.stockByLocation : null;
+                          return (
+                            <div key={i} style={{ fontSize:10,padding:"4px 6px",borderRadius:5,
+                              lineHeight:1.4,whiteSpace:"normal",
+                              background:stockZero&&!isPod?T.redPale:it.taxRate===8?T.okPale:T.amberPale,
+                              border:"1px solid "+(stockZero&&!isPod?T.red+"40":it.taxRate===8?T.g2+"20":T.amber+"20") }}>
+                              {/* 品名＋数量 */}
+                              <div style={{ display:"flex",alignItems:"center",gap:4,flexWrap:"wrap" }}>
+                                <span style={{ fontWeight:600,color:stockZero&&!isPod?T.red:it.taxRate===8?T.g2:T.amber }}>
+                                  {it.name}
+                                </span>
+                                {qty>1 && (
+                                  <span style={{ fontSize:9,fontWeight:800,padding:"0 4px",borderRadius:3,
+                                    background:T.ink+"10",color:T.ink3 }}>×{qty}</span>
+                                )}
+                              </div>
+                              {/* 在庫ステータス（書籍のみ・サービスは非表示） */}
+                              {book && !isService && (
+                                <div style={{ display:"flex",alignItems:"center",gap:4,marginTop:2,fontSize:9,flexWrap:"wrap" }}>
+                                  {stockZero && isPod ? (
+                                    <span style={{ padding:"1px 5px",borderRadius:3,background:T.purplePale,color:T.purple,fontWeight:700 }}>🖨 POD対応</span>
+                                  ) : stockZero ? (
+                                    <span style={{ padding:"1px 5px",borderRadius:3,background:T.red,color:"#fff",fontWeight:700 }}>❌ 欠品・要発注</span>
+                                  ) : !stockOk ? (
+                                    <span style={{ padding:"1px 5px",borderRadius:3,background:T.amberPale,color:T.amber,fontWeight:700 }}>⚠ 在庫不足（残{book.stock}）</span>
+                                  ) : (
+                                    <span style={{ padding:"1px 5px",borderRadius:3,background:T.okPale,color:T.g2,fontWeight:700 }}>✅ {book.stock}冊</span>
+                                  )}
+                                  {loc && (
+                                    <span style={{ color:T.ink4 }}>
+                                      霞:{loc.kasumigaseki||0} 本:{loc.honsha||0}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     ) : (
                       <div style={{ fontSize:10,color:T.ink4 }}>{r.items}</div>
@@ -7708,76 +7782,177 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                 );
               }},
             ])}
-            expandedId={expandedOrderId}
-            onRow={r=>setExpandedOrderId(expandedOrderId===r.id?null:r.id)}
-            renderExpanded={r=>{
-              const sf = SHIP_FROM_META[getShipFrom(r)];
-              const total8  = (r.taxItems||[]).filter(it=>it.taxRate===8 ).reduce((s,it)=>s+it.amount,0)||r.total;
-              const total10 = (r.taxItems||[]).filter(it=>it.taxRate===10).reduce((s,it)=>s+it.amount,0)||0;
-              const base8   = Math.round(total8/1.08);
-              const tax8    = r.total - base8 - total10 + Math.round(total10/1.1)*0;
+            expandAll={expandAllOrders}
+            expandedId={expandAllOrders?null:expandedOrderId}
+            onRow={expandAllOrders?undefined:function(r){setExpandedOrderId(expandedOrderId===r.id?null:r.id);}}
+            renderExpanded={function(r){
+              var sf = SHIP_FROM_META[getShipFrom(r)];
+              var payMeta = PAY_META[r.paymentMethod] || {icon:"",label:r.paymentMethod};
+              var items = r.taxItems && r.taxItems.length>0 ? r.taxItems : [{name:r.items,amount:r.total,taxRate:8,qty:1}];
+              var totalQty = items.reduce(function(s,it){return s+(it.qty||1);},0);
+              // 在庫問題の集計
+              var stockIssues = items.filter(function(it){
+                if(!it.bookId) return false;
+                var b = MOCK_BOOKS.find(function(bk){return bk.id===it.bookId;});
+                return b && b.stock===0 && !b.pod;
+              });
+              var stockWarnings = items.filter(function(it){
+                if(!it.bookId) return false;
+                var b = MOCK_BOOKS.find(function(bk){return bk.id===it.bookId;});
+                return b && b.stock>0 && b.stock<(it.qty||1);
+              });
+
               return (
-                <div style={{ padding:"14px 20px",display:"flex",gap:16,flexWrap:"wrap",
-                  borderLeft:"3px solid "+T.g2 }}>
-                  {/* 出荷拠点 */}
-                  <div style={{ minWidth:120 }}>
-                    <div style={{ fontSize:10,fontWeight:700,color:T.ink4,marginBottom:4 }}>出荷拠点</div>
-                    {sf && (
-                      <span style={{ fontSize:12,fontWeight:700,padding:"3px 10px",
-                        borderRadius:6,background:sf.bg,color:sf.color }}>
-                        {sf.icon} {sf.label}
-                      </span>
-                    )}
-                  </div>
-                  {/* 品目明細 */}
-                  <div style={{ flex:2,minWidth:160 }}>
-                    <div style={{ fontSize:10,fontWeight:700,color:T.ink4,marginBottom:4 }}>品目明細</div>
-                    {(r.taxItems&&r.taxItems.length>0?r.taxItems:[{name:r.items,amount:r.total,taxRate:8}]).map((it,i)=>(
-                      <div key={i} style={{ display:"flex",justifyContent:"space-between",
-                        padding:"3px 0",borderBottom:"1px solid "+T.rule,fontSize:12 }}>
-                        <span>{it.name}</span>
-                        <span style={{ fontFamily:"'Inter'",fontWeight:700,marginLeft:8,
-                          color:it.taxRate===8?T.g2:T.amber }}>
-                          ¥{it.amount.toLocaleString()}
-                          <span style={{ fontSize:9,marginLeft:3,opacity:.6 }}>
-                            {it.taxRate===8?"※8%":"10%"}
-                          </span>
+                <div style={{ padding:"12px 16px",borderLeft:"3px solid "+T.g2,background:"rgba(26,92,56,.015)" }}>
+
+                  {/* ━━ ZONE A: 在庫アラートバー（問題がある場合のみ表示）━━ */}
+                  {stockIssues.length>0 && (
+                    <div style={{ display:"flex",alignItems:"center",gap:10,padding:"8px 14px",marginBottom:10,
+                      borderRadius:6,background:"#fce4ec",border:"1px solid #e5737340" }}>
+                      <span style={{ fontSize:18,flexShrink:0 }}>🚨</span>
+                      <div style={{ flex:1,fontSize:12,color:"#c62828",fontWeight:600 }}>
+                        欠品 {stockIssues.length}点 — 発注が必要です
+                        <span style={{ fontSize:11,color:"#e5737380",fontWeight:400,marginLeft:8 }}>
+                          {stockIssues.map(function(it){return it.name;}).join("、")}
                         </span>
                       </div>
-                    ))}
-                    <div style={{ display:"flex",justifyContent:"space-between",
-                      padding:"4px 0",fontSize:12,fontWeight:700 }}>
-                      <span>合計（税込）</span>
-                      <span style={{ fontFamily:"'Inter'",color:T.g2 }}>¥{r.total.toLocaleString()}</span>
+                      <button onClick={function(e){e.stopPropagation(); if(onPurchaseOrder) onPurchaseOrder(stockIssues[0].isbn||"",stockIssues[0].name);}}
+                        style={{ padding:"5px 14px",borderRadius:5,background:"#c62828",color:"#fff",
+                          fontSize:11,fontWeight:700,border:"none",cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap" }}>
+                        📠 発注画面へ
+                      </button>
                     </div>
-                  </div>
-                  {/* 事件番号・メモ */}
-                  {(r.caseNo||r.staffMemo) && (
-                    <div style={{ flex:2,minWidth:140 }}>
-                      {r.caseNo && (
-                        <div style={{ marginBottom:6 }}>
-                          <div style={{ fontSize:10,fontWeight:700,color:T.ink4,marginBottom:2 }}>事件番号</div>
-                          <div style={{ fontSize:11,color:T.navy,fontWeight:700 }}>{r.caseNo}</div>
-                          {r.caseName && <div style={{ fontSize:10,color:T.ink4 }}>{r.caseName}</div>}
+                  )}
+                  {stockWarnings.length>0 && !stockIssues.length && (
+                    <div style={{ display:"flex",alignItems:"center",gap:10,padding:"8px 14px",marginBottom:10,
+                      borderRadius:6,background:T.amberPale,border:"1px solid "+T.amber+"30" }}>
+                      <span style={{ fontSize:16 }}>⚠</span>
+                      <div style={{ fontSize:12,color:T.amber,fontWeight:600 }}>
+                        在庫不足 {stockWarnings.length}点 — 注文数に対して在庫が足りません
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ━━ ZONE B: 注文概要（2列グリッド・軽量）━━ */}
+                  <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"1px",marginBottom:10,
+                    background:T.rule,borderRadius:6,overflow:"hidden",border:"1px solid "+T.rule }}>
+                    {[
+                      {label:"注文者",  val:r.member, bold:true},
+                      {label:"メール",  val:r.email||"—"},
+                      {label:"決済",    val:payMeta.icon+" "+payMeta.label},
+                      {label:"合計",    val:"¥"+r.total.toLocaleString(), bold:true, accent:T.g2},
+                      {label:"送り先",  val:r.address||"—", wide:true},
+                    ].concat(sf ? [{label:"出荷",val:sf.icon+" "+sf.label+" / "+(autoChannel(r)==="gaishoo"?"外商":"EC"),wide:true}] : [])
+                    .map(function(cell,i){
+                      return (
+                        <div key={i} style={{ padding:"7px 12px",background:T.white,
+                          gridColumn:cell.wide?"span 2":"auto" }}>
+                          <span style={{ fontSize:10,color:T.ink4,marginRight:8 }}>{cell.label}</span>
+                          <span style={{ fontSize:12,fontWeight:cell.bold?700:400,color:cell.accent||T.ink,
+                            fontFamily:cell.accent?"'Inter',sans-serif":"inherit" }}>{cell.val}</span>
                         </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* ━━ 事件番号・メモ（あれば）━━ */}
+                  {(r.caseNo||r.staffMemo) && (
+                    <div style={{ display:"flex",gap:8,marginBottom:10,flexWrap:"wrap" }}>
+                      {r.caseNo && (
+                        <span style={{ fontSize:11,padding:"3px 10px",borderRadius:4,background:T.navyPale,color:T.navy,fontWeight:600 }}>
+                          📂 {r.caseNo}{r.caseName?" — "+r.caseName:""}
+                        </span>
                       )}
                       {r.staffMemo && (
-                        <div>
-                          <div style={{ fontSize:10,fontWeight:700,color:T.ink4,marginBottom:2 }}>📝 スタッフメモ</div>
-                          <div style={{ fontSize:11,color:T.ink3,fontStyle:"italic" }}>{r.staffMemo}</div>
-                        </div>
+                        <span style={{ fontSize:11,padding:"3px 10px",borderRadius:4,background:"#fff8e1",color:T.ink3,fontStyle:"italic" }}>
+                          📝 {r.staffMemo}
+                        </span>
                       )}
                     </div>
                   )}
-                  {/* 支払・発送 */}
-                  <div style={{ minWidth:110 }}>
-                    <div style={{ fontSize:10,fontWeight:700,color:T.ink4,marginBottom:4 }}>支払・発送</div>
-                    <div style={{ fontSize:11,color:T.ink3,lineHeight:1.8 }}>
-                      <div>{(PAY_META[r.paymentMethod]||{icon:"",label:r.paymentMethod}).icon+" "+(PAY_META[r.paymentMethod]||{label:r.paymentMethod}).label}</div>
-                      {r.shippedAt&&<div style={{ color:T.g2 }}>📦 {r.shippedAt.slice(5)}</div>}
-                      {r.deliveredAt&&<div style={{ color:T.ok }}>✅ {r.deliveredAt.slice(5)}</div>}
-                    </div>
-                  </div>
+
+                  {/* ━━ ZONE C: 品目明細（クリーンテーブル）━━ */}
+                  <table style={{ width:"100%",borderCollapse:"collapse",fontSize:12,
+                    border:"1px solid "+T.rule,borderRadius:6,overflow:"hidden" }}>
+                    <thead>
+                      <tr style={{ background:T.g2,color:"#fff" }}>
+                        <th style={{ padding:"7px 10px",textAlign:"left",fontSize:11,fontWeight:600,width:30 }}>#</th>
+                        <th style={{ padding:"7px 10px",textAlign:"left",fontSize:11,fontWeight:600 }}>商品名</th>
+                        <th style={{ padding:"7px 10px",textAlign:"center",fontSize:11,fontWeight:600,width:50 }}>冊数</th>
+                        <th style={{ padding:"7px 10px",textAlign:"right",fontSize:11,fontWeight:600,width:80 }}>小計</th>
+                        <th style={{ padding:"7px 10px",textAlign:"center",fontSize:11,fontWeight:600,width:120 }}>在庫状況</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {items.map(function(it,i){
+                        var book = it.bookId ? MOCK_BOOKS.find(function(b){return b.id===it.bookId;}) : null;
+                        var qty = it.qty || 1;
+                        var stockZero = book ? book.stock===0 : false;
+                        var stockOk = book ? book.stock>=qty : true;
+                        var isPod = book ? book.pod : false;
+                        var loc = book && book.stockByLocation ? book.stockByLocation : null;
+                        var isService = !it.bookId;
+                        var rowBg = stockZero && !isPod ? "#fce4ec" : i%2===0 ? T.white : T.bg;
+                        return (
+                          <tr key={i} style={{ borderBottom:"1px solid "+T.rule,background:rowBg }}>
+                            <td style={{ padding:"8px 10px",color:T.ink4,fontWeight:600,textAlign:"center" }}>{i+1}</td>
+                            <td style={{ padding:"8px 10px" }}>
+                              <div style={{ fontWeight:600,color:T.ink,marginBottom:2 }}>{it.name}{qty>1?" ×"+qty:""}</div>
+                              <div style={{ fontSize:10,color:T.ink4 }}>
+                                {it.publisher ? it.publisher : ""}{it.isbn ? " ｜ "+it.isbn : ""}
+                              </div>
+                            </td>
+                            <td style={{ padding:"8px 10px",textAlign:"center",fontFamily:"'Inter'",fontWeight:800,fontSize:14 }}>{qty}</td>
+                            <td style={{ padding:"8px 10px",textAlign:"right",fontFamily:"'Inter'",fontWeight:700 }}>
+                              ¥{it.amount.toLocaleString()}
+                              <div style={{ fontSize:9,color:T.ink4,fontWeight:400 }}>{it.taxRate===8?"税8%":"税10%"}</div>
+                            </td>
+                            <td style={{ padding:"8px 10px",textAlign:"center" }}>
+                              {isService ? (
+                                <span style={{ fontSize:10,color:T.ink4 }}>—</span>
+                              ) : stockZero && isPod ? (
+                                <div>
+                                  <span style={{ fontSize:10,padding:"2px 8px",borderRadius:4,background:"#ede7f6",color:"#7b1fa2",fontWeight:700 }}>🖨 POD製造</span>
+                                </div>
+                              ) : stockZero ? (
+                                <div>
+                                  <button onClick={function(e){e.stopPropagation();if(onPurchaseOrder)onPurchaseOrder(it.isbn||"",it.name);}}
+                                    style={{ padding:"3px 10px",borderRadius:4,background:"#c62828",color:"#fff",
+                                      fontWeight:700,fontSize:10,border:"none",cursor:"pointer",fontFamily:"inherit" }}>
+                                    ❌ 要発注
+                                  </button>
+                                </div>
+                              ) : !stockOk ? (
+                                <div>
+                                  <span style={{ fontSize:10,padding:"2px 8px",borderRadius:4,background:T.amberPale,color:T.amber,fontWeight:700 }}>
+                                    ⚠ 残{book.stock}冊
+                                  </span>
+                                  {loc && <div style={{ fontSize:9,color:T.ink4,marginTop:2 }}>霞{loc.kasumigaseki} 本{loc.honsha}</div>}
+                                </div>
+                              ) : (
+                                <div>
+                                  <span style={{ fontSize:11,color:T.g2,fontWeight:700 }}>✅ {book.stock}冊</span>
+                                  {loc && <div style={{ fontSize:9,color:T.ink4,marginTop:2 }}>霞{loc.kasumigaseki} 本{loc.honsha}</div>}
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                    <tfoot>
+                      <tr style={{ background:T.bg,borderTop:"2px solid "+T.g2 }}>
+                        <td colSpan={2} style={{ padding:"8px 10px",fontWeight:700,textAlign:"right",fontSize:12 }}>
+                          合計
+                          {r.shippedAt && <span style={{ marginLeft:12,fontWeight:400,color:T.g2 }}>📦 出荷済 {r.shippedAt.slice(5)}</span>}
+                          {r.deliveredAt && <span style={{ marginLeft:8,fontWeight:400,color:T.ok }}>✅ 配達済 {r.deliveredAt.slice(5)}</span>}
+                        </td>
+                        <td style={{ padding:"8px 10px",textAlign:"center",fontFamily:"'Inter'",fontWeight:900,fontSize:14 }}>{totalQty}冊</td>
+                        <td style={{ padding:"8px 10px",textAlign:"right",fontFamily:"'Inter'",fontWeight:900,fontSize:14,color:T.g2 }}>¥{r.total.toLocaleString()}</td>
+                        <td style={{ padding:"8px 10px" }}></td>
+                      </tr>
+                    </tfoot>
+                  </table>
                 </div>
               );
             }}
@@ -14195,6 +14370,640 @@ const GrossProfitView = ({ onToast, darkMode }) => {
 // SECTION 13: View: 消し込み
 // ReconciliationView：振込入金 自動マッチング・手動消し込み
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+// ── 発注記録管理ビュー ──────────────────────────
+// 将来接続：eFAX Webhook → Claude Vision API OCR → 自動INSERT（Stage 1-B）
+// 将来接続：openBD APIによるISBN→書名補完（手動登録モーダルで即時実装可）
+// 将来接続：発注履歴×在庫データ連携（発注点自動算出・補充提案 / Stage 2以降）
+const PurchaseOrdersView = function({ onToast, darkMode, prefill, onClearPrefill }) {
+  var T = darkMode ? T_DARK : T_LIGHT;
+  var [tab, setTab] = useState("unconfirmed");
+  var [records, setRecords] = useState(MOCK_PURCHASE_ORDERS.map(function(r){ return Object.assign({},r); }));
+  var [editId, setEditId] = useState(null);
+  var [editForm, setEditForm] = useState({});
+  var [addModal, setAddModal] = useState(false);
+  var [addForm, setAddForm] = useState({ distributor:"東京官書普及", isbn:"", title:"", quantity:1, note:"", created_by:"専務" });
+
+  // 発注画面へのプリフィル（注文画面の「要発注」ボタンから連携）
+  React.useEffect(function(){
+    if (prefill && prefill.isbn) {
+      setAddForm(Object.assign({}, addForm, { isbn:prefill.isbn||"", title:prefill.title||"" }));
+      setAddModal(true);
+      if (onClearPrefill) onClearPrefill();
+    }
+  }, [prefill]);
+  var [distFilter, setDistFilter] = useState("all");
+  var [monthFilter, setMonthFilter] = useState("all");
+
+  var unconfirmed = records.filter(function(r){ return !r.confirmed; });
+  var confirmed = records.filter(function(r){ return r.confirmed; });
+
+  // 取次別フィルター
+  var filteredConfirmed = confirmed;
+  if (distFilter !== "all") filteredConfirmed = filteredConfirmed.filter(function(r){ return r.distributor === distFilter; });
+  if (monthFilter !== "all") filteredConfirmed = filteredConfirmed.filter(function(r){ return r.ordered_at.slice(0,7) === monthFilter; });
+
+  // 統計データ
+  var distributors = ["日販","東京官書普及","大学図書","商事法務","その他"];
+  var distColor = { "日販":T.g2, "東京官書普及":T.navy, "大学図書":T.amber, "商事法務":T.purple, "その他":T.ink4 };
+
+  function confirmRecord(id) {
+    setRecords(records.map(function(r){ return r.id===id ? Object.assign({},r,{confirmed:true}) : r; }));
+    onToast("✅ 発注記録を確定しました");
+    setEditId(null);
+  }
+  function deleteRecord(id) {
+    setRecords(records.filter(function(r){ return r.id!==id; }));
+    onToast("🗑 発注記録を削除しました");
+  }
+  function saveEdit(id) {
+    setRecords(records.map(function(r){
+      return r.id===id ? Object.assign({},r,editForm) : r;
+    }));
+    setEditId(null);
+    onToast("💾 編集を保存しました");
+  }
+  function addRecord() {
+    var newId = "po-" + String(records.length+1).padStart(3,"0");
+    var newRec = Object.assign({}, addForm, {
+      id: newId,
+      ordered_at: new Date().toISOString(),
+      confirmed: false,
+      scan_pdf_url: null,
+      ocr_raw: null,
+    });
+    setRecords([newRec].concat(records));
+    setAddModal(false);
+    setAddForm({ distributor:"東京官書普及", isbn:"", title:"", quantity:1, note:"", created_by:"専務" });
+    onToast("📠 発注記録を追加しました");
+  }
+  function exportCsv() {
+    var header = "発注日,送付先,ISBN,書名,冊数,確認者";
+    var rows = filteredConfirmed.map(function(r){
+      return [r.ordered_at.slice(0,10), r.distributor, r.isbn||"", r.title, r.quantity, r.created_by||""].join(",");
+    });
+    var csv = header + "\n" + rows.join("\n");
+    var blob = new Blob(["\uFEFF"+csv], {type:"text/csv"});
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "purchase_orders_"+new Date().toISOString().slice(0,10)+".csv";
+    a.click();
+    onToast("📥 CSVをダウンロードしました");
+  }
+
+  var fmtDate = function(d){ return d ? d.slice(0,10)+" "+d.slice(11,16) : ""; };
+  var distBadge = function(dist) {
+    var c = distColor[dist] || T.ink4;
+    return { color:c, bg:c+"15" };
+  };
+
+  // 月リスト
+  var months = [];
+  records.forEach(function(r){
+    var m = r.ordered_at.slice(0,7);
+    if (months.indexOf(m) === -1) months.push(m);
+  });
+  months.sort().reverse();
+
+  return (
+    <div>
+      <SectionHeader title="📠 発注記録"
+        desc="取次・出版社への発注履歴を記録・管理"
+        action={<div style={{display:"flex",gap:8}}>
+          <Btn small onClick={function(){ setAddModal(true); }}>＋ 手動登録</Btn>
+        </div>} />
+
+      {/* KPIサマリ */}
+      <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:12,marginBottom:20 }}>
+        {[
+          { icon:"⚠",  label:"要確認",       val:unconfirmed.length+"件",    color:T.red,    bg:T.redPale },
+          { icon:"✅", label:"確定済み（今月）", val:confirmed.filter(function(r){ return r.ordered_at.slice(0,7)===new Date().toISOString().slice(0,7); }).length+"件", color:T.g2, bg:T.okPale },
+          { icon:"📦", label:"今月発注冊数",   val:records.filter(function(r){ return r.ordered_at.slice(0,7)===new Date().toISOString().slice(0,7); }).reduce(function(s,r){return s+(r.quantity||0);},0)+"冊", color:T.navy, bg:T.navyPale },
+          { icon:"📠", label:"取次別",         val:distributors.filter(function(d){ return records.some(function(r){return r.distributor===d;}); }).length+"社", color:T.amber, bg:T.amberPale },
+        ].map(function(k,i){
+          return (
+            <Card key={i} style={{ padding:"12px 16px" }}>
+              <div style={{ display:"flex",alignItems:"center",gap:6,marginBottom:6 }}>
+                <span style={{ fontSize:16 }}>{k.icon}</span>
+                <span style={{ fontSize:10,color:T.ink4,fontWeight:700 }}>{k.label}</span>
+              </div>
+              <div style={{ fontFamily:"'Inter',sans-serif",fontSize:20,fontWeight:900,color:k.color }}>{k.val}</div>
+            </Card>
+          );
+        })}
+      </div>
+
+      <Tabs tabs={[
+        { id:"unconfirmed", icon:"⚠",  label:"要確認（"+unconfirmed.length+"）" },
+        { id:"confirmed",   icon:"✅", label:"確定済み" },
+        { id:"stats",       icon:"📊", label:"発注統計" },
+      ]} active={tab} onChange={setTab} />
+
+      {/* ── 要確認タブ ── */}
+      {tab==="unconfirmed" && (
+        <div>
+          {unconfirmed.length===0 ? (
+            <Card style={{ padding:"30px 20px",textAlign:"center" }}>
+              <div style={{ fontSize:40,marginBottom:8 }}>✅</div>
+              <div style={{ fontSize:14,fontWeight:700,color:T.g2 }}>未確認の発注記録はありません</div>
+              <div style={{ fontSize:12,color:T.ink4,marginTop:4 }}>eFAXからの自動取込み or 手動登録で追加されます</div>
+            </Card>
+          ) : (
+            <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
+              {unconfirmed.map(function(r){
+                var isEdit = editId===r.id;
+                var db = distBadge(r.distributor);
+                return (
+                  <Card key={r.id} style={{ padding:"16px 20px" }}>
+                    <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10 }}>
+                      <div>
+                        <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:4 }}>
+                          <span style={{ fontSize:10,padding:"2px 8px",borderRadius:4,fontWeight:700,background:db.bg,color:db.color }}>{r.distributor}</span>
+                          <span style={{ fontSize:11,color:T.ink4 }}>{fmtDate(r.ordered_at)}</span>
+                          {r.created_by && <span style={{ fontSize:10,color:T.ink3 }}>by {r.created_by}</span>}
+                        </div>
+                        {r.scan_pdf_url && (
+                          <div style={{ fontSize:10,color:T.navy,marginBottom:4 }}>📎 PDFスキャンあり</div>
+                        )}
+                      </div>
+                      <div style={{ display:"flex",gap:6 }}>
+                        {!isEdit && <Btn variant="ghost" small onClick={function(){ setEditId(r.id); setEditForm({isbn:r.isbn||"",title:r.title||"",quantity:r.quantity||1,note:r.note||"",distributor:r.distributor}); }}>✏ 編集</Btn>}
+                        <Btn small onClick={function(){ confirmRecord(r.id); }}>✅ 確定</Btn>
+                        <Btn variant="ghost" small onClick={function(){ if(confirm("この記録を削除しますか？")) deleteRecord(r.id); }} style={{color:T.red}}>🗑</Btn>
+                      </div>
+                    </div>
+                    {isEdit ? (
+                      <div style={{ display:"grid",gridTemplateColumns:"1fr 2fr 80px",gap:8,alignItems:"end" }}>
+                        <div>
+                          <div style={{ fontSize:10,fontWeight:700,color:T.ink4,marginBottom:2 }}>ISBN</div>
+                          <input aria-label="ISBN" value={editForm.isbn} onChange={function(e){setEditForm(Object.assign({},editForm,{isbn:e.target.value}));}}
+                            style={{ width:"100%",padding:"6px 8px",borderRadius:5,border:"1px solid "+T.rule,fontSize:12,fontFamily:"'Inter'" }} />
+                        </div>
+                        <div>
+                          <div style={{ fontSize:10,fontWeight:700,color:T.ink4,marginBottom:2 }}>書名</div>
+                          <input aria-label="書名" value={editForm.title} onChange={function(e){setEditForm(Object.assign({},editForm,{title:e.target.value}));}}
+                            style={{ width:"100%",padding:"6px 8px",borderRadius:5,border:"1px solid "+T.rule,fontSize:12 }} />
+                        </div>
+                        <div>
+                          <div style={{ fontSize:10,fontWeight:700,color:T.ink4,marginBottom:2 }}>冊数</div>
+                          <input aria-label="冊数" type="number" value={editForm.quantity} onChange={function(e){setEditForm(Object.assign({},editForm,{quantity:parseInt(e.target.value)||0}));}}
+                            style={{ width:"100%",padding:"6px 8px",borderRadius:5,border:"1px solid "+T.rule,fontSize:12,fontFamily:"'Inter'" }} />
+                        </div>
+                        <div style={{ gridColumn:"span 2" }}>
+                          <div style={{ fontSize:10,fontWeight:700,color:T.ink4,marginBottom:2 }}>備考</div>
+                          <input aria-label="備考" value={editForm.note||""} onChange={function(e){setEditForm(Object.assign({},editForm,{note:e.target.value}));}}
+                            style={{ width:"100%",padding:"6px 8px",borderRadius:5,border:"1px solid "+T.rule,fontSize:12 }} />
+                        </div>
+                        <Btn small onClick={function(){ saveEdit(r.id); }}>💾 保存</Btn>
+                      </div>
+                    ) : (
+                      <div style={{ display:"grid",gridTemplateColumns:"120px 1fr 60px",gap:8,fontSize:12 }}>
+                        <div>
+                          <div style={{ fontSize:10,color:T.ink4 }}>ISBN</div>
+                          <div style={{ fontFamily:"'Inter'",fontWeight:600,color:T.ink }}>{r.isbn||"—"}</div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize:10,color:T.ink4 }}>書名</div>
+                          <div style={{ fontWeight:700,color:T.ink }}>{r.title||"（未入力）"}</div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize:10,color:T.ink4 }}>冊数</div>
+                          <div style={{ fontFamily:"'Inter'",fontSize:18,fontWeight:900,color:T.g2 }}>{r.quantity}</div>
+                        </div>
+                      </div>
+                    )}
+                    {r.note && !isEdit && <div style={{ fontSize:11,color:T.ink3,marginTop:6,fontStyle:"italic" }}>📝 {r.note}</div>}
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── 確定済みタブ ── */}
+      {tab==="confirmed" && (
+        <Card>
+          <div style={{ padding:"12px 16px",borderBottom:"1px solid "+T.rule,display:"flex",gap:8,alignItems:"center",flexWrap:"wrap" }}>
+            <select aria-label="取次フィルター" value={distFilter} onChange={function(e){setDistFilter(e.target.value);}}
+              style={{ padding:"4px 8px",borderRadius:5,border:"1px solid "+T.rule,fontSize:11,fontFamily:"inherit",cursor:"pointer" }}>
+              <option value="all">全取次</option>
+              {distributors.map(function(d){ return <option key={d} value={d}>{d}</option>; })}
+            </select>
+            <select aria-label="月フィルター" value={monthFilter} onChange={function(e){setMonthFilter(e.target.value);}}
+              style={{ padding:"4px 8px",borderRadius:5,border:"1px solid "+T.rule,fontSize:11,fontFamily:"inherit",cursor:"pointer" }}>
+              <option value="all">全期間</option>
+              {months.map(function(m){ return <option key={m} value={m}>{m}</option>; })}
+            </select>
+            <span style={{ fontSize:11,color:T.ink3 }}>{filteredConfirmed.length}件</span>
+            <Btn variant="ghost" small onClick={exportCsv} style={{marginLeft:"auto"}}>📥 CSV出力</Btn>
+          </div>
+          <div style={{ overflowX:"auto" }}>
+            <table style={{ width:"100%",borderCollapse:"collapse",fontSize:12 }}>
+              <thead><tr style={{ borderBottom:"2px solid "+T.rule }}>
+                {["発注日","送付先","ISBN","書名","冊数","確認者"].map(function(h,i){
+                  return <th key={i} style={{ padding:"8px 10px",textAlign:i>=4?"center":"left",fontSize:10,fontWeight:700,color:T.ink3 }}>{h}</th>;
+                })}
+              </tr></thead>
+              <tbody>
+                {filteredConfirmed.sort(function(a,b){return b.ordered_at.localeCompare(a.ordered_at);}).map(function(r,i){
+                  var db = distBadge(r.distributor);
+                  return (
+                    <tr key={r.id} style={{ borderBottom:"1px solid "+T.rule,background:i%2===0?T.white:T.bg }}>
+                      <td style={{ padding:"8px 10px",fontSize:11,color:T.ink3 }}>{r.ordered_at.slice(0,10)}</td>
+                      <td style={{ padding:"8px 10px" }}>
+                        <span style={{ fontSize:10,padding:"2px 7px",borderRadius:4,fontWeight:700,background:db.bg,color:db.color }}>{r.distributor}</span>
+                      </td>
+                      <td style={{ padding:"8px 10px",fontFamily:"'Inter'",fontSize:11,color:T.ink3 }}>{r.isbn||"—"}</td>
+                      <td style={{ padding:"8px 10px",fontWeight:600,color:T.ink }}>{r.title}</td>
+                      <td style={{ padding:"8px 10px",textAlign:"center",fontFamily:"'Inter'",fontWeight:700 }}>{r.quantity}</td>
+                      <td style={{ padding:"8px 10px",textAlign:"center",fontSize:11,color:T.ink4 }}>{r.created_by||"—"}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* ── 発注統計タブ ── */}
+      {tab==="stats" && (
+        <div>
+          {/* 取次別月次グラフ */}
+          <Card style={{ padding:"18px 20px",marginBottom:14 }}>
+            <div style={{ fontSize:13,fontWeight:700,color:T.ink,marginBottom:12 }}>📊 取次別 発注件数</div>
+            <div style={{ display:"flex",alignItems:"flex-end",gap:12,height:140,padding:"0 4px" }}>
+              {distributors.filter(function(d){ return records.some(function(r){return r.distributor===d;}); }).map(function(dist,i){
+                var count = records.filter(function(r){return r.distributor===dist;}).length;
+                var totalQty = records.filter(function(r){return r.distributor===dist;}).reduce(function(s,r){return s+(r.quantity||0);},0);
+                var maxCount = Math.max.apply(null, distributors.map(function(d){ return records.filter(function(r){return r.distributor===d;}).length; }));
+                var h = Math.max(20, Math.round(count/Math.max(maxCount,1)*120));
+                var c = distColor[dist]||T.ink4;
+                return (
+                  <div key={i} style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4 }}>
+                    <div style={{ fontSize:10,fontWeight:800,color:c }}>{count}件</div>
+                    <div style={{ fontSize:9,color:T.ink4 }}>{totalQty}冊</div>
+                    <div style={{ width:"100%",maxWidth:60,height:h,background:c,borderRadius:"4px 4px 0 0",opacity:.8 }} />
+                    <div style={{ fontSize:9,color:T.ink3,fontWeight:600,textAlign:"center",lineHeight:1.2 }}>{dist}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+
+          {/* よく発注する書籍 TOP */}
+          <Card style={{ padding:"18px 20px" }}>
+            <div style={{ fontSize:13,fontWeight:700,color:T.ink,marginBottom:12 }}>📚 よく発注する書籍 TOP</div>
+            {(function(){
+              var titleMap = {};
+              records.forEach(function(r){
+                if (!r.title) return;
+                if (!titleMap[r.title]) titleMap[r.title] = { title:r.title, count:0, qty:0 };
+                titleMap[r.title].count += 1;
+                titleMap[r.title].qty += (r.quantity||0);
+              });
+              var sorted = Object.values(titleMap).sort(function(a,b){ return b.qty-a.qty; });
+              return sorted.slice(0,10).map(function(item,i){
+                var maxQty = sorted[0].qty;
+                var barW = Math.round(item.qty/maxQty*100);
+                return (
+                  <div key={i} style={{ display:"flex",alignItems:"center",gap:10,padding:"6px 0",borderBottom:i<sorted.length-1?"1px solid "+T.rule:"none" }}>
+                    <span style={{ fontSize:12,fontWeight:800,color:T.ink4,minWidth:20,textAlign:"right" }}>{i+1}</span>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:12,fontWeight:600,color:T.ink }}>{item.title}</div>
+                      <div style={{ height:6,background:T.rule,borderRadius:3,marginTop:4,overflow:"hidden" }}>
+                        <div style={{ width:barW+"%",height:"100%",background:T.g2,borderRadius:3 }} />
+                      </div>
+                    </div>
+                    <div style={{ textAlign:"right",minWidth:60 }}>
+                      <div style={{ fontFamily:"'Inter'",fontSize:14,fontWeight:900,color:T.g2 }}>{item.qty}冊</div>
+                      <div style={{ fontSize:9,color:T.ink4 }}>{item.count}回発注</div>
+                    </div>
+                  </div>
+                );
+              });
+            })()}
+          </Card>
+        </div>
+      )}
+
+      {/* ── 手動登録モーダル ── */}
+      {addModal && (
+        <ModalOverlay onClose={function(){ setAddModal(false); }}>
+          <div style={{ background:T.white,borderRadius:12,padding:"24px 28px",maxWidth:480,width:"90vw" }}>
+            <ModalHeader title="📠 発注を手動登録" onClose={function(){ setAddModal(false); }} />
+            <div style={{ fontSize:11,color:T.ink4,marginBottom:16,lineHeight:1.6 }}>
+              eFAX切り替え前の暫定対応として、短冊FAX発注の内容を手動で記録します。
+            </div>
+            <div style={{ display:"flex",flexDirection:"column",gap:12 }}>
+              <div>
+                <div style={{ fontSize:10,fontWeight:700,color:T.ink4,marginBottom:3 }}>送付先 *</div>
+                <select aria-label="送付先" value={addForm.distributor} onChange={function(e){setAddForm(Object.assign({},addForm,{distributor:e.target.value}));}}
+                  style={{ width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid "+T.rule,fontSize:12,fontFamily:"inherit" }}>
+                  {distributors.map(function(d){ return <option key={d} value={d}>{d}</option>; })}
+                </select>
+              </div>
+              <div style={{ display:"grid",gridTemplateColumns:"140px 1fr",gap:10 }}>
+                <div>
+                  <div style={{ fontSize:10,fontWeight:700,color:T.ink4,marginBottom:3 }}>ISBN</div>
+                  <input aria-label="ISBN" value={addForm.isbn} placeholder="978-4-xxx" onChange={function(e){setAddForm(Object.assign({},addForm,{isbn:e.target.value}));}}
+                    style={{ width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid "+T.rule,fontSize:12,fontFamily:"'Inter'" }} />
+                </div>
+                <div>
+                  <div style={{ fontSize:10,fontWeight:700,color:T.ink4,marginBottom:3 }}>書名 *</div>
+                  <input aria-label="書名" value={addForm.title} onChange={function(e){setAddForm(Object.assign({},addForm,{title:e.target.value}));}}
+                    style={{ width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid "+T.rule,fontSize:12 }} />
+                </div>
+              </div>
+              <div style={{ display:"grid",gridTemplateColumns:"80px 1fr",gap:10 }}>
+                <div>
+                  <div style={{ fontSize:10,fontWeight:700,color:T.ink4,marginBottom:3 }}>冊数 *</div>
+                  <input aria-label="冊数" type="number" min="1" value={addForm.quantity} onChange={function(e){setAddForm(Object.assign({},addForm,{quantity:parseInt(e.target.value)||1}));}}
+                    style={{ width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid "+T.rule,fontSize:12,fontFamily:"'Inter'" }} />
+                </div>
+                <div>
+                  <div style={{ fontSize:10,fontWeight:700,color:T.ink4,marginBottom:3 }}>登録者</div>
+                  <select aria-label="登録者" value={addForm.created_by} onChange={function(e){setAddForm(Object.assign({},addForm,{created_by:e.target.value}));}}
+                    style={{ width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid "+T.rule,fontSize:12,fontFamily:"inherit" }}>
+                    <option value="専務">専務</option>
+                    <option value="店長">店長</option>
+                    <option value="金子">金子</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize:10,fontWeight:700,color:T.ink4,marginBottom:3 }}>備考</div>
+                <textarea aria-label="備考" value={addForm.note} onChange={function(e){setAddForm(Object.assign({},addForm,{note:e.target.value}));}}
+                  rows={2} style={{ width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid "+T.rule,fontSize:12,resize:"vertical",fontFamily:"inherit" }} />
+              </div>
+              <div style={{ display:"flex",gap:8,justifyContent:"flex-end",marginTop:4 }}>
+                <Btn variant="ghost" onClick={function(){ setAddModal(false); }}>キャンセル</Btn>
+                <Btn onClick={addRecord} disabled={!addForm.title}>📠 登録</Btn>
+              </div>
+            </div>
+          </div>
+        </ModalOverlay>
+      )}
+    </div>
+  );
+};
+
+// ── 検索ログ分析ビュー ──────────────────────────
+const SearchAnalyticsView = function({ onToast, darkMode }) {
+  var T = darkMode ? T_DARK : T_LIGHT;
+  var [tab, setTab] = useState("ranking");
+  var [sortKey, setSortKey] = useState("searches");
+  var [sortAsc, setSortAsc] = useState(false);
+  var [filterZero, setFilterZero] = useState(false);
+  var [filterTrend, setFilterTrend] = useState("all");
+
+  var sorted = MOCK_SEARCH_LOGS.slice();
+  if (filterZero) sorted = sorted.filter(function(d){ return d.zeroHit; });
+  if (filterTrend !== "all") sorted = sorted.filter(function(d){ return d.trend === filterTrend; });
+  sorted.sort(function(a,b){ return sortAsc ? (a[sortKey]||0)-(b[sortKey]||0) : (b[sortKey]||0)-(a[sortKey]||0); });
+
+  var totalSearches = MOCK_SEARCH_LOGS.reduce(function(s,d){ return s+d.searches; },0);
+  var zeroHitKws = MOCK_SEARCH_LOGS.filter(function(d){ return d.zeroHit; });
+  var zeroHitTotal = zeroHitKws.reduce(function(s,d){ return s+d.searches; },0);
+  var withResults = MOCK_SEARCH_LOGS.filter(function(d){ return !d.zeroHit && d.clicks>0; });
+  var avgCvr = withResults.length>0 ? (withResults.reduce(function(s,d){return s+d.purchases;},0)/withResults.reduce(function(s,d){return s+d.clicks;},0)*100) : 0;
+  var dailyMax = Math.max.apply(null, MOCK_SEARCH_DAILY.map(function(d){ return d.total; }));
+
+  function toggleSort(key){ if(sortKey===key){setSortAsc(!sortAsc);}else{setSortKey(key);setSortAsc(false);} }
+  var si = function(key){ return sortKey===key?(sortAsc?" ▲":" ▼"):""; };
+  var trendBadge = function(trend){
+    var m={up:["↑ 上昇",T.ok,T.okPale],down:["↓ 下降",T.red,T.redPale],stable:["→ 横ばい",T.ink4,T.bg]};
+    return m[trend]||m.stable;
+  };
+
+  return (
+    <div>
+      <SectionHeader title="🔍 検索ログ分析"
+        desc="サイト内検索キーワードの分析・未対応需要の可視化"
+        action={<div style={{display:"flex",gap:8}}>
+          <Btn variant="ghost" small onClick={function(){onToast("検索ログCSVを出力（デモ）");}}>📥 CSV出力</Btn>
+          <Btn small onClick={function(){onToast("出版社ポータルに連携（デモ）");}}>📈 出版社連携</Btn>
+        </div>} />
+
+      {/* KPIサマリ */}
+      <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:12,marginBottom:20 }}>
+        {[
+          { icon:"🔍", label:"月間総検索数",     val:totalSearches.toLocaleString()+"回",  color:T.g2, bg:T.okPale },
+          { icon:"⚠",  label:"0件ヒット",        val:zeroHitKws.length+"キーワード",       color:T.red, bg:T.redPale },
+          { icon:"📊", label:"0件比率（検索数）", val:Math.round(zeroHitTotal/totalSearches*100)+"%", color:T.amber, bg:T.amberPale },
+          { icon:"🛒", label:"検索→購入CVR",     val:avgCvr.toFixed(1)+"%",               color:T.navy, bg:T.navyPale },
+          { icon:"📈", label:"トレンド上昇中",   val:MOCK_SEARCH_LOGS.filter(function(d){return d.trend==="up";}).length+"件", color:T.purple, bg:T.purplePale },
+        ].map(function(k,i){
+          return (
+            <Card key={i} style={{ padding:"12px 16px" }}>
+              <div style={{ display:"flex",alignItems:"center",gap:6,marginBottom:6 }}>
+                <span style={{ fontSize:16 }}>{k.icon}</span>
+                <span style={{ fontSize:10,color:T.ink4,fontWeight:700 }}>{k.label}</span>
+              </div>
+              <div style={{ fontFamily:"'Inter',sans-serif",fontSize:20,fontWeight:900,color:k.color }}>{k.val}</div>
+            </Card>
+          );
+        })}
+      </div>
+
+      <Tabs tabs={[
+        { id:"ranking",  icon:"📊", label:"キーワードランキング" },
+        { id:"gap",      icon:"⚠",  label:"0件ヒット（未対応需要）" },
+        { id:"trend",    icon:"📈", label:"日次トレンド" },
+        { id:"usertype", icon:"👤", label:"ユーザー種別" },
+      ]} active={tab} onChange={setTab} />
+
+      {/* ── キーワードランキング ── */}
+      {tab==="ranking" && (
+        <Card>
+          <div style={{ padding:"12px 16px",borderBottom:"1px solid "+T.rule,display:"flex",gap:8,alignItems:"center",flexWrap:"wrap" }}>
+            <span style={{ fontSize:12,fontWeight:700,color:T.ink }}>全{sorted.length}件</span>
+            <label style={{ display:"flex",alignItems:"center",gap:4,cursor:"pointer",fontSize:11,color:T.ink3 }}>
+              <input aria-label="0件ヒットのみ" type="checkbox" checked={filterZero} onChange={function(){setFilterZero(!filterZero);}} /> 0件ヒットのみ
+            </label>
+            <div style={{ display:"flex",gap:4,marginLeft:"auto" }}>
+              {[{v:"all",l:"全て"},{v:"up",l:"↑上昇"},{v:"stable",l:"→横ばい"},{v:"down",l:"↓下降"}].map(function(f){
+                return (<button key={f.v} onClick={function(){setFilterTrend(f.v);}}
+                  style={{ padding:"3px 8px",borderRadius:4,fontSize:10,fontWeight:filterTrend===f.v?700:400,
+                    border:"1px solid "+(filterTrend===f.v?T.g2:T.rule),background:filterTrend===f.v?T.okPale:T.white,
+                    color:filterTrend===f.v?T.g2:T.ink4,cursor:"pointer",fontFamily:"inherit" }}>{f.l}</button>);
+              })}
+            </div>
+          </div>
+          <div style={{ overflowX:"auto" }}>
+            <table style={{ width:"100%",borderCollapse:"collapse",fontSize:12 }}>
+              <thead><tr style={{ borderBottom:"2px solid "+T.rule }}>
+                {[{k:"keyword",l:"検索キーワード"},{k:"searches",l:"月間検索数"},{k:"results",l:"ヒット件数"},{k:"clicks",l:"クリック"},{k:"purchases",l:"購入"},{k:"exits",l:"離脱"},{k:"trend",l:"トレンド"}].map(function(c){
+                  return (<th key={c.k} onClick={function(){toggleSort(c.k);}} style={{ padding:"8px 10px",textAlign:c.k==="keyword"?"left":"center",fontSize:10,fontWeight:700,color:T.ink3,cursor:"pointer",whiteSpace:"nowrap",userSelect:"none" }}>{c.l}{si(c.k)}</th>);
+                })}
+              </tr></thead>
+              <tbody>
+                {sorted.map(function(d,i){
+                  var t = trendBadge(d.trend);
+                  return (
+                    <tr key={i} style={{ borderBottom:"1px solid "+T.rule,background:d.zeroHit?T.redPale+"80":i%2===0?T.white:T.bg }}>
+                      <td style={{ padding:"8px 10px" }}>
+                        <div style={{ display:"flex",alignItems:"center",gap:6 }}>
+                          <span style={{ fontWeight:700,color:T.ink }}>{d.keyword}</span>
+                          {d.zeroHit && <span style={{ fontSize:9,padding:"1px 6px",borderRadius:3,background:T.red,color:"#fff",fontWeight:700 }}>0件</span>}
+                        </div>
+                      </td>
+                      <td style={{ padding:"8px 10px",textAlign:"center",fontFamily:"'Inter'",fontWeight:700,color:T.ink }}>{d.searches.toLocaleString()}</td>
+                      <td style={{ padding:"8px 10px",textAlign:"center",fontFamily:"'Inter'",fontWeight:700,color:d.results===0?T.red:T.g2 }}>{d.results}</td>
+                      <td style={{ padding:"8px 10px",textAlign:"center",fontFamily:"'Inter'",color:T.ink3 }}>{d.clicks.toLocaleString()}</td>
+                      <td style={{ padding:"8px 10px",textAlign:"center",fontFamily:"'Inter'",color:T.ink3 }}>{d.purchases}</td>
+                      <td style={{ padding:"8px 10px",textAlign:"center",fontFamily:"'Inter'",color:d.exits>500?T.red:T.ink4 }}>{d.exits.toLocaleString()}</td>
+                      <td style={{ padding:"8px 10px",textAlign:"center" }}>
+                        <span style={{ fontSize:10,padding:"2px 7px",borderRadius:4,background:t[2],color:t[1],fontWeight:700 }}>{t[0]}</span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* ── 0件ヒット分析 ── */}
+      {tab==="gap" && (
+        <div>
+          <div style={{ padding:"12px 16px",marginBottom:14,background:T.redPale,borderRadius:8,border:"1px solid "+T.red+"30" }}>
+            <div style={{ fontSize:12,fontWeight:700,color:T.red,marginBottom:4 }}>
+              ⚠ 「検索したが見つからなかった」＝ SLDにしか見えない固有資産
+            </div>
+            <div style={{ fontSize:11,color:T.ink3,lineHeight:1.7 }}>
+              月間{zeroHitTotal.toLocaleString()}回の検索が0件ヒット（対応書籍なし）で離脱しています。
+              これらは出版社への企画提案・仕入れ拡充のエビデンスとして活用できます。
+            </div>
+          </div>
+          <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
+            {zeroHitKws.sort(function(a,b){return b.searches-a.searches;}).map(function(d,i){
+              var t = trendBadge(d.trend);
+              var barW = Math.round(d.searches/zeroHitKws[0].searches*100);
+              return (
+                <Card key={i} style={{ padding:"14px 18px" }}>
+                  <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8 }}>
+                    <div>
+                      <div style={{ display:"flex",alignItems:"center",gap:8 }}>
+                        <span style={{ fontSize:14,fontWeight:800,color:T.ink }}>{d.keyword}</span>
+                        <span style={{ fontSize:10,padding:"2px 7px",borderRadius:4,background:t[2],color:t[1],fontWeight:700 }}>{t[0]}</span>
+                      </div>
+                      <div style={{ fontSize:11,color:T.ink4,marginTop:4 }}>
+                        弁護士{d.userTypes.lawyer.toLocaleString()}回 / 企業法務{d.userTypes.corp.toLocaleString()}回 / 修習生{d.userTypes.judicial}回
+                      </div>
+                    </div>
+                    <div style={{ textAlign:"right" }}>
+                      <div style={{ fontFamily:"'Inter'",fontSize:22,fontWeight:900,color:T.red }}>{d.searches.toLocaleString()}</div>
+                      <div style={{ fontSize:10,color:T.ink4 }}>回/月（全て離脱）</div>
+                    </div>
+                  </div>
+                  {/* バー */}
+                  <div style={{ height:8,background:T.rule,borderRadius:4,overflow:"hidden" }}>
+                    <div style={{ width:barW+"%",height:"100%",background:T.red,borderRadius:4,transition:"width .3s" }} />
+                  </div>
+                  {/* アクション */}
+                  <div style={{ display:"flex",gap:6,marginTop:10 }}>
+                    <Btn variant="ghost" small onClick={function(){onToast(d.keyword+"の仕入れ候補をNDL APIで検索（デモ）");}}>📚 仕入れ候補検索</Btn>
+                    <Btn variant="ghost" small onClick={function(){onToast(d.keyword+"の企画提案書を出版社ポータルに追加（デモ）");}}>📄 企画提案書生成</Btn>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ── 日次トレンド ── */}
+      {tab==="trend" && (
+        <Card style={{ padding:"18px 20px" }}>
+          <div style={{ fontSize:13,fontWeight:700,color:T.ink,marginBottom:4 }}>📈 日次検索数トレンド（過去14日）</div>
+          <div style={{ fontSize:11,color:T.ink4,marginBottom:16 }}>オレンジ＝0件ヒット検索の割合</div>
+          <div style={{ display:"flex",alignItems:"flex-end",gap:4,height:180,padding:"0 4px" }}>
+            {MOCK_SEARCH_DAILY.map(function(d,i){
+              var h = Math.round(d.total/dailyMax*160);
+              var zh = Math.round(d.zeroHit/dailyMax*160);
+              var isWeekend = i===4||i===5||i===11||i===12;
+              return (
+                <div key={i} style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2 }}>
+                  <div style={{ fontSize:9,color:T.ink4,fontWeight:700 }}>{d.total}</div>
+                  <div style={{ width:"100%",position:"relative" }}>
+                    <div style={{ height:h,background:isWeekend?T.rule:T.g2+"60",borderRadius:"3px 3px 0 0",position:"relative" }}>
+                      <div style={{ position:"absolute",bottom:0,left:0,right:0,height:zh,background:T.amber,borderRadius:"0 0 0 0",opacity:.7 }} />
+                    </div>
+                  </div>
+                  <div style={{ fontSize:9,color:isWeekend?T.ink4:T.ink3,fontWeight:isWeekend?400:600 }}>{d.date}</div>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ display:"flex",gap:16,marginTop:12,justifyContent:"center" }}>
+            <div style={{ display:"flex",alignItems:"center",gap:4 }}>
+              <div style={{ width:12,height:12,borderRadius:2,background:T.g2+"60" }} />
+              <span style={{ fontSize:10,color:T.ink4 }}>総検索数</span>
+            </div>
+            <div style={{ display:"flex",alignItems:"center",gap:4 }}>
+              <div style={{ width:12,height:12,borderRadius:2,background:T.amber,opacity:.7 }} />
+              <span style={{ fontSize:10,color:T.ink4 }}>0件ヒット</span>
+            </div>
+            <div style={{ display:"flex",alignItems:"center",gap:4 }}>
+              <div style={{ width:12,height:12,borderRadius:2,background:T.rule }} />
+              <span style={{ fontSize:10,color:T.ink4 }}>土日</span>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* ── ユーザー種別分析 ── */}
+      {tab==="usertype" && (
+        <div>
+          <Card style={{ padding:"18px 20px",marginBottom:14 }}>
+            <div style={{ fontSize:13,fontWeight:700,color:T.ink,marginBottom:12 }}>👤 ユーザー種別 × 検索キーワード</div>
+            <div style={{ fontSize:11,color:T.ink4,marginBottom:14 }}>上位キーワードの検索者構成。企業法務比率が高いキーワードはBPO提案の根拠になります。</div>
+            {MOCK_SEARCH_LOGS.slice(0,10).map(function(d,i){
+              var total = d.searches;
+              var types = [
+                {label:"弁護士",val:d.userTypes.lawyer,color:T.g2},
+                {label:"企業法務",val:d.userTypes.corp,color:T.navy},
+                {label:"修習生",val:d.userTypes.judicial,color:T.purple},
+                {label:"その他",val:d.userTypes.other,color:T.ink4},
+              ];
+              return (
+                <div key={i} style={{ marginBottom:12,paddingBottom:12,borderBottom:i<9?"1px solid "+T.rule:"none" }}>
+                  <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6 }}>
+                    <div style={{ display:"flex",alignItems:"center",gap:6 }}>
+                      <span style={{ fontSize:12,fontWeight:700,color:T.ink }}>{d.keyword}</span>
+                      {d.zeroHit && <span style={{ fontSize:9,padding:"1px 5px",borderRadius:3,background:T.red,color:"#fff",fontWeight:700 }}>0件</span>}
+                    </div>
+                    <span style={{ fontSize:11,fontFamily:"'Inter'",fontWeight:700,color:T.ink3 }}>{total.toLocaleString()}回</span>
+                  </div>
+                  {/* 積み上げバー */}
+                  <div style={{ display:"flex",height:20,borderRadius:4,overflow:"hidden",marginBottom:4 }}>
+                    {types.map(function(t,j){
+                      var w = Math.round(t.val/total*100);
+                      return <div key={j} title={t.label+": "+t.val+"回 ("+w+"%)"} style={{ width:w+"%",background:t.color,minWidth:w>0?2:0 }} />;
+                    })}
+                  </div>
+                  <div style={{ display:"flex",gap:12,fontSize:10,color:T.ink4 }}>
+                    {types.map(function(t,j){
+                      return <span key={j} style={{ display:"flex",alignItems:"center",gap:3 }}>
+                        <span style={{ width:8,height:8,borderRadius:2,background:t.color,display:"inline-block" }} />
+                        {t.label} {Math.round(t.val/total*100)}%
+                      </span>;
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </Card>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const ReconciliationView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, updateDeposit, globalDeposits, setGlobalDeposits, darkMode }) => {
   var T = darkMode ? T_DARK : T_LIGHT;
   const [tab,       setTab]       = useState("inbox");
@@ -14690,6 +15499,65 @@ const ReconciliationView = ({ onToast, globalOrders, setGlobalOrders, updateOrde
     </div>
   );
 };
+
+
+
+// ── 発注記録 サンプルデータ ──────────────────
+// ⚠ MOCK: Supabase purchase_order_records に差替え
+// 将来接続: eFAX Webhook → Claude Vision API OCR → 自動INSERT
+const MOCK_PURCHASE_ORDERS = [
+  { id:"po-001", ordered_at:"2026-04-14T09:15:00+09:00", distributor:"東京官書普及",
+    isbn:"9784641134567", title:"民法改正と実務対応【第3版】", quantity:3,
+    scan_pdf_url:null, ocr_raw:null, confirmed:false, note:"", created_by:"専務" },
+  { id:"po-002", ordered_at:"2026-04-14T09:15:00+09:00", distributor:"東京官書普及",
+    isbn:"9784335308123", title:"会社法コンメンタール【第4版】", quantity:2,
+    scan_pdf_url:null, ocr_raw:null, confirmed:false, note:"", created_by:"専務" },
+  { id:"po-003", ordered_at:"2026-04-14T13:30:00+09:00", distributor:"日販",
+    isbn:"9784641012345", title:"刑事訴訟法の基礎【改訂版】", quantity:5,
+    scan_pdf_url:null, ocr_raw:null, confirmed:true, note:"急ぎ対応済み", created_by:"店長" },
+  { id:"po-004", ordered_at:"2026-04-11T10:00:00+09:00", distributor:"商事法務",
+    isbn:"9784785727345", title:"労働審判実務マニュアル", quantity:2,
+    scan_pdf_url:null, ocr_raw:null, confirmed:true, note:"", created_by:"専務" },
+  { id:"po-005", ordered_at:"2026-04-10T14:00:00+09:00", distributor:"日販",
+    isbn:"9784641017890", title:"行政法実務テキスト", quantity:10,
+    scan_pdf_url:null, ocr_raw:null, confirmed:true, note:"司法研修所店向け大量補充", created_by:"店長" },
+  { id:"po-006", ordered_at:"2026-04-09T09:30:00+09:00", distributor:"大学図書",
+    isbn:"9784335356789", title:"憲法判例百選【第8版】", quantity:8,
+    scan_pdf_url:null, ocr_raw:null, confirmed:true, note:"", created_by:"専務" },
+  { id:"po-007", ordered_at:"2026-04-08T11:00:00+09:00", distributor:"東京官書普及",
+    isbn:"9784641134567", title:"民法改正と実務対応【第3版】", quantity:5,
+    scan_pdf_url:null, ocr_raw:null, confirmed:true, note:"霞が関店在庫補充", created_by:"店長" },
+  { id:"po-008", ordered_at:"2026-04-07T15:20:00+09:00", distributor:"商事法務",
+    isbn:"9784785728901", title:"M&A契約実務の基礎", quantity:3,
+    scan_pdf_url:null, ocr_raw:null, confirmed:true, note:"", created_by:"専務" },
+];
+
+// ── 検索ログ サンプルデータ ──────────────────
+const MOCK_SEARCH_LOGS = [ // ⚠ MOCK: Supabase search_logs に差替え
+  { keyword:"民法改正 実務",searches:2840,results:3,clicks:1820,purchases:98,exits:420,zeroHit:false,trend:"up",userTypes:{lawyer:1890,corp:620,judicial:180,other:150} },
+  { keyword:"フリーランス保護法",searches:1920,results:0,clicks:0,purchases:0,exits:1920,zeroHit:true,trend:"up",userTypes:{lawyer:980,corp:640,judicial:120,other:180} },
+  { keyword:"会社法 実務",searches:1640,results:5,clicks:1200,purchases:73,exits:180,zeroHit:false,trend:"stable",userTypes:{lawyer:820,corp:580,judicial:140,other:100} },
+  { keyword:"AI 法律 弁護士",searches:1480,results:0,clicks:0,purchases:0,exits:1480,zeroHit:true,trend:"up",userTypes:{lawyer:740,corp:420,judicial:180,other:140} },
+  { keyword:"労働法 改正 2026",searches:1340,results:2,clicks:980,purchases:66,exits:140,zeroHit:false,trend:"up",userTypes:{lawyer:670,corp:480,judicial:90,other:100} },
+  { keyword:"M&A DD チェックリスト",searches:1280,results:0,clicks:0,purchases:0,exits:1280,zeroHit:true,trend:"stable",userTypes:{lawyer:420,corp:680,judicial:40,other:140} },
+  { keyword:"個人情報保護法 改正",searches:1120,results:2,clicks:840,purchases:42,exits:120,zeroHit:false,trend:"up",userTypes:{lawyer:560,corp:380,judicial:80,other:100} },
+  { keyword:"民事執行法 実務",searches:980,results:0,clicks:0,purchases:0,exits:980,zeroHit:true,trend:"stable",userTypes:{lawyer:620,corp:180,judicial:80,other:100} },
+  { keyword:"知財法 判例",searches:920,results:4,clicks:680,purchases:28,exits:80,zeroHit:false,trend:"down",userTypes:{lawyer:460,corp:320,judicial:60,other:80} },
+  { keyword:"相続法 実務対応",searches:860,results:3,clicks:620,purchases:41,exits:100,zeroHit:false,trend:"stable",userTypes:{lawyer:520,corp:180,judicial:80,other:80} },
+  { keyword:"コーポレートガバナンス 改訂",searches:780,results:1,clicks:420,purchases:12,exits:240,zeroHit:false,trend:"up",userTypes:{lawyer:280,corp:380,judicial:40,other:80} },
+  { keyword:"育介法 改正 解説",searches:720,results:1,clicks:480,purchases:31,exits:120,zeroHit:false,trend:"up",userTypes:{lawyer:360,corp:280,judicial:40,other:40} },
+  { keyword:"契約書 AI レビュー",searches:580,results:0,clicks:0,purchases:0,exits:580,zeroHit:true,trend:"up",userTypes:{lawyer:290,corp:220,judicial:20,other:50} },
+  { keyword:"デジタル証拠 刑事",searches:420,results:0,clicks:0,purchases:0,exits:420,zeroHit:true,trend:"up",userTypes:{lawyer:280,corp:60,judicial:40,other:40} },
+  { keyword:"ESG 法務 ガイドライン",searches:380,results:0,clicks:0,purchases:0,exits:380,zeroHit:true,trend:"up",userTypes:{lawyer:120,corp:200,judicial:20,other:40} },
+  { keyword:"不動産登記法 実務",searches:340,results:2,clicks:240,purchases:14,exits:40,zeroHit:false,trend:"stable",userTypes:{lawyer:140,corp:80,judicial:80,other:40} },
+];
+const MOCK_SEARCH_DAILY = [
+  {date:"03/25",total:1240,zeroHit:186},{date:"03/26",total:1180,zeroHit:172},{date:"03/27",total:1320,zeroHit:198},
+  {date:"03/28",total:980,zeroHit:147},{date:"03/29",total:640,zeroHit:96},{date:"03/30",total:580,zeroHit:87},
+  {date:"03/31",total:1380,zeroHit:207},{date:"04/01",total:1420,zeroHit:213},{date:"04/02",total:1360,zeroHit:204},
+  {date:"04/03",total:1280,zeroHit:192},{date:"04/04",total:1340,zeroHit:201},{date:"04/05",total:1100,zeroHit:165},
+  {date:"04/06",total:620,zeroHit:93},{date:"04/07",total:1440,zeroHit:216},
+];
 
 // ── コンテンツ管理 サンプルデータ ──────────────
 const INIT_CONTENT_SECTIONS = [
@@ -17543,10 +18411,10 @@ const ROLE_META = {
     label:"オーナー", icon:"🏢", color:T.navy, bg:T.navyPale,
     defaultPage:"dashboard", showFinance:true, showSettings:false,
     defaultFilter:"all",
-    navAllow:["orders","reconciliation","bpo","books","inventory","elec_req",
+    navAllow:["orders","reconciliation","bpo","books","inventory","elec_req","purchase_orders",
       "stripe","stores","members","corporate","points","reviews",
       "mail_tx","mail_ma","articles","banners","mail_ad","hero_slider",
-      "dashboard","sales","gross_profit","reports","reform_cal","publishing",
+      "dashboard","sales","gross_profit","reports","search_analytics","reform_cal","publishing",
       "digital_products","pub_report","publishers","torikeshi","legalscape",
       "saas","feedback_mgmt"],
     desc:"全実務＋財務閲覧。スタッフ管理・システム設定は管理者のみ。",
@@ -17562,7 +18430,7 @@ const ROLE_META = {
     label:"EC・出荷担当", icon:"📦", color:T.g2, bg:T.okPale,
     defaultPage:"orders", showFinance:false, showSettings:false,
     defaultFilter:"all",
-    navAllow:["orders","books","inventory","elec_req","stores","members",
+    navAllow:["orders","books","inventory","elec_req","purchase_orders","stores","members",
       "points","reviews","feedback_mgmt"],
     desc:"注文処理・在庫・佐川出荷。財務データは非表示。",
   },
@@ -20165,6 +21033,8 @@ const QA_MASTER = [
   { id:"qa_sales",       icon:"💰", label:"売上管理",       nav:"sales" },
   { id:"qa_content",     icon:"✍",  label:"コンテンツ管理", nav:"articles" },
   { id:"qa_mail",        icon:"📧", label:"メルマガ配信",   nav:"mail_campaign" },
+  { id:"qa_search_log",  icon:"🔍", label:"検索ログ分析",   nav:"search_analytics" },
+  { id:"qa_purchase",     icon:"📠", label:"発注記録",        nav:"purchase_orders" },
 ];
 const QA_DEFAULT_IDS = ["qa_phone_order","qa_sagawa_csv","qa_inventory","qa_search","qa_dashboard"];
 
@@ -20429,6 +21299,7 @@ function AdminApp() {
   });
   const [prevPage,  setPrevPage]  = useState(null);
   const [pageLoading, setPageLoading] = useState(false);
+  const [poPrefill, setPoPrefill] = useState(null); // 発注画面へのプリフィル（ISBN/書名）
   const [collapsed, setCollapsed] = useState(false);
 
   // モバイル時はサイドバー自動折り畳み
@@ -20758,7 +21629,7 @@ function AdminApp() {
     switch(page) {
       case "dashboard":  return <DashboardView onNav={navigateTo} darkMode={darkMode} staffRole={staffRole} staffName={staffName} orders={globalOrders} deposits={globalDeposits} grossMarginMap={grossMarginMap} updateGrossMargin={updateGrossMargin} />;
       case "books":      return <BooksView onToast={showToast} sentRevisions={globalSentRevisions} markRevisionSent={markRevisionSent} darkMode={darkMode} />;
-      case "orders":        return <OrdersView onToast={showToast} globalOrders={globalOrders} setGlobalOrders={setGlobalOrders} updateOrder={updateOrder} addOrder={addOrder} globalAddrHistory={globalAddrHistory} setGlobalAddrHistory={setGlobalAddrHistory} sagawaDeadline={sagawaDeadline} transitRecord={transitRecord} confirmTransit={confirmTransit} globalDeposits={globalDeposits} globalCorps={globalCorps} setGlobalCorps={setGlobalCorps} darkMode={darkMode} staffRole={staffRole} staffName={staffName} myOrdersOnly={myOrdersOnly} setMyOrdersOnly={setMyOrdersOnly} />;
+      case "orders":        return <OrdersView onToast={showToast} globalOrders={globalOrders} setGlobalOrders={setGlobalOrders} updateOrder={updateOrder} addOrder={addOrder} globalAddrHistory={globalAddrHistory} setGlobalAddrHistory={setGlobalAddrHistory} sagawaDeadline={sagawaDeadline} transitRecord={transitRecord} confirmTransit={confirmTransit} globalDeposits={globalDeposits} globalCorps={globalCorps} setGlobalCorps={setGlobalCorps} darkMode={darkMode} staffRole={staffRole} staffName={staffName} myOrdersOnly={myOrdersOnly} setMyOrdersOnly={setMyOrdersOnly} onPurchaseOrder={function(isbn,title){ setPoPrefill({isbn:isbn,title:title}); navigateTo("purchase_orders"); }} />;
       case "reconciliation": return <ReconciliationView onToast={showToast} globalOrders={globalOrders} setGlobalOrders={setGlobalOrders} updateOrder={updateOrder} updateDeposit={updateDeposit} globalDeposits={globalDeposits} setGlobalDeposits={setGlobalDeposits} darkMode={darkMode} />;
       case "stores":          return <StoreView onToast={showToast} darkMode={darkMode} />;
       case "bpo":        return <BpoView onToast={showToast} darkMode={darkMode} />;
@@ -20770,10 +21641,12 @@ function AdminApp() {
       case "points":     return <PointsView onToast={showToast} darkMode={darkMode} />;
       case "corporate":  return <CorporateView onToast={showToast} globalOrders={globalOrders} updateOrder={updateOrder} globalAddrHistory={globalAddrHistory} globalCorps={globalCorps} setGlobalCorps={setGlobalCorps} darkMode={darkMode} />;
       case "saas":       return <SaasView onToast={showToast} darkMode={darkMode} />;
+      case "purchase_orders": return <PurchaseOrdersView onToast={showToast} darkMode={darkMode} prefill={poPrefill} onClearPrefill={function(){setPoPrefill(null);}} />;
       case "inventory":  return <InventoryView onToast={showToast} darkMode={darkMode} />;
       case "members":    return <MembersView onToast={showToast} globalMembers={globalMembers} updateMember={updateMember} darkMode={darkMode} />;
       case "sales":      return <SalesView onToast={showToast} darkMode={darkMode} />;
       case "gross_profit": return <GrossProfitView onToast={showToast} darkMode={darkMode} />;
+      case "search_analytics":  return <SearchAnalyticsView onToast={showToast} darkMode={darkMode} />;
       case "reports":           return <ReportsView onToast={showToast} onNav={setPage} darkMode={darkMode} />;
       case "digital_products":  return <DigitalProductsView onToast={showToast} initialTab="products" darkMode={darkMode} />;
       case "digital_purchases": return <DigitalProductsView onToast={showToast} initialTab="purchases" darkMode={darkMode} />;
