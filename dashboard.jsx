@@ -1,5 +1,15 @@
 // React グローバル変数展開（Babel Standalone用）
 const { useState, useEffect, useRef, useMemo, useCallback, useContext, createContext } = React;
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// TODO[P0]: ファイル分割計画（5月エンジニア参画前に実施）
+// 分割対象:
+//   1. OrdersView（7,983行）→ orders/OrdersView.jsx + orders/PicklistSection.jsx + orders/SagawaSection.jsx
+//   2. DashboardView（850行）→ dashboard/DashboardView.jsx
+//   3. PubReportView（630行）→ publisher/PubReportView.jsx
+//   4. SettingsView（400行）→ settings/SettingsView.jsx
+//   5. 共通コンポーネント（Card/Btn/Table等）→ components/ui/
+// 分割後もindex.tsxからre-exportして既存importを維持
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 // ── トークン ─────────────────────────────
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -105,7 +115,7 @@ const NAV = [
     { id:"points",     icon:"🎁", label:"ポイント管理"                  },
     { id:"reviews",    icon:"⭐", label:"レビュー審査",    badge:"8"   },
   ]},
-  { group:"📣 マーケティング", items:[
+  { group:"📣 マーケティング・コンテンツ", items:[
     { id:"mail_tx",    icon:"🔔", label:"法改正アラート",  badge:"2"   },
     { id:"mail_ma",    icon:"📰", label:"メルマガ配信"                  },
     { id:"articles",   icon:"✍",  label:"記事管理（MicroCMS）",badge:"11"},
@@ -120,8 +130,9 @@ const NAV = [
     { id:"gross_profit", icon:"🧮", label:"粗利分析",     badge:"NEW"  },
     { id:"reports",      icon:"📑", label:"レポート"                    },
     { id:"search_analytics", icon:"🔍", label:"検索ログ分析",  badge:"NEW"  },
-  ]},
-  { group:"✍ コンテンツ制作", items:[
+    { id:"saas",        icon:"🤖", label:"AI司書 Pro"                    },
+    { id:"bpo",         icon:"📋", label:"BPO案件管理",   badge:"5"      },
+    { id:"bpo_72",      icon:"⚖",  label:"弁護士法72条チェック",badge:"2" },
     { id:"reform_cal",       icon:"📅", label:"法改正カレンダー", badge:"1" },
     { id:"publishing",       icon:"📖", label:"出版プロジェクト", badge:"3" },
     { id:"digital_products", icon:"💎", label:"デジタル商品",     badge:"2",
@@ -134,11 +145,6 @@ const NAV = [
     { id:"legalscape",  icon:"🔗", label:"Legalscape連携"                 },
   ]},
   // ─── 層4：設定・管理（固定下部）────────────────────────
-  { group:"💼 SaaS・AI", items:[
-    { id:"saas",    icon:"🤖", label:"AI司書 Pro"                    },
-    { id:"bpo",     icon:"📋", label:"BPO案件管理",   badge:"5"      },
-    { id:"bpo_72",  icon:"⚖",  label:"弁護士法72条チェック",badge:"2" },
-  ]},
   { group:"⚙ 設定", items:[
     { id:"staff",         icon:"👩‍💼", label:"スタッフ・権限管理"          },
     { id:"settings",      icon:"⚙",  label:"システム設定"                },
@@ -1228,7 +1234,7 @@ const StoreView = ({ onToast, darkMode }) => {
                     <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
                       <span style={{ fontSize:14, fontWeight:800, color:T.ink }}>{s.name}</span>
                       {s.tabletReady && (
-                        <span style={{ fontSize:9, padding:"2px 6px", borderRadius:4,
+                        <span style={{ fontSize:10, padding:"2px 6px", borderRadius:4,
                           background:T.okPale, color:T.ok, fontWeight:700 }}>📱 タブレット対応</span>
                       )}
                       <span style={{ fontSize:10, color:T.ink4, marginLeft:"auto" }}>
@@ -1317,14 +1323,14 @@ const StoreView = ({ onToast, darkMode }) => {
                       <div key={d.date} onClick={() => setDateIdx(6-i)}
                         style={{ flex:1, display:"flex", flexDirection:"column",
                           alignItems:"center", gap:3, cursor:"pointer" }}>
-                        <div style={{ fontSize:8, color:T.ink4, fontWeight:700 }}>
+                        <div style={{ fontSize:10, color:T.ink4, fontWeight:700 }}>
                           {fmtM(d.sales)}
                         </div>
                         <div style={{ width:"100%", height:h, borderRadius:"4px 4px 0 0",
                           background: isSel ? store.color : `${store.color}50`,
                           border: isSel ? `2px solid ${store.color}` : "none",
                           transition:"height .3s" }} />
-                        <div style={{ fontSize:9,
+                        <div style={{ fontSize:10,
                           color: isSel ? store.color : T.ink4,
                           fontWeight: isSel ? 800 : 400 }}>
                           {d.date.slice(5)}
@@ -1463,14 +1469,14 @@ const StoreView = ({ onToast, darkMode }) => {
                   <div key={h} style={{ flex:1, display:"flex", flexDirection:"column",
                     alignItems:"center", justifyContent:"flex-end", height:110, gap:2 }}>
                     {isPeak && (
-                      <div style={{ fontSize:8, color:store.color, fontWeight:800 }}>▲{v}</div>
+                      <div style={{ fontSize:10, color:store.color, fontWeight:800 }}>▲{v}</div>
                     )}
                     <div style={{ width:"100%", height:barH,
                       borderRadius:"3px 3px 0 0",
                       background: isPeak ? store.color : isOpen ? `${store.color}65` : T.rule,
                       transition:"height .3s" }} />
                     {h % 3 === 0 && (
-                      <div style={{ fontSize:8, color:T.ink4, position:"absolute", bottom:0 }}>
+                      <div style={{ fontSize:10, color:T.ink4, position:"absolute", bottom:0 }}>
                         {h}h
                       </div>
                     )}
@@ -1651,7 +1657,7 @@ const MAIL_SEGMENTS = [
   { id:"seg-keiji",    label:"刑事弁護",      color:T.purple, count:1240, note:"刑事法カテゴリ" },
   { id:"seg-gyosei",   label:"行政法",        color:"#0277bd", count:890,  note:"行政法・官公庁法務" },
   { id:"seg-shuushu",  label:"修習生",        color:"#558b2f", count:1502, note:"修習生ステータス" },
-  { id:"seg-bpo",      label:"BPO見込み",     color:"#c62828", count:412,  note:"BPO記事クリック・問い合わせ" },
+  { id:"seg-bpo",      label:"BPO見込み",     color:T.red, count:412,  note:"BPO記事クリック・問い合わせ" },
   { id:"seg-expert",   label:"エキスパート",  color:T.gold, count:387,  note:"エキスパート認定会員" },
   { id:"seg-corp",     label:"企業法務",      color:"#37474f", count:947,  note:"法人会員紐づき企業法務担当" },
 ];
@@ -1990,6 +1996,9 @@ const SkeletonList = () => (
   </div>
 );
 
+// TODO[P1]: localStorage全52箇所をSupabase user_settingsテーブルに移行
+// 対象: QA設定・KPI並替え・フォントサイズ・ダークモード・ロール・デモシナリオ
+// 移行タイミング: Supabase Auth実装後（Stage 1-A Week 3〜）
 const Table = ({ cols, rows, onRow, expandedId, renderExpanded, expandAll }) => (
   <div style={{ overflowX:"auto" }}>
     <table style={{ width:"100%", borderCollapse:"collapse", fontSize:14 }}>
@@ -2216,7 +2225,7 @@ const INITIAL_KPI_ORDER = [
   { id:"ad_count",    label:"広告掲載（全媒体）", value:"9件",         deltaKey:"ad_count",    color:T.gold, icon:"📣", nav:"banners", group:"revenue", goalVal:15,       goalDisp:"15件",   goalPct:60 },
   { id:"ad_sales",    label:"広告月額収益（全媒体）", value:"¥480,000", deltaKey:"ad_sales",    color:T.gold, icon:"💴", nav:"banners", group:"revenue", goalVal:700000,   goalDisp:"¥70万",  goalPct:69 },
   { id:"bpo",         label:"BPO稼働案件",        value:"23件",        deltaKey:"bpo",         color:T.amber, icon:"📋", nav:"bpo",     group:"bpo",     goalVal:25,       goalDisp:"25件",   goalPct:92 },
-  { id:"pay_hold",    label:"発送保留",             value:"1件",         deltaKey:"pay_hold",    color:"#c62828", icon:"🔒", nav:"orders",  group:"revenue", goalVal:0,        goalDisp:"0件",    goalPct:100 },
+  { id:"pay_hold",    label:"発送保留",             value:"1件",         deltaKey:"pay_hold",    color:T.red, icon:"🔒", nav:"orders",  group:"revenue", goalVal:0,        goalDisp:"0件",    goalPct:100 },
   { id:"reviews",     label:"レビュー投稿（月）",  value:"43件",        deltaKey:"reviews",     color:T.gold, icon:"⭐", nav:"reviews", group:"crm",     goalVal:50,       goalDisp:"50件",   goalPct:86 },
   { id:"inquiry",     label:"お問い合わせ数",      value:"37件",        deltaKey:"inquiry",     color:T.ink3, icon:"✉", nav:null,      group:"crm" },
 ];
@@ -2434,7 +2443,7 @@ const DashboardView = ({ onNav, darkMode, staffRole, staffName, orders, deposits
             </div>
             <div style={{ textAlign:"right" }}>
               <div style={{ fontSize:12, fontWeight:800, color:isUp?T.ok:isDown?T.red:T.ink4 }}>{delta}</div>
-              {basis && <div style={{ fontSize:9, color:T.ink4 }}>{basis}</div>}
+              {basis && <div style={{ fontSize:10, color:T.ink4 }}>{basis}</div>}
             </div>
           </div>
           <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:8 }}>
@@ -2474,13 +2483,13 @@ const DashboardView = ({ onNav, darkMode, staffRole, staffName, orders, deposits
           <div style={{ textAlign:"right" }}>
             <div style={{ fontSize:12, fontWeight:800,
               color:isUp?T.ok:isDown?T.red:T.ink4 }}>{delta}</div>
-            {basis && <div style={{ fontSize:9, color:T.ink4, marginTop:1 }}>{basis}</div>}
+            {basis && <div style={{ fontSize:10, color:T.ink4, marginTop:1 }}>{basis}</div>}
           </div>
         </div>
         <div style={{ fontFamily:"'Inter',sans-serif", fontSize:20, fontWeight:800,
           color:k.color, lineHeight:1.1, marginBottom:2 }}>{k.value}</div>
         {k.sub && (
-          <div style={{ fontSize:9,color:T.teal,fontWeight:600,marginBottom:2 }}>
+          <div style={{ fontSize:10,color:T.teal,fontWeight:600,marginBottom:2 }}>
             {k.sub}
           </div>
         )}
@@ -2929,17 +2938,17 @@ const DashboardView = ({ onNav, darkMode, staffRole, staffName, orders, deposits
                 <div style={{ textAlign:"right" }}>
                   <div style={{ display:"flex",alignItems:"baseline",gap:10,justifyContent:"flex-end" }}>
                     <div>
-                      <div style={{ fontSize:9,color:T.ink4,fontWeight:700 }}>売上</div>
+                      <div style={{ fontSize:10,color:T.ink4,fontWeight:700 }}>売上</div>
                       <div style={{ fontFamily:"'Inter'",fontSize:18,fontWeight:800,color:T.g2 }}>
                         ¥{(pillarTotal/10000).toFixed(0)}万
                       </div>
                     </div>
                     <div>
-                      <div style={{ fontSize:9,color:T.ok,fontWeight:700 }}>粗利（概算）</div>
+                      <div style={{ fontSize:10,color:T.ok,fontWeight:700 }}>粗利（概算）</div>
                       <div style={{ fontFamily:"'Inter'",fontSize:16,fontWeight:800,color:T.ok }}>
                         ¥{Math.round(pillars.reduce(function(s,p){ return s+p.val*(p.gm||0)/100; },0)/10000)}万
                       </div>
-                      <div style={{ fontSize:9,color:T.ok }}>
+                      <div style={{ fontSize:10,color:T.ok }}>
                         粗利率 {Math.round(pillars.reduce(function(s,p){ return s+p.val*(p.gm||0)/100; },0)/pillarTotal*100)}%
                       </div>
                     </div>
@@ -2954,7 +2963,7 @@ const DashboardView = ({ onNav, darkMode, staffRole, staffName, orders, deposits
                   <div key={i} title={`${p.label}：¥${(p.val/10000).toFixed(1)}万（${p.pct}%）`}
                     style={{ width:`${p.pct}%`, background:p.color,
                       display:"flex", alignItems:"center", justifyContent:"center",
-                      fontSize:9, color:"rgba(255,255,255,.9)", fontWeight:700,
+                      fontSize:10, color:"rgba(255,255,255,.9)", fontWeight:700,
                       overflow:"hidden", whiteSpace:"nowrap", transition:"width .5s",
                       cursor:"default", minWidth:0 }}>
                     {p.pct >= 8 ? `${p.pct}%` : ""}
@@ -2975,13 +2984,13 @@ const DashboardView = ({ onNav, darkMode, staffRole, staffName, orders, deposits
                       <div style={{ fontFamily:"'Inter'", fontSize:14, fontWeight:800, color:s.color }}>
                         ¥{(s.val/10000).toFixed(s.val<100000?1:0)}万
                       </div>
-                      <div style={{ fontSize:9, color:T.ink4, marginBottom:2 }}>
+                      <div style={{ fontSize:10, color:T.ink4, marginBottom:2 }}>
                         {s.pct}%{tgt>0?` / 目標¥${tgt}万`:""}
                       </div>
                       {(function(){
                         return (
                           <div style={{ display:"flex",alignItems:"center",gap:4,marginTop:2 }}>
-                            <div style={{ fontSize:9,color:T.ok,fontWeight:700 }}>
+                            <div style={{ fontSize:10,color:T.ok,fontWeight:700 }}>
                               粗利 ¥{Math.round(s.val*s.gm/100/10000).toFixed(0)}万
                             </div>
                             <div style={{ display:"flex",alignItems:"center",gap:2 }}>
@@ -2993,11 +3002,11 @@ const DashboardView = ({ onNav, darkMode, staffRole, staffName, orders, deposits
                                 onClick={function(e){ e.stopPropagation(); }}
                                 title="粗利率を手動変更できます（%）"
                                 style={{ width:36,padding:"1px 4px",borderRadius:4,
-                                  border:"1px solid "+T.ok+"50",fontSize:9,
+                                  border:"1px solid "+T.ok+"50",fontSize:10,
                                   fontFamily:"inherit",textAlign:"right",
                                   background:T.okPale,color:T.ok,fontWeight:700,
                                   outline:"none" }} />
-                              <span style={{ fontSize:9,color:T.ok }}>%</span>
+                              <span style={{ fontSize:10,color:T.ok }}>%</span>
                             </div>
                           </div>
                         );
@@ -3010,7 +3019,7 @@ const DashboardView = ({ onNav, darkMode, staffRole, staffName, orders, deposits
                         </div>
                       )}
                       {tgt>0&&(
-                        <div style={{ fontSize:9, fontWeight:700, marginTop:2,
+                        <div style={{ fontSize:10, fontWeight:700, marginTop:2,
                           color:ach>=100?T.ok:ach>=70?T.amber:T.red }}>
                           {ach}%
                         </div>
@@ -3025,7 +3034,7 @@ const DashboardView = ({ onNav, darkMode, staffRole, staffName, orders, deposits
               background:"linear-gradient(135deg,rgba(1,87,155,.03),rgba(26,92,56,.03))" }}>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
                 <h3 style={{ fontSize:13, fontWeight:800, color:T.ink, margin:0 }}>📈 GA4 サイト計測</h3>
-                <span style={{ fontSize:9, fontWeight:700, padding:"2px 6px", borderRadius:4,
+                <span style={{ fontSize:10, fontWeight:700, padding:"2px 6px", borderRadius:4,
                   background:T.amberPale, color:T.amber }}>API連携待ち</span>
               </div>
               {[
@@ -3041,7 +3050,7 @@ const DashboardView = ({ onNav, darkMode, staffRole, staffName, orders, deposits
                   <span style={{ fontSize:12, color:T.ink3 }}>{g.icon} {g.label}</span>
                   <div style={{ textAlign:"right" }}>
                     <div style={{ fontFamily:"'Inter'", fontSize:13, fontWeight:800, color:g.color }}>{g.value}</div>
-                    <div style={{ fontSize:9, fontWeight:700,
+                    <div style={{ fontSize:10, fontWeight:700,
                       color:g.change.startsWith("+")?T.ok:g.change.startsWith("-")?T.red:T.ink4 }}>
                       {g.change}
                     </div>
@@ -3230,7 +3239,7 @@ const PubReportView = ({ onToast, darkMode }) => {
                     <div style={{ width:"100%",borderRadius:"3px 3px 0 0",
                       background:i===5?pub.color:pub.color+"60",
                       height:`${Math.round(chartData[i]/chartMax*80)}px` }} />
-                    <div style={{ fontSize:9,color:T.ink4 }}>{m}</div>
+                    <div style={{ fontSize:10,color:T.ink4 }}>{m}</div>
                   </div>
                 ))}
               </div>
@@ -5041,7 +5050,7 @@ const CorporateView = ({ onToast, globalOrders, updateOrder, globalAddrHistory, 
                                         style={{ color:T.red,borderColor:T.red+"40" }}>
                                         📧 督促メール
                                         {inv.reminderSentAt && (
-                                          <span style={{ fontSize:9,color:T.ink4,marginLeft:4 }}>
+                                          <span style={{ fontSize:10,color:T.ink4,marginLeft:4 }}>
                                             送信済
                                           </span>
                                         )}
@@ -5160,7 +5169,7 @@ const CorporateView = ({ onToast, globalOrders, updateOrder, globalAddrHistory, 
                                       <div style={{ display:"flex",gap:6,alignItems:"center",marginBottom:3 }}>
                                         <span style={{ fontSize:12,fontWeight:700,color:T.ink }}>{h.member}</span>
                                         {isToHome && (
-                                          <span style={{ fontSize:9,fontWeight:700,padding:"1px 5px",
+                                          <span style={{ fontSize:10,fontWeight:700,padding:"1px 5px",
                                             borderRadius:3,background:T.amberPale,color:T.amber }}>
                                             ⚠ 自宅宛
                                           </span>
@@ -5697,7 +5706,7 @@ const CorporateView = ({ onToast, globalOrders, updateOrder, globalAddrHistory, 
                               <span style={{ fontSize:11,fontWeight:700,color:T.ink3,fontFamily:"'Inter',monospace" }}>{o.id}</span>
                               <span style={{ fontSize:11,color:T.ink4 }}>{o.member}</span>
                               {o.corpId===genTarget.id && (
-                                <span style={{ fontSize:9,padding:"1px 5px",borderRadius:3,
+                                <span style={{ fontSize:10,padding:"1px 5px",borderRadius:3,
                                   background:T.g2+"18",color:T.g2,fontWeight:700 }}>corpID一致</span>
                               )}
                             </div>
@@ -6631,7 +6640,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
     transfer: { label:"振込",  icon:"🏦", color:T.navy,  bg:T.navyPale },
     invoice:  { label:"請求書",icon:"📄", color:T.amber, bg:T.amberPale},
     cod:      { label:"代引き",icon:"📦", color:T.ink3,  bg:T.bg       },
-    kakeuri:  { label:"掛売り",icon:"📋", color:"#7b1fa2",bg:T.purplePale  },
+    kakeuri:  { label:"掛売り",icon:"📋", color:T.purple,bg:T.purplePale  },
   };
 
   // グローバルstateを使用（消し込みと連動）
@@ -7153,7 +7162,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                       <div key={i} style={{ textAlign:"center",background:"rgba(255,255,255,.08)",
                         borderRadius:6,padding:"6px 4px" }}>
                         <div style={{ fontFamily:"'Inter'",fontSize:13,fontWeight:800,color:k.color }}>{k.val}</div>
-                        <div style={{ fontSize:9,color:"rgba(255,255,255,.45)" }}>{k.label}</div>
+                        <div style={{ fontSize:10,color:"rgba(255,255,255,.45)" }}>{k.label}</div>
                       </div>
                     );
                   })}
@@ -7177,7 +7186,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                       <div key={i} style={{ textAlign:"center",background:"rgba(255,255,255,.08)",
                         borderRadius:6,padding:"6px 4px" }}>
                         <div style={{ fontFamily:"'Inter'",fontSize:13,fontWeight:800,color:k.color }}>{k.val}</div>
-                        <div style={{ fontSize:9,color:"rgba(255,255,255,.45)" }}>{k.label}</div>
+                        <div style={{ fontSize:10,color:"rgba(255,255,255,.45)" }}>{k.label}</div>
                       </div>
                     );
                   })}
@@ -7382,9 +7391,9 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                       <div style={{ fontSize:11,fontWeight:700,color:T.navy,fontFamily:"'Inter'" }}>{r.id}</div>
                       <div style={{ fontSize:12,fontWeight:600,color:T.ink }}>{r.member}</div>
                       <div style={{ display:"flex",gap:3,marginTop:2,flexWrap:"wrap" }}>
-                        {r.urgent&&<span style={{ fontSize:9,padding:"1px 4px",borderRadius:3,background:T.redPale,color:T.red,fontWeight:800 }}>🚨急ぎ</span>}
-                        {!ap.ok&&r.fmt==="paper"&&<span style={{ fontSize:9,padding:"1px 4px",borderRadius:3,background:T.amberPale,color:T.amber,fontWeight:800 }}>🔒保留</span>}
-                        {r.staffMemo&&<span style={{ fontSize:9,color:T.ink4 }}>📝</span>}
+                        {r.urgent&&<span style={{ fontSize:10,padding:"1px 4px",borderRadius:3,background:T.redPale,color:T.red,fontWeight:800 }}>🚨急ぎ</span>}
+                        {!ap.ok&&r.fmt==="paper"&&<span style={{ fontSize:10,padding:"1px 4px",borderRadius:3,background:T.amberPale,color:T.amber,fontWeight:800 }}>🔒保留</span>}
+                        {r.staffMemo&&<span style={{ fontSize:10,color:T.ink4 }}>📝</span>}
                       </div>
                     </div>
                   </div>
@@ -7443,26 +7452,26 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                         <span style={{ fontFamily:"'Inter'",fontWeight:700,color:T.navy,fontSize:12 }}>{r.id}</span>
                         {r.urgent && (
                           <span title={"急ぎ期日: "+(r.urgentBy||"")+" / "+r.urgentNote}
-                            style={{ fontSize:9,fontWeight:800,padding:"1px 5px",borderRadius:3,
+                            style={{ fontSize:10,fontWeight:800,padding:"1px 5px",borderRadius:3,
                               background:T.redPale,color:T.red,cursor:"help",flexShrink:0 }}>
                             🚨 急ぎ {r.urgentBy&&r.urgentBy.slice(5)}
                           </span>
                         )}
                         {isGaishoo && (
-                          <span style={{ fontSize:9,fontWeight:700,padding:"1px 5px",borderRadius:3,
+                          <span style={{ fontSize:10,fontWeight:700,padding:"1px 5px",borderRadius:3,
                             background:T.amberPale,color:T.amber,flexShrink:0 }}>
                             外商
                           </span>
                         )}
                         {r.assignedTo && (
-                          <span style={{ fontSize:9,color:T.ink4,flexShrink:0 }}>
+                          <span style={{ fontSize:10,color:T.ink4,flexShrink:0 }}>
                             {r.assignedTo}担当
                           </span>
                         )}
                         {(function(){
                           var pm = PAY_META[r.paymentMethod] || PAY_META.transfer;
                           return (
-                            <span style={{ fontSize:9,fontWeight:700,
+                            <span style={{ fontSize:10,fontWeight:700,
                               padding:"1px 5px",borderRadius:3,
                               background:pm.bg,color:pm.color,flexShrink:0 }}>
                               {pm.icon} {pm.label}
@@ -7470,7 +7479,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                           );
                         })()}
                         {isHold && (
-                          <span style={{ fontSize:9,fontWeight:800,
+                          <span style={{ fontSize:10,fontWeight:800,
                             padding:"1px 5px",borderRadius:3,
                             background:"#fbe9e7",color:T.amber,flexShrink:0 }}>
                             🔒 発送保留
@@ -7478,7 +7487,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                         )}
                       </div>
                       {r.caseNo && (
-                        <div style={{ fontSize:9,color:T.ink4,marginTop:1,
+                        <div style={{ fontSize:10,color:T.ink4,marginTop:1,
                           maxWidth:140,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}
                           title={r.caseNo+" / "+r.caseName}>
                           📂 {r.caseNo}
@@ -7488,15 +7497,15 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                       {st && r.fmt==="paper" && (
                         <div style={{ marginTop:3,display:"flex",gap:4,alignItems:"center" }}>
                           {st.isPod ? (
-                            <span style={{ fontSize:9,padding:"1px 5px",borderRadius:3,
+                            <span style={{ fontSize:10,padding:"1px 5px",borderRadius:3,
                               background:T.navyPale,color:T.navy,fontWeight:700 }}>🖨 POD</span>
                           ) : st.isOut ? (
-                            <span style={{ fontSize:9,padding:"1px 5px",borderRadius:3,
+                            <span style={{ fontSize:10,padding:"1px 5px",borderRadius:3,
                               background:T.redPale,color:T.red,fontWeight:800 }}>
                               ⚠ 品切れ
                             </span>
                           ) : (
-                            <span style={{ fontSize:9,color:T.ink4 }}>
+                            <span style={{ fontSize:10,color:T.ink4 }}>
                               {r.shipFrom==="honsha"?"本社":"霞が関"}
                               <span style={{ fontFamily:"'Inter'",fontWeight:700,
                                 color:st.isLow?T.amber:T.g2,marginLeft:3 }}>
@@ -7513,7 +7522,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                         setMemoModal(r);
                         setMemoInput(r.staffMemo||"");
                       }} title={r.staffMemo||"クリックでメモを追加"}
-                        style={{ marginTop:3,fontSize:9,cursor:"pointer",
+                        style={{ marginTop:3,fontSize:10,cursor:"pointer",
                           background:r.staffMemo?"#fffde7":"transparent",
                           borderRadius:4,padding:"2px 6px",
                           borderLeft:r.staffMemo?"2px solid #f9a825":"2px solid #ddd",
@@ -7573,7 +7582,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                       <div style={{ display:"flex",flexDirection:"column",gap:3 }}>
                         {/* 品目数サマリ */}
                         {r.taxItems.length>1 && (
-                          <div style={{ fontSize:9,fontWeight:700,color:T.ink3,marginBottom:1 }}>
+                          <div style={{ fontSize:10,fontWeight:700,color:T.ink3,marginBottom:1 }}>
                             📦 {r.taxItems.length}品目・計{r.taxItems.reduce(function(s,it){return s+(it.qty||1);},0)}冊
                           </div>
                         )}
@@ -7596,13 +7605,13 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                                   {it.name}
                                 </span>
                                 {qty>1 && (
-                                  <span style={{ fontSize:9,fontWeight:800,padding:"0 4px",borderRadius:3,
+                                  <span style={{ fontSize:10,fontWeight:800,padding:"0 4px",borderRadius:3,
                                     background:T.ink+"10",color:T.ink3 }}>×{qty}</span>
                                 )}
                               </div>
                               {/* 在庫ステータス（書籍のみ・サービスは非表示） */}
                               {book && !isService && (
-                                <div style={{ display:"flex",alignItems:"center",gap:4,marginTop:2,fontSize:9,flexWrap:"wrap" }}>
+                                <div style={{ display:"flex",alignItems:"center",gap:4,marginTop:2,fontSize:10,flexWrap:"wrap" }}>
                                   {stockZero && isPod ? (
                                     <span style={{ padding:"1px 5px",borderRadius:3,background:T.purplePale,color:T.purple,fontWeight:700 }}>🖨 POD対応</span>
                                   ) : stockZero ? (
@@ -7627,7 +7636,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                       <div style={{ fontSize:10,color:T.ink4 }}>{r.items}</div>
                     )}
                     {r.caseNo && (
-                      <div style={{ fontSize:9,color:T.ink4,marginTop:3,
+                      <div style={{ fontSize:10,color:T.ink4,marginTop:3,
                         overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
                         maxWidth:210 }} title={r.caseNo+" / "+r.caseName}>
                         📂 {r.caseNo}
@@ -7662,7 +7671,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                   ec:      { label:"EC",  bg:T.navyPale,  color:T.navy   },
                   gaishoo: { label:"外商", bg:T.okPale,    color:T.g2     },
                   phone:   { label:"TEL", bg:T.amberPale, color:T.amber  },
-                  fax:     { label:"FAX", bg:T.purplePale,   color:"#7b1fa2"},
+                  fax:     { label:"FAX", bg:T.purplePale,   color:T.purple},
                 };
                 const m = meta[ch] || meta.ec;
                 return (
@@ -7759,7 +7768,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                     <Btn variant="secondary" small onClick={function(){ setActionTarget(r); setReturnStep(1); setReturnReason(""); }}>処理</Btn>
                     {r.invoiceHistory&&r.invoiceHistory.length>0 && (
                       <span title={"最終発行: "+r.invoiceHistory[r.invoiceHistory.length-1].issuedAt}
-                        style={{ fontSize:9,color:T.g2,fontWeight:700,
+                        style={{ fontSize:10,color:T.g2,fontWeight:700,
                           padding:"2px 5px",borderRadius:3,background:T.okPale,cursor:"default" }}>
                         📄{r.invoiceHistory.length}
                       </span>
@@ -7772,7 +7781,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                           style={{ color:T.navy,borderColor:T.navy+"40",fontWeight:700 }}
                           onClick={function(){ openOrderInv(r); }}>📄 請求書</Btn>
                         {r.invoiceHistory&&r.invoiceHistory.length>0 && (
-                          <span style={{ fontSize:9,color:T.g2,fontWeight:700 }}>
+                          <span style={{ fontSize:10,color:T.g2,fontWeight:700 }}>
                             {"✅ "+r.invoiceHistory.length+"回発行"}
                           </span>
                         )}
@@ -7808,16 +7817,16 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                   {/* ━━ ZONE A: 在庫アラートバー（問題がある場合のみ表示）━━ */}
                   {stockIssues.length>0 && (
                     <div style={{ display:"flex",alignItems:"center",gap:10,padding:"8px 14px",marginBottom:10,
-                      borderRadius:6,background:"#fce4ec",border:"1px solid #e5737340" }}>
+                      borderRadius:6,background:T.redPale,border:"1px solid #e5737340" }}>
                       <span style={{ fontSize:18,flexShrink:0 }}>🚨</span>
-                      <div style={{ flex:1,fontSize:12,color:"#c62828",fontWeight:600 }}>
+                      <div style={{ flex:1,fontSize:12,color:T.red,fontWeight:600 }}>
                         欠品 {stockIssues.length}点 — 発注が必要です
                         <span style={{ fontSize:11,color:"#e5737380",fontWeight:400,marginLeft:8 }}>
                           {stockIssues.map(function(it){return it.name;}).join("、")}
                         </span>
                       </div>
                       <button onClick={function(e){e.stopPropagation(); if(onPurchaseOrder) onPurchaseOrder(stockIssues[0].isbn||"",stockIssues[0].name);}}
-                        style={{ padding:"5px 14px",borderRadius:5,background:"#c62828",color:"#fff",
+                        style={{ padding:"5px 14px",borderRadius:5,background:T.red,color:"#fff",
                           fontSize:11,fontWeight:700,border:"none",cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap" }}>
                         📠 発注画面へ
                       </button>
@@ -7905,19 +7914,19 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                             <td style={{ padding:"8px 10px",textAlign:"center",fontFamily:"'Inter'",fontWeight:800,fontSize:14 }}>{qty}</td>
                             <td style={{ padding:"8px 10px",textAlign:"right",fontFamily:"'Inter'",fontWeight:700 }}>
                               ¥{it.amount.toLocaleString()}
-                              <div style={{ fontSize:9,color:T.ink4,fontWeight:400 }}>{it.taxRate===8?"税8%":"税10%"}</div>
+                              <div style={{ fontSize:10,color:T.ink4,fontWeight:400 }}>{it.taxRate===8?"税8%":"税10%"}</div>
                             </td>
                             <td style={{ padding:"8px 10px",textAlign:"center" }}>
                               {isService ? (
                                 <span style={{ fontSize:10,color:T.ink4 }}>—</span>
                               ) : stockZero && isPod ? (
                                 <div>
-                                  <span style={{ fontSize:10,padding:"2px 8px",borderRadius:4,background:"#ede7f6",color:"#7b1fa2",fontWeight:700 }}>🖨 POD製造</span>
+                                  <span style={{ fontSize:10,padding:"2px 8px",borderRadius:4,background:T.purplePale,color:T.purple,fontWeight:700 }}>🖨 POD製造</span>
                                 </div>
                               ) : stockZero ? (
                                 <div>
                                   <button onClick={function(e){e.stopPropagation();if(onPurchaseOrder)onPurchaseOrder(it.isbn||"",it.name);}}
-                                    style={{ padding:"3px 10px",borderRadius:4,background:"#c62828",color:"#fff",
+                                    style={{ padding:"3px 10px",borderRadius:4,background:T.red,color:"#fff",
                                       fontWeight:700,fontSize:10,border:"none",cursor:"pointer",fontFamily:"inherit" }}>
                                     ❌ 要発注
                                   </button>
@@ -7927,12 +7936,12 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                                   <span style={{ fontSize:10,padding:"2px 8px",borderRadius:4,background:T.amberPale,color:T.amber,fontWeight:700 }}>
                                     ⚠ 残{book.stock}冊
                                   </span>
-                                  {loc && <div style={{ fontSize:9,color:T.ink4,marginTop:2 }}>霞{loc.kasumigaseki} 本{loc.honsha}</div>}
+                                  {loc && <div style={{ fontSize:10,color:T.ink4,marginTop:2 }}>霞{loc.kasumigaseki} 本{loc.honsha}</div>}
                                 </div>
                               ) : (
                                 <div>
                                   <span style={{ fontSize:11,color:T.g2,fontWeight:700 }}>✅ {book.stock}冊</span>
-                                  {loc && <div style={{ fontSize:9,color:T.ink4,marginTop:2 }}>霞{loc.kasumigaseki} 本{loc.honsha}</div>}
+                                  {loc && <div style={{ fontSize:10,color:T.ink4,marginTop:2 }}>霞{loc.kasumigaseki} 本{loc.honsha}</div>}
                                 </div>
                               )}
                             </td>
@@ -8185,7 +8194,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                                   {o.assignedTo||"未割当"}
                                 </div>
                                 {o.urgent && (
-                                  <div style={{ fontSize:9,fontWeight:800,color:T.red,marginTop:2 }}>
+                                  <div style={{ fontSize:10,fontWeight:800,color:T.red,marginTop:2 }}>
                                     🚨 {o.urgentBy&&o.urgentBy.slice(5)}まで
                                   </div>
                                 )}
@@ -8196,7 +8205,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                                   {o.member}
                                 </div>
                                 {o.caseNo && (
-                                  <div style={{ fontSize:9,color:T.ink4,marginTop:1 }}>
+                                  <div style={{ fontSize:10,color:T.ink4,marginTop:1 }}>
                                     📂 {o.caseNo}
                                   </div>
                                 )}
@@ -8233,7 +8242,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                                   color:T.g2,marginBottom:3 }}>
                                   ¥{o.total.toLocaleString()}
                                 </div>
-                                <div style={{ fontSize:9,fontWeight:700,padding:"1px 5px",
+                                <div style={{ fontSize:10,fontWeight:700,padding:"1px 5px",
                                   borderRadius:4,display:"inline-block",
                                   background:statusColor(o.status)+"18",
                                   color:statusColor(o.status) }}>
@@ -8243,14 +8252,14 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                                   justifyContent:"flex-end",gap:3 }}>
                                   {o.fmt!=="elec"&&(
                                     <Btn variant="ghost" small
-                                      style={{ fontSize:9,padding:"2px 5px" }}
+                                      style={{ fontSize:10,padding:"2px 5px" }}
                                       onClick={function(){ setActionTarget(o); setPrintMode("delivery"); }}>
                                       納品書
                                     </Btn>
                                   )}
                                   {(o.paymentMethod==="invoice"||o.shipMethod==="direct") && (
                                     <Btn variant="ghost" small
-                                      style={{ fontSize:9,padding:"2px 5px",color:T.navy }}
+                                      style={{ fontSize:10,padding:"2px 5px",color:T.navy }}
                                       onClick={function(){ openOrderInv(o); }}>
                                       請求書
                                     </Btn>
@@ -8427,13 +8436,13 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                                     <span style={{ fontFamily:"'Inter'",fontWeight:700,
                                       fontSize:12,color:T.navy }}>{o.id}</span>
                                     {o.urgent && (
-                                      <span style={{ fontSize:9,fontWeight:800,padding:"1px 5px",
+                                      <span style={{ fontSize:10,fontWeight:800,padding:"1px 5px",
                                         borderRadius:3,background:T.redPale,color:T.red }}>
                                         🚨 急ぎ {o.urgentBy&&o.urgentBy.slice(5)}
                                       </span>
                                     )}
                                     {isDeliv && (
-                                      <span style={{ fontSize:9,fontWeight:700,padding:"1px 5px",
+                                      <span style={{ fontSize:10,fontWeight:700,padding:"1px 5px",
                                         borderRadius:3,background:T.navyPale,color:"#0277bd" }}>
                                         🚴 配達中
                                       </span>
@@ -9426,7 +9435,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                                 <span style={{ fontFamily:"'Inter'",fontWeight:700,
                                   color:T.navy,fontSize:11 }}>{r.orderId}</span>
                                 <div style={{ display:"flex",gap:4,marginTop:2,alignItems:"center" }}>
-                                  <span style={{ fontSize:9,fontWeight:700,padding:"1px 5px",
+                                  <span style={{ fontSize:10,fontWeight:700,padding:"1px 5px",
                                     borderRadius:3,
                                     background:r.addrType==="home"?T.amberPale:T.okPale,
                                     color:r.addrType==="home"?T.amber:T.g2 }}>
@@ -9449,7 +9458,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                                           border:"1.5px solid "+(over?T.red:T.rule),
                                           fontSize:11,fontFamily:"inherit",outline:"none",
                                           boxSizing:"border-box",background:over?"#fff5f5":T.white }} />
-                                      {over && <div style={{ fontSize:9,color:T.red }}>⚠ 全角{Math.ceil(len/2)}文字超（上限16）</div>}
+                                      {over && <div style={{ fontSize:10,color:T.red }}>⚠ 全角{Math.ceil(len/2)}文字超（上限16）</div>}
                                     </div>
                                   );
                                 })()}
@@ -9466,7 +9475,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                                           border:"1.5px solid "+(over?T.red:T.rule),
                                           fontSize:11,fontFamily:"inherit",outline:"none",
                                           boxSizing:"border-box",background:over?"#fff5f5":T.white }} />
-                                      {over && <div style={{ fontSize:9,color:T.red }}>⚠ 全角{Math.ceil(len/2)}文字超（上限16）</div>}
+                                      {over && <div style={{ fontSize:10,color:T.red }}>⚠ 全角{Math.ceil(len/2)}文字超（上限16）</div>}
                                     </div>
                                   );
                                 })()}
@@ -9499,7 +9508,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                                           boxSizing:"border-box",
                                           background:over?"#fff5f5":T.white }} />
                                       {over && (
-                                        <div style={{ fontSize:9,color:T.red,marginTop:1 }}>
+                                        <div style={{ fontSize:10,color:T.red,marginTop:1 }}>
                                           ⚠ 全角{Math.ceil(len/2)}文字（上限16）
                                         </div>
                                       )}
@@ -10110,7 +10119,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                             <tr key={ii} style={{ borderBottom:`1px solid ${T.rule}` }}>
                               <td style={{ padding:"10px",fontSize:12 }}>
                                 {item.name}
-                                {item.taxRate===8 && <span style={{ marginLeft:4,fontSize:9,color:T.ok }}>※</span>}
+                                {item.taxRate===8 && <span style={{ marginLeft:4,fontSize:10,color:T.ok }}>※</span>}
                               </td>
                               <td style={{ padding:"10px",textAlign:"right",fontFamily:"'Inter'",fontSize:12 }}>
                                 ¥{printMode==="delivery"?taxExcl.toLocaleString():item.amount.toLocaleString()}
@@ -10175,10 +10184,10 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                         <div style={{ textAlign:"center" }}>
                           <div style={{ width:60,height:60,border:"1.5px solid "+T.g2,
                             borderRadius:"50%",display:"flex",alignItems:"center",
-                            justifyContent:"center",fontSize:9,color:T.g2,fontWeight:700 }}>
+                            justifyContent:"center",fontSize:10,color:T.g2,fontWeight:700 }}>
                             収受印
                           </div>
-                          <div style={{ fontSize:9,color:T.ink4,marginTop:3 }}>
+                          <div style={{ fontSize:10,color:T.ink4,marginTop:3 }}>
                             （収入印紙200円貼付）
                           </div>
                         </div>
@@ -10311,7 +10320,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                         {mergeInvOrders.map((o,i) => (
                           <tr key={i} style={{ borderBottom:"1px solid "+T.rule }}>
                             <td style={{ padding:"8px 10px",fontSize:11,color:T.navy,fontWeight:700 }}>{o.id}</td>
-                            <td style={{ padding:"8px 10px",fontSize:11 }}>{o.items}<span style={{ fontSize:9,marginLeft:4,color:T.ok,fontWeight:700 }}>※</span></td>
+                            <td style={{ padding:"8px 10px",fontSize:11 }}>{o.items}<span style={{ fontSize:10,marginLeft:4,color:T.ok,fontWeight:700 }}>※</span></td>
                             <td style={{ padding:"8px 10px",textAlign:"right",fontSize:11,color:T.ok,fontWeight:700 }}>8%※</td>
                             <td style={{ padding:"8px 10px",textAlign:"right",fontFamily:"'Inter'",fontWeight:700,fontSize:12 }}>{"¥"+o.total.toLocaleString()}</td>
                           </tr>
@@ -10326,7 +10335,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                     </table>
                     <div style={{ background:T.navyPale,borderRadius:7,padding:"8px 12px",fontSize:10,color:T.ink3,marginBottom:12 }}>
                       {"消費税内訳（合算計算・端数切捨）　※8%（軽減税率）対象：¥"+base8.toLocaleString()+"　消費税：¥"+tax8.toLocaleString()}
-                      <br/><span style={{ fontSize:9 }}>※印は軽減税率（8%）対象。書籍は消費税法上の軽減税率適用対象品目です。</span>
+                      <br/><span style={{ fontSize:10 }}>※印は軽減税率（8%）対象。書籍は消費税法上の軽減税率適用対象品目です。</span>
                     </div>
                     <div style={{ border:"1px solid "+T.rule,borderRadius:7,padding:"10px 14px",fontSize:11,color:T.ink3,lineHeight:1.9 }}>
                       <div style={{ fontWeight:700,color:T.ink,marginBottom:3 }}>お振込先</div>
@@ -10605,7 +10614,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                             <tr key={i} style={{ borderBottom:"1px solid "+T.rule }}>
                               <td style={{ padding:"9px 10px",fontSize:12 }}>
                                 {it.name}
-                                {rate===8&&<span style={{ fontSize:9,marginLeft:6,color:T.ok,fontWeight:700 }}>※</span>}
+                                {rate===8&&<span style={{ fontSize:10,marginLeft:6,color:T.ok,fontWeight:700 }}>※</span>}
                               </td>
                               <td style={{ padding:"9px 10px",textAlign:"center",fontSize:12 }}>—</td>
                               <td style={{ padding:"9px 10px",textAlign:"right",fontSize:11,
@@ -10624,7 +10633,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                           <tr style={{ borderBottom:"1px solid "+T.rule }}>
                             <td style={{ padding:"9px 10px",fontSize:12 }}>
                               {o.items||"書籍代"}
-                              <span style={{ fontSize:9,marginLeft:6,color:T.ok,fontWeight:700 }}>※</span>
+                              <span style={{ fontSize:10,marginLeft:6,color:T.ok,fontWeight:700 }}>※</span>
                             </td>
                             <td style={{ padding:"9px 10px",textAlign:"center",fontSize:12 }}>—</td>
                             <td style={{ padding:"9px 10px",textAlign:"right",fontSize:11,color:T.ok,fontWeight:700 }}>8%※</td>
@@ -10658,7 +10667,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                         <span>{"10%（標準税率）対象：¥"+taxR.base10.toLocaleString()+"　消費税：¥"+taxR.tax10.toLocaleString()}</span>
                       )}
                       <br/>
-                      <span style={{ fontSize:9 }}>※印は軽減税率（8%）対象。書籍は消費税法上の軽減税率適用対象品目です。</span>
+                      <span style={{ fontSize:10 }}>※印は軽減税率（8%）対象。書籍は消費税法上の軽減税率適用対象品目です。</span>
                     </div>
 
                     {/* 振込先 */}
@@ -10682,10 +10691,10 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                         <div style={{ textAlign:"center" }}>
                           <div style={{ width:64,height:64,border:"1.5px solid "+T.g2,
                             borderRadius:"50%",display:"flex",alignItems:"center",
-                            justifyContent:"center",fontSize:9,color:T.g2,fontWeight:700 }}>
+                            justifyContent:"center",fontSize:10,color:T.g2,fontWeight:700 }}>
                             検収印
                           </div>
-                          <div style={{ fontSize:9,color:T.ink4,marginTop:3 }}>検収日：　　　月　　　日</div>
+                          <div style={{ fontSize:10,color:T.ink4,marginTop:3 }}>検収日：　　　月　　　日</div>
                         </div>
                       )}
                     </div>
@@ -11453,9 +11462,9 @@ const MembersView = ({ onToast, globalMembers, updateMember, darkMode }) => {
                     <span style={{fontSize:12,color:T.ink3}}>{r.type}</span>
                     {r.barNo && (
                       <div style={{ display:"flex",gap:4,alignItems:"center",marginTop:2 }}>
-                        <span style={{ fontSize:9,fontWeight:700,padding:"1px 5px",
+                        <span style={{ fontSize:10,fontWeight:700,padding:"1px 5px",
                           borderRadius:3,background:"#fff8e1",color:"#f57c00" }}>⚖</span>
-                        <span style={{ fontSize:9,color:T.ink4,fontFamily:"'Inter'" }}>{r.barNo}</span>
+                        <span style={{ fontSize:10,color:T.ink4,fontFamily:"'Inter'" }}>{r.barNo}</span>
                       </div>
                     )}
                   </div>
@@ -11652,7 +11661,7 @@ const MembersView = ({ onToast, globalMembers, updateMember, darkMode }) => {
                   <div style={{ flex:1 }}>
                     <div style={{ display:"flex",gap:6,alignItems:"center",marginBottom:2 }}>
                       <span style={{ fontSize:13,fontWeight:800,color:T.ink }}>{m.name}</span>
-                      <span style={{ fontSize:9,padding:"1px 6px",borderRadius:3,
+                      <span style={{ fontSize:10,padding:"1px 6px",borderRadius:3,
                         background:"#fffbe6",color:T.gold,border:"1px solid "+T.gold+"60",
                         fontWeight:700 }}>⭐ エキスパート</span>
                       {m.barNo && <span style={{ fontSize:10,color:T.ink4 }}>{m.barNo}　{m.barAssoc}</span>}
@@ -12041,7 +12050,7 @@ const SalesView = ({ onToast, darkMode }) => {
                   borderRadius:"3px 3px 0 0", transition:"height .3s",
                   cursor:"pointer" }} />
               </div>
-              <div style={{ fontSize:9, color:isInPeriod?color:T.ink4, marginTop:3,
+              <div style={{ fontSize:10, color:isInPeriod?color:T.ink4, marginTop:3,
                 fontWeight:isInPeriod?700:400 }}>{lbl}</div>
             </div>
           );
@@ -12178,7 +12187,7 @@ const SalesView = ({ onToast, darkMode }) => {
                     return (
                       <div key={i} style={{ flex:1, display:"flex", flexDirection:"column",
                         alignItems:"center", gap:2 }}>
-                        <div style={{ fontSize:9, color:isIn?T.g2:T.ink4, fontWeight:isIn?700:400,
+                        <div style={{ fontSize:10, color:isIn?T.g2:T.ink4, fontWeight:isIn?700:400,
                           fontFamily:"'Inter'", marginBottom:2 }}>
                           {isIn ? fmtM(tot*1000) : ""}
                         </div>
@@ -12196,7 +12205,7 @@ const SalesView = ({ onToast, darkMode }) => {
                               borderRadius:"2px 2px 0 0", transition:"height .3s" }} />
                           </div>
                         </div>
-                        <div style={{ fontSize:8, color:T.ink4, marginTop:2, textAlign:"center" }}>{lbl}</div>
+                        <div style={{ fontSize:10, color:T.ink4, marginTop:2, textAlign:"center" }}>{lbl}</div>
                       </div>
                     );
                   })}
@@ -13114,11 +13123,11 @@ const BannerAdView = ({ onToast, darkMode }) => {
                           <div style={{ width:18,height:18,borderRadius:5,
                             background:a.status==="active"?T.ok:T.navy,
                             display:"flex",alignItems:"center",justifyContent:"center",
-                            fontFamily:"'Inter'",fontSize:9,fontWeight:800,color:"#fff" }}>
+                            fontFamily:"'Inter'",fontSize:10,fontWeight:800,color:"#fff" }}>
                             {a.order}
                           </div>
                           {a.status==="scheduled"&&(
-                            <span style={{ fontSize:9,padding:"1px 5px",borderRadius:4,
+                            <span style={{ fontSize:10,padding:"1px 5px",borderRadius:4,
                               background:T.navyPale,color:T.navy,fontWeight:700 }}>⏰</span>
                           )}
                         </div>
@@ -13128,16 +13137,16 @@ const BannerAdView = ({ onToast, darkMode }) => {
                           {a.title}
                         </div>
                         <div style={{ fontSize:10,color:T.ink4,marginBottom:4 }}>{a.client}</div>
-                        <div style={{ fontSize:9,color:T.ink4,lineHeight:1.4 }}>
+                        <div style={{ fontSize:10,color:T.ink4,lineHeight:1.4 }}>
                           {(a.startDatetime||"").slice(0,16)}<br/>〜{(a.endDatetime||"").slice(0,16)}
                         </div>
                         {a.price>0&&(
-                          <div style={{ marginTop:4,fontSize:9,fontWeight:700,color:T.gold }}>
+                          <div style={{ marginTop:4,fontSize:10,fontWeight:700,color:T.gold }}>
                             💴 ¥{(a.price/10000).toFixed(0)}万/月
                           </div>
                         )}
                         {a.ctr!=="—"&&(
-                          <div style={{ marginTop:2,fontSize:9,color:T.ok,fontWeight:700 }}>
+                          <div style={{ marginTop:2,fontSize:10,color:T.ok,fontWeight:700 }}>
                             CTR {a.ctr}
                           </div>
                         )}
@@ -13799,7 +13808,7 @@ const GrossProfitView = ({ onToast, darkMode }) => {
               <div style={{ height:"100%",borderRadius:4,background:s.color,
                 width:Math.min(100,s.rate*100)+"%",transition:"width .4s" }} />
             </div>
-            <div style={{ fontSize:9,color:T.ink4,marginTop:3 }}>粗利率 {fmtPct(s.rate)}</div>
+            <div style={{ fontSize:10,color:T.ink4,marginTop:3 }}>粗利率 {fmtPct(s.rate)}</div>
           </div>
         ))}
       </div>
@@ -13884,7 +13893,7 @@ const GrossProfitView = ({ onToast, darkMode }) => {
                           overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
                           {b.title}
                         </div>
-                        {b.pod&&<span style={{ fontSize:9,padding:"1px 5px",borderRadius:4,
+                        {b.pod&&<span style={{ fontSize:10,padding:"1px 5px",borderRadius:4,
                           background:T.amberPale,color:T.amber,fontWeight:700,marginTop:2,display:"inline-block" }}>POD</span>}
                       </td>
                       <td style={{ padding:"9px 10px" }}>
@@ -14644,9 +14653,9 @@ const PurchaseOrdersView = function({ onToast, darkMode, prefill, onClearPrefill
                 return (
                   <div key={i} style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4 }}>
                     <div style={{ fontSize:10,fontWeight:800,color:c }}>{count}件</div>
-                    <div style={{ fontSize:9,color:T.ink4 }}>{totalQty}冊</div>
+                    <div style={{ fontSize:10,color:T.ink4 }}>{totalQty}冊</div>
                     <div style={{ width:"100%",maxWidth:60,height:h,background:c,borderRadius:"4px 4px 0 0",opacity:.8 }} />
-                    <div style={{ fontSize:9,color:T.ink3,fontWeight:600,textAlign:"center",lineHeight:1.2 }}>{dist}</div>
+                    <div style={{ fontSize:10,color:T.ink3,fontWeight:600,textAlign:"center",lineHeight:1.2 }}>{dist}</div>
                   </div>
                 );
               })}
@@ -14679,7 +14688,7 @@ const PurchaseOrdersView = function({ onToast, darkMode, prefill, onClearPrefill
                     </div>
                     <div style={{ textAlign:"right",minWidth:60 }}>
                       <div style={{ fontFamily:"'Inter'",fontSize:14,fontWeight:900,color:T.g2 }}>{item.qty}冊</div>
-                      <div style={{ fontSize:9,color:T.ink4 }}>{item.count}回発注</div>
+                      <div style={{ fontSize:10,color:T.ink4 }}>{item.count}回発注</div>
                     </div>
                   </div>
                 );
@@ -14708,7 +14717,8 @@ const PurchaseOrdersView = function({ onToast, darkMode, prefill, onClearPrefill
               <div style={{ display:"grid",gridTemplateColumns:"140px 1fr",gap:10 }}>
                 <div>
                   <div style={{ fontSize:10,fontWeight:700,color:T.ink4,marginBottom:3 }}>ISBN</div>
-                  <input aria-label="ISBN" value={addForm.isbn} placeholder="978-4-xxx" onChange={function(e){setAddForm(Object.assign({},addForm,{isbn:e.target.value}));}}
+                  /* TODO: openBD APIでISBN→書名自動補完（GET https://api.openbd.jp/v1/get?isbn=XXX） */
+                  <input aria-label="ISBN" value={addForm.isbn} placeholder="978-4-xxx（入力後openBDで自動補完予定）" onChange={function(e){setAddForm(Object.assign({},addForm,{isbn:e.target.value}));}}
                     style={{ width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid "+T.rule,fontSize:12,fontFamily:"'Inter'" }} />
                 </div>
                 <div>
@@ -14847,7 +14857,7 @@ const SearchAnalyticsView = function({ onToast, darkMode }) {
                       <td style={{ padding:"8px 10px" }}>
                         <div style={{ display:"flex",alignItems:"center",gap:6 }}>
                           <span style={{ fontWeight:700,color:T.ink }}>{d.keyword}</span>
-                          {d.zeroHit && <span style={{ fontSize:9,padding:"1px 6px",borderRadius:3,background:T.red,color:"#fff",fontWeight:700 }}>0件</span>}
+                          {d.zeroHit && <span style={{ fontSize:10,padding:"1px 6px",borderRadius:3,background:T.red,color:"#fff",fontWeight:700 }}>0件</span>}
                         </div>
                       </td>
                       <td style={{ padding:"8px 10px",textAlign:"center",fontFamily:"'Inter'",fontWeight:700,color:T.ink }}>{d.searches.toLocaleString()}</td>
@@ -14928,13 +14938,13 @@ const SearchAnalyticsView = function({ onToast, darkMode }) {
               var isWeekend = i===4||i===5||i===11||i===12;
               return (
                 <div key={i} style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2 }}>
-                  <div style={{ fontSize:9,color:T.ink4,fontWeight:700 }}>{d.total}</div>
+                  <div style={{ fontSize:10,color:T.ink4,fontWeight:700 }}>{d.total}</div>
                   <div style={{ width:"100%",position:"relative" }}>
                     <div style={{ height:h,background:isWeekend?T.rule:T.g2+"60",borderRadius:"3px 3px 0 0",position:"relative" }}>
                       <div style={{ position:"absolute",bottom:0,left:0,right:0,height:zh,background:T.amber,borderRadius:"0 0 0 0",opacity:.7 }} />
                     </div>
                   </div>
-                  <div style={{ fontSize:9,color:isWeekend?T.ink4:T.ink3,fontWeight:isWeekend?400:600 }}>{d.date}</div>
+                  <div style={{ fontSize:10,color:isWeekend?T.ink4:T.ink3,fontWeight:isWeekend?400:600 }}>{d.date}</div>
                 </div>
               );
             })}
@@ -14975,7 +14985,7 @@ const SearchAnalyticsView = function({ onToast, darkMode }) {
                   <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6 }}>
                     <div style={{ display:"flex",alignItems:"center",gap:6 }}>
                       <span style={{ fontSize:12,fontWeight:700,color:T.ink }}>{d.keyword}</span>
-                      {d.zeroHit && <span style={{ fontSize:9,padding:"1px 5px",borderRadius:3,background:T.red,color:"#fff",fontWeight:700 }}>0件</span>}
+                      {d.zeroHit && <span style={{ fontSize:10,padding:"1px 5px",borderRadius:3,background:T.red,color:"#fff",fontWeight:700 }}>0件</span>}
                     </div>
                     <span style={{ fontSize:11,fontFamily:"'Inter'",fontWeight:700,color:T.ink3 }}>{total.toLocaleString()}回</span>
                   </div>
@@ -15364,7 +15374,7 @@ const ReconciliationView = ({ onToast, globalOrders, setGlobalOrders, updateOrde
                     <div style={{ display:"flex",gap:8,alignItems:"center",marginBottom:3 }}>
                       <span style={{ fontSize:13,fontWeight:800,color:T.ink }}>{r.name}</span>
                       {r.autoApprove&&(
-                        <span style={{ fontSize:9,padding:"1px 6px",borderRadius:4,
+                        <span style={{ fontSize:10,padding:"1px 6px",borderRadius:4,
                           background:T.okPale,color:T.ok,fontWeight:700 }}>自動承認</span>
                       )}
                     </div>
@@ -16236,7 +16246,7 @@ const ContentView = ({ onToast, darkMode }) => {
                       <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
                         {art.tags.map(function(tag,j){
                           return (
-                            <span key={j} style={{fontSize:9,fontWeight:700,padding:"1px 6px",
+                            <span key={j} style={{fontSize:10,fontWeight:700,padding:"1px 6px",
                               borderRadius:3,background:T.okPale,color:T.g2}}>
                               {tag}
                             </span>
@@ -16367,7 +16377,7 @@ const ContentView = ({ onToast, darkMode }) => {
                     background:T.bg,borderRadius:8,border:"1px solid "+T.rule}}>
                     <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:4}}>
                       <span style={{fontSize:12,fontWeight:700,color:T.ink}}>{rv.reviewer}</span>
-                      <span style={{fontSize:9,color:T.ink4}}>{rv.barAssoc}</span>
+                      <span style={{fontSize:10,color:T.ink4}}>{rv.barAssoc}</span>
                       <div style={{marginLeft:"auto"}}>
                         <StatusBadge status={rv.status} />
                       </div>
@@ -16822,7 +16832,7 @@ const HeroSliderView = ({ onToast, darkMode }) => {
                             {ct.icon} {ct.label}
                           </span>
                           {s.status==="scheduled"&&(
-                            <span style={{ fontSize:9,padding:"1px 5px",borderRadius:4,
+                            <span style={{ fontSize:10,padding:"1px 5px",borderRadius:4,
                               background:T.navyPale,color:T.navy,fontWeight:700 }}>⏰ 予定</span>
                           )}
                         </div>
@@ -16840,7 +16850,7 @@ const HeroSliderView = ({ onToast, darkMode }) => {
                             💴 ¥{(s.pricePerMonth/10000).toFixed(0)}万/月
                           </div>
                         )}
-                        <div style={{ marginTop:6,textAlign:"right",fontSize:9,
+                        <div style={{ marginTop:6,textAlign:"right",fontSize:10,
                           color:T.ink4 }}>クリックで詳細 ▸</div>
                       </div>
                     );
@@ -18083,7 +18093,7 @@ const ReformCalView = ({ onToast, darkMode }) => {
                             color:isCritical?T.red:isLow?T.amber:T.ok}}>
                             {b.pod?"🖨 POD":b.stock+"冊"}
                           </div>
-                          <div style={{fontSize:9,color:T.ink4}}>現在庫</div>
+                          <div style={{fontSize:10,color:T.ink4}}>現在庫</div>
                         </div>
                         {isCritical ? (
                           <Btn small onClick={function(){ onToast("⚠ "+b.title+" 緊急発注を開始"); }}>
@@ -18986,7 +18996,7 @@ const SettingsView = ({ onToast, onResetOrders, onResetDeposits, onResetMembers,
                         <div style={{ flex:1 }}>
                           <div style={{ display:"flex",gap:8,alignItems:"center",marginBottom:4 }}>
                             <span style={{ fontSize:13,fontWeight:700,color:T.ink }}>{j.name}</span>
-                            <span style={{ fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:4,
+                            <span style={{ fontSize:10,fontWeight:700,padding:"2px 7px",borderRadius:4,
                               background:j.status==="active"?T.okPale:T.bg,
                               color:j.status==="active"?T.ok:T.ink4 }}>
                               {j.status==="active"?"稼働中":"一時停止"}
@@ -19725,7 +19735,7 @@ const PhoneOrderEntry = ({ orders, setOrders, addOrder, onToast, setGlobalAddrHi
                     <span style={{ color:T.ink4 }}>登録番号：</span>
                     <span style={{ fontWeight:700,color:T.ink }}>{fullMember.barNo}</span>
                     <span style={{ color:T.ink4 }}>{fullMember.barAssoc}</span>
-                    <span style={{ marginLeft:"auto",fontSize:9,fontWeight:700,padding:"1px 6px",
+                    <span style={{ marginLeft:"auto",fontSize:10,fontWeight:700,padding:"1px 6px",
                       borderRadius:3,background:T.okPale,color:T.ok,border:"1px solid "+T.ok+"40" }}>
                       会員価格適用 ✓
                     </span>
@@ -19940,11 +19950,11 @@ const PhoneOrderEntry = ({ orders, setOrders, addOrder, onToast, setGlobalAddrHi
                               <span style={{ fontSize:12,fontWeight:700,
                                 color:isHome?T.amber:T.g2 }}>{addr.label}</span>
                               {addr.isDefault && (
-                                <span style={{ fontSize:9,fontWeight:700,padding:"1px 6px",
+                                <span style={{ fontSize:10,fontWeight:700,padding:"1px 6px",
                                   borderRadius:3,background:T.okPale,color:T.ok }}>デフォルト</span>
                               )}
                               {isHome && (
-                                <span style={{ fontSize:9,fontWeight:700,padding:"1px 6px",
+                                <span style={{ fontSize:10,fontWeight:700,padding:"1px 6px",
                                   borderRadius:3,background:T.amberPale,color:T.amber }}>
                                   ⚠ 個人宅
                                 </span>
@@ -20532,7 +20542,7 @@ const Sidebar = ({ active, onNav, collapsed, onCollapse, globalOrders, globalDep
         <span style={{fontSize:14,flexShrink:0}}>{item.icon}</span>
         <span style={{flex:1,textAlign:'left',fontSize:11,lineHeight:1.3}}>{item.label}</span>
         {item.badge && (
-          <span style={{fontSize:9,padding:'1px 5px',borderRadius:10,
+          <span style={{fontSize:10,padding:'1px 5px',borderRadius:10,
             background: isNaN(+item.badge) ? T.gold : 'rgba(255,80,80,.85)',
             color:'#fff',fontWeight:800,flexShrink:0}}>
             {item.badge}
@@ -20589,7 +20599,7 @@ const Sidebar = ({ active, onNav, collapsed, onCollapse, globalOrders, globalDep
                     <span style={{fontSize:13}}>{item.icon}</span>
                     <span style={{flex:1,color:T.ink,fontWeight:active===item.id?700:400}}>{item.label}</span>
                     {item.badge && (
-                      <span style={{fontSize:9,padding:'1px 5px',borderRadius:8,
+                      <span style={{fontSize:10,padding:'1px 5px',borderRadius:8,
                         background: isNaN(+item.badge) ? T.goldPale : T.redPale,
                         color: isNaN(+item.badge) ? T.ink3 : T.red,fontWeight:700}}>
                         {item.badge}
@@ -20637,7 +20647,7 @@ const Sidebar = ({ active, onNav, collapsed, onCollapse, globalOrders, globalDep
                     borderLeft: hasActive ? '3px solid '+T.gold : '3px solid transparent'}}>
                   {icon}
                   {groupBadge > 0 && (
-                    <span style={{position:'absolute',top:6,right:6,fontSize:8,
+                    <span style={{position:'absolute',top:6,right:6,fontSize:10,
                       padding:'1px 4px',borderRadius:8,background:'rgba(255,80,80,.9)',
                       color:'#fff',fontWeight:800}}>
                       {groupBadge}
@@ -20682,7 +20692,7 @@ const Sidebar = ({ active, onNav, collapsed, onCollapse, globalOrders, globalDep
                     {noSub.map(item => renderItem(item, sec.group, true))}
                     {Object.entries(subGroups).map(([sg, sgItems]) => (
                       <div key={sg}>
-                        <div style={{fontSize:9,color:T.gold,fontWeight:700,
+                        <div style={{fontSize:10,color:T.gold,fontWeight:700,
                           padding:'10px 12px 4px',letterSpacing:'.08em',textTransform:'uppercase'}}>
                           {sg}
                         </div>
@@ -20714,11 +20724,11 @@ const Sidebar = ({ active, onNav, collapsed, onCollapse, globalOrders, globalDep
             <div style={{fontFamily:"'Cinzel',serif",fontSize:11,color:T.gold,letterSpacing:'.1em',fontWeight:700}}>SHISEIDO BOOKS</div>
             <div style={{fontFamily:"'Cinzel',serif",fontSize:10,color:T.gold,letterSpacing:'.08em',opacity:.7}}>至誠堂書店</div>
             <div style={{display:"flex",gap:5,alignItems:"center",marginTop:5,flexWrap:"wrap"}}>
-              <span style={{fontSize:9,padding:"1px 6px",borderRadius:10,fontWeight:700,
+              <span style={{fontSize:10,padding:"1px 6px",borderRadius:10,fontWeight:700,
                 background:rm.bg,color:rm.color}}>
                 {rm.icon} {rm.label}
               </span>
-              <span style={{fontSize:9,color:"rgba(255,255,255,.45)"}}>
+              <span style={{fontSize:10,color:"rgba(255,255,255,.45)"}}>
                 {staffName||"ゲスト"}
               </span>
             </div>
@@ -20756,7 +20766,7 @@ const Sidebar = ({ active, onNav, collapsed, onCollapse, globalOrders, globalDep
                           <span style={{fontSize:13}}>{item.icon}</span>
                           {dynBadge && (
                             <span style={{position:'absolute',top:2,right:2,
-                              fontSize:8,fontWeight:800,padding:'0 3px',borderRadius:8,
+                              fontSize:10,fontWeight:800,padding:'0 3px',borderRadius:8,
                               background:'rgba(255,60,60,.9)',color:'#fff',lineHeight:'14px',
                               minWidth:14,textAlign:'center'}}>
                               {dynBadge}
@@ -20776,12 +20786,12 @@ const Sidebar = ({ active, onNav, collapsed, onCollapse, globalOrders, globalDep
                 background:'rgba(255,60,60,.13)',borderRadius:8,
                 border:'1px solid rgba(255,80,80,.22)'}}>
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',
-                  padding:'0 6px 4px',fontSize:9,fontWeight:800,
+                  padding:'0 6px 4px',fontSize:10,fontWeight:800,
                   color:'rgba(255,120,120,.9)',letterSpacing:'.08em',textTransform:'uppercase'}}>
                   <span>処理待ち</span>
                   {totalDynamic>0 && (
                     <span style={{background:'rgba(255,60,60,.75)',color:'#fff',
-                      fontSize:9,fontWeight:800,padding:'1px 6px',borderRadius:10}}>
+                      fontSize:10,fontWeight:800,padding:'1px 6px',borderRadius:10}}>
                       {totalDynamic}件
                     </span>
                   )}
@@ -20802,12 +20812,12 @@ const Sidebar = ({ active, onNav, collapsed, onCollapse, globalOrders, globalDep
                         {item.label}
                       </span>
                       {dynBadge ? (
-                        <span style={{fontSize:9,padding:'1px 5px',borderRadius:10,
+                        <span style={{fontSize:10,padding:'1px 5px',borderRadius:10,
                           background:'rgba(255,60,60,.8)',color:'#fff',fontWeight:800,flexShrink:0}}>
                           {dynBadge}
                         </span>
                       ) : (
-                        <span style={{fontSize:9,color:'rgba(255,200,200,.4)',flexShrink:0}}>
+                        <span style={{fontSize:10,color:'rgba(255,200,200,.4)',flexShrink:0}}>
                           完了
                         </span>
                       )}
@@ -20820,8 +20830,7 @@ const Sidebar = ({ active, onNav, collapsed, onCollapse, globalOrders, globalDep
 
           // ── 層区切り線（層2→3、層3→4の間に挿入）──
           const LAYER_DIVIDERS = {
-            "📊 分析・経営":  "── 週次・月次 ──",
-            "💼 SaaS・AI":    "── 設定・管理 ──",
+            "📊 分析・経営":  "── 分析・SaaS・BPO ──",
           };
           const dividerLabel = LAYER_DIVIDERS[sec.group];
 
@@ -20830,13 +20839,13 @@ const Sidebar = ({ active, onNav, collapsed, onCollapse, globalOrders, globalDep
             <div key={si}>
               {dividerLabel && !collapsed && (
                 <div style={{margin:'6px 12px 2px',borderTop:'1px solid rgba(255,255,255,.1)',
-                  paddingTop:6,fontSize:8,color:'rgba(255,255,255,.2)',
+                  paddingTop:6,fontSize:10,color:'rgba(255,255,255,.2)',
                   textAlign:'center',letterSpacing:'.1em'}}>
                   {dividerLabel}
                 </div>
               )}
               {!collapsed && (
-                <div style={{padding:'8px 14px 3px',fontSize:9,fontWeight:700,
+                <div style={{padding:'8px 14px 3px',fontSize:10,fontWeight:700,
                   color:'rgba(255,255,255,.35)',letterSpacing:'.1em',textTransform:'uppercase'}}>
                   {sec.group.replace(/^[^\s]+\s/,'')}
                 </div>
@@ -20860,7 +20869,7 @@ const Sidebar = ({ active, onNav, collapsed, onCollapse, globalOrders, globalDep
                       </span>
                     )}
                     {!collapsed && item.badge && (
-                      <span style={{fontSize:9,padding:'1px 5px',borderRadius:10,
+                      <span style={{fontSize:10,padding:'1px 5px',borderRadius:10,
                         background:isNaN(+item.badge)?T.gold:'rgba(255,80,80,.85)',
                         color:'#fff',fontWeight:800,flexShrink:0}}>
                         {item.badge}
@@ -21725,7 +21734,7 @@ function AdminApp() {
                       🔔
                       {notifBadge>0 && (
                         <span style={{ position:"absolute", top:0, right:0, background:T.red,
-                          color:"#fff", fontSize:9, fontWeight:700, width:16, height:16,
+                          color:"#fff", fontSize:10, fontWeight:700, width:16, height:16,
                           borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center" }}>
                           {notifBadge}
                         </span>
@@ -21800,7 +21809,7 @@ function AdminApp() {
               <div style={{ display:"flex",alignItems:"center",gap:1,
                 background:"rgba(255,255,255,.15)",borderRadius:8,padding:"3px 4px",
                 border:"1px solid rgba(255,255,255,.25)" }}>
-                <span style={{ fontSize:9,color:"rgba(255,255,255,.6)",
+                <span style={{ fontSize:10,color:"rgba(255,255,255,.6)",
                   paddingRight:4,paddingLeft:2,fontWeight:700 }}>文字</span>
                 {[
                   {n:1,lbl:"小",tip:"小（14px）"},
@@ -21839,7 +21848,7 @@ function AdminApp() {
                       <span style={{ fontSize:11,fontWeight:700,color:crm.color }}>
                         {(staffName||"ゲスト").replace(/ .*/,"")}
                       </span>
-                      <span style={{ fontSize:9,color:crm.color+"80" }}>▼</span>
+                      <span style={{ fontSize:10,color:crm.color+"80" }}>▼</span>
                     </div>
                     {/* ロール切替ドロップダウン */}
                     {roleMenuOpen && (
@@ -21876,7 +21885,7 @@ function AdminApp() {
                               <div style={{ flex:1 }}>
                                 <div style={{ fontSize:12,fontWeight:isActive?700:400,
                                   color:isActive?v.color:T.ink }}>{v.label}</div>
-                                <div style={{ fontSize:9,color:T.ink4 }}>{v.desc.slice(0,30)}...</div>
+                                <div style={{ fontSize:10,color:T.ink4 }}>{v.desc.slice(0,30)}...</div>
                               </div>
                               {isActive && <span style={{ fontSize:10,color:v.color,fontWeight:700 }}>現在</span>}
                             </button>
