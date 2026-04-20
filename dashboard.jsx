@@ -72,6 +72,28 @@ const FONT = {
   badge:{ fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:10 },
 };
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// v22.61: 視認性向上のためのフォントスケール 3段階切替
+// OrdersView 最上位 div にてスケールを選択し、以下の変数を style に注入
+// fsLabel: ラベル・注釈 / fsBody: 本文 / fsTitle: 書籍名・見出し
+// fsNum: 冊数・金額 / fsButton: ボタン / fsId: 注文ID・日時
+// デフォルトは「大きめ」（鈴木社長70歳・実務スタッフ配慮）
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const FONT_SCALES = {
+  standard: { fsLabel:12, fsBody:14, fsTitle:16, fsNum:20, fsButton:12, fsId:12 },
+  large:    { fsLabel:14, fsBody:16, fsTitle:18, fsNum:24, fsButton:14, fsId:14 },
+  xlarge:   { fsLabel:16, fsBody:18, fsTitle:22, fsNum:32, fsButton:16, fsId:18 },
+};
+// 旧fontSize値 → スケール変数マッピング（視認性優先の底上げ）
+// 10/11 → fsLabel, 12/13 → fsBody, 14/15/16 → fsTitle, 18/20/22/24+ → fsNum
+function fsFor(base, scale){
+  var s = FONT_SCALES[scale] || FONT_SCALES.large;
+  if (base <= 11) return s.fsLabel;
+  if (base <= 13) return s.fsBody;
+  if (base <= 16) return s.fsTitle;
+  return s.fsNum;
+}
+
 // ── localStorage キー定数（一元管理）──────────
 const LS = {
   orders:        "sld_orders",
@@ -6472,6 +6494,9 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
     return function(){ window.removeEventListener("resize",onR); };
   },[]);
   var isMobileOV = owWidth < 768;
+  // ★v22.61: フォントスケール（3段階・セッション中のみ保持／localStorage禁止）
+  const [fontScale, setFontScale] = useState("large"); // standard / large / xlarge
+  var FS = FONT_SCALES[fontScale] || FONT_SCALES.large;
   const [tab,       setTab]       = useState("list");
   const [nowTime,   setNowTime]   = useState(new Date());
   const [assignModal, setAssignModal] = useState(null); // 担当変更モーダル対象注文
@@ -7113,11 +7138,11 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
   };
 
   return (
-    <div>
+    <div data-font-scale={fontScale}>
       <SectionHeader title="注文管理"
         desc="通常注文・CSV一括・メール自動認識・FAX対応"
         action={
-          <div style={{ display:"flex",gap:8,flexWrap:"wrap" }}>
+          <div style={{ display:"flex",gap:8,flexWrap:"wrap",alignItems:"center" }}>
             <Btn variant="ghost" small onClick={()=>setCsvModal(true)}>📊 CSV一括注文</Btn>
             <Btn variant="ghost" small onClick={()=>setEmailModal(true)}>✉ メール注文認識</Btn>
             <Btn variant="ghost" small onClick={()=>setFaxModal(true)}>📠 FAX注文</Btn>
@@ -7137,6 +7162,44 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
               e飛伝III CSV出力
             </Btn>
             <HelpTip text="チェックを入れた紙書籍注文の送り状CSVを出力します。e飛伝IIIの「送り状データ取込」から取り込んで送り状を印刷してください。" color={T.navy} />
+            {/* ★v22.61: フォントサイズセレクター（3段階） */}
+            <div
+              role="group"
+              aria-label="表示サイズを変更"
+              style={{
+                display:"inline-flex", alignItems:"center", gap:2,
+                background:T.white, border:"1px solid "+T.rule,
+                borderRadius:999, padding:3, marginLeft:6,
+                boxShadow:"0 1px 2px rgba(15,51,32,.04)",
+              }}>
+              <span style={{ fontSize:11, color:T.ink4, marginLeft:8, marginRight:4, fontWeight:700 }}>表示</span>
+              {[
+                { key:"standard", label:"標準" },
+                { key:"large",    label:"大きめ" },
+                { key:"xlarge",   label:"特大" },
+              ].map(function(opt){
+                var isSel = fontScale === opt.key;
+                return (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    aria-label={"表示サイズ: "+opt.label}
+                    aria-pressed={isSel}
+                    onClick={function(){ setFontScale(opt.key); }}
+                    style={{
+                      height:28, padding:"0 14px",
+                      border:"none", borderRadius:999, cursor:"pointer",
+                      background: isSel ? T.g2 : T.white,
+                      color:      isSel ? "#fff" : T.ink3,
+                      fontSize:12, fontWeight:700,
+                      fontFamily:"inherit",
+                      transition:"background .15s, color .15s",
+                    }}>
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         } />
 
@@ -7154,8 +7217,8 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
               cursor:s.onClick?"pointer":"default",
               transform:s.onClick?"scale(1)":"none",
               transition:"transform .1s" }}>
-            <div style={{ fontFamily:"'Inter'",fontSize:18,fontWeight:800,color:s.color }}>{s.val}</div>
-            <div style={{ fontSize:11,color:s.color,fontWeight:700,marginTop:2 }}>{s.label}</div>
+            <div style={{ fontFamily:"'Inter'",fontSize:FS.fsNum,fontWeight:800,color:s.color }}>{s.val}</div>
+            <div style={{ fontSize:FS.fsLabel,color:s.color,fontWeight:700,marginTop:2 }}>{s.label}</div>
           </div>
         ))}
       </div>
@@ -7196,13 +7259,13 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
             borderRadius:10,padding:"14px 18px",marginBottom:16,
             border:"1px solid rgba(255,255,255,.15)" }}>
             <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:12,flexWrap:"wrap" }}>
-              <span style={{ fontSize:14,fontWeight:800,color:"#fff" }}>📦 本日の出荷・配達状況</span>
-              <span style={{ fontSize:11,color:"rgba(255,255,255,.55)" }}>
+              <span style={{ fontSize:FS.fsTitle,fontWeight:800,color:"#fff" }}>📦 本日の出荷・配達状況</span>
+              <span style={{ fontSize:FS.fsLabel,color:"rgba(255,255,255,.55)" }}>
                 {nowTime.getFullYear()}/{("0"+(nowTime.getMonth()+1)).slice(-2)}/{("0"+nowTime.getDate()).slice(-2)}（{weekdays[nowTime.getDay()]}）
               </span>
               <div style={{ marginLeft:"auto",display:"flex",alignItems:"center",gap:6 }}>
-                <span style={{ fontSize:10,color:"rgba(255,255,255,.6)" }}>佐川集荷（{sagawaDeadline||"16:30"}）まで</span>
-                <span style={{ fontFamily:"'Inter'",fontSize:17,fontWeight:900,
+                <span style={{ fontSize:FS.fsLabel,color:"rgba(255,255,255,.6)" }}>佐川集荷（{sagawaDeadline||"16:30"}）まで</span>
+                <span style={{ fontFamily:"'Inter'",fontSize:FS.fsNum,fontWeight:900,
                   color:isOver?"#ff8a80":isUrgent?"#ffcc02":T.okPale }}>
                   {isOver?"超過":Math.floor(mins/60)+"h "+(mins%60)+"m"}
                 </span>
@@ -7213,7 +7276,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
               {/* EC佐川ゾーン */}
               <div style={{ background:"rgba(1,87,155,.25)",borderRadius:8,padding:"10px 14px",
                 border:"1px solid rgba(1,87,155,.4)" }}>
-                <div style={{ fontSize:11,fontWeight:800,color:"#90caf9",marginBottom:8 }}>
+                <div style={{ fontSize:FS.fsLabel,fontWeight:800,color:"#90caf9",marginBottom:8 }}>
                   🌐 EC発送（霞が関→本社→佐川）
                 </div>
                 <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:5 }}>
@@ -7227,8 +7290,8 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                     return (
                       <div key={i} style={{ textAlign:"center",background:"rgba(255,255,255,.08)",
                         borderRadius:6,padding:"6px 4px" }}>
-                        <div style={{ fontFamily:"'Inter'",fontSize:13,fontWeight:800,color:k.color }}>{k.val}</div>
-                        <div style={{ fontSize:10,color:"rgba(255,255,255,.45)" }}>{k.label}</div>
+                        <div style={{ fontFamily:"'Inter'",fontSize:FS.fsBody,fontWeight:800,color:k.color }}>{k.val}</div>
+                        <div style={{ fontSize:FS.fsLabel,color:"rgba(255,255,255,.45)" }}>{k.label}</div>
                       </div>
                     );
                   })}
@@ -7237,7 +7300,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
               {/* 外商直配ゾーン */}
               <div style={{ background:"rgba(200,168,75,.2)",borderRadius:8,padding:"10px 14px",
                 border:"1px solid rgba(200,168,75,.35)" }}>
-                <div style={{ fontSize:11,fontWeight:800,color:T.gold,marginBottom:8 }}>
+                <div style={{ fontSize:FS.fsLabel,fontWeight:800,color:T.gold,marginBottom:8 }}>
                   🚴 外商直配（霞が関→担当者配達）
                 </div>
                 <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:5 }}>
@@ -7251,8 +7314,8 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                     return (
                       <div key={i} style={{ textAlign:"center",background:"rgba(255,255,255,.08)",
                         borderRadius:6,padding:"6px 4px" }}>
-                        <div style={{ fontFamily:"'Inter'",fontSize:13,fontWeight:800,color:k.color }}>{k.val}</div>
-                        <div style={{ fontSize:10,color:"rgba(255,255,255,.45)" }}>{k.label}</div>
+                        <div style={{ fontFamily:"'Inter'",fontSize:FS.fsBody,fontWeight:800,color:k.color }}>{k.val}</div>
+                        <div style={{ fontSize:FS.fsLabel,color:"rgba(255,255,255,.45)" }}>{k.label}</div>
                       </div>
                     );
                   })}
@@ -7261,7 +7324,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
             </div>
             {urgentCnt>0 && (
               <div style={{ padding:"6px 12px",background:"rgba(183,28,28,.35)",borderRadius:6,
-                fontSize:11,color:"#ff8a80",fontWeight:700 }}>
+                fontSize:FS.fsLabel,color:"#ff8a80",fontWeight:700 }}>
                 🚨 急ぎ注文 {urgentCnt}件 — 今日中に対応が必要です
               </div>
             )}
@@ -7319,29 +7382,29 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
       {(tab!=="pick_list") && (
         <div style={{ display:"flex", gap:6, flexWrap:"wrap", margin:"8px 0 12px",
           padding:"8px 10px", background:T.bg, borderRadius:8, border:"1px dashed "+T.rule }}>
-          <span style={{ fontSize:10, color:T.ink4, alignSelf:"center", marginRight:4 }}>補助ツール:</span>
+          <span style={{ fontSize:FS.fsLabel, color:T.ink4, alignSelf:"center", marginRight:4 }}>補助ツール:</span>
           <button onClick={function(){ setTab("phone"); }} aria-label="電話注文受付"
-            style={{ fontSize:11, padding:"4px 10px", borderRadius:6, border:"1px solid "+T.rule,
+            style={{ fontSize:FS.fsLabel, padding:"4px 10px", borderRadius:6, border:"1px solid "+T.rule,
               background:tab==="phone"?T.g2:T.white, color:tab==="phone"?T.white:T.ink2, cursor:"pointer" }}>
             📞 電話注文
           </button>
           <button onClick={function(){ setTab("sagawa"); setSagawaStep&&setSagawaStep("select"); }} aria-label="佐川CSV出力"
-            style={{ fontSize:11, padding:"4px 10px", borderRadius:6, border:"1px solid "+T.rule,
+            style={{ fontSize:FS.fsLabel, padding:"4px 10px", borderRadius:6, border:"1px solid "+T.rule,
               background:tab==="sagawa"?T.g2:T.white, color:tab==="sagawa"?T.white:T.ink2, cursor:"pointer" }}>
             📦 佐川CSV
           </button>
           <button onClick={function(){ setTab("delivery_list"); }} aria-label="外商配達リスト"
-            style={{ fontSize:11, padding:"4px 10px", borderRadius:6, border:"1px solid "+T.rule,
+            style={{ fontSize:FS.fsLabel, padding:"4px 10px", borderRadius:6, border:"1px solid "+T.rule,
               background:tab==="delivery_list"?T.g2:T.white, color:tab==="delivery_list"?T.white:T.ink2, cursor:"pointer" }}>
             🚴 外商配達
           </button>
           <button onClick={function(){ setTab("fax"); }} aria-label="FAXキュー"
-            style={{ fontSize:11, padding:"4px 10px", borderRadius:6, border:"1px solid "+T.rule,
+            style={{ fontSize:FS.fsLabel, padding:"4px 10px", borderRadius:6, border:"1px solid "+T.rule,
               background:tab==="fax"?T.g2:T.white, color:tab==="fax"?T.white:T.ink2, cursor:"pointer" }}>
             📠 FAXキュー
           </button>
           <button onClick={function(){ setTab("csv_fmt"); }} aria-label="CSVフォーマット"
-            style={{ fontSize:11, padding:"4px 10px", borderRadius:6, border:"1px solid "+T.rule,
+            style={{ fontSize:FS.fsLabel, padding:"4px 10px", borderRadius:6, border:"1px solid "+T.rule,
               background:tab==="csv_fmt"?T.g2:T.white, color:tab==="csv_fmt"?T.white:T.ink2, cursor:"pointer" }}>
             📋 CSVフォーマット
           </button>
@@ -7383,8 +7446,8 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                         style={{ flex:1,padding:"9px 4px",border:"none",cursor:"pointer",
                           borderBottom:statusFilter===f.key?"3px solid "+f.color:"3px solid transparent",
                           background:statusFilter===f.key?T.white:T.bg,fontFamily:"inherit" }}>
-                        <div style={{ fontSize:11,fontWeight:700,color:statusFilter===f.key?f.color:T.ink4 }}>{f.label}</div>
-                        <div style={{ fontFamily:"'Inter'",fontSize:13,fontWeight:800,
+                        <div style={{ fontSize:FS.fsLabel,fontWeight:700,color:statusFilter===f.key?f.color:T.ink4 }}>{f.label}</div>
+                        <div style={{ fontFamily:"'Inter'",fontSize:FS.fsBody,fontWeight:800,
                           color:statusFilter===f.key?f.color:T.ink4,marginTop:1 }}>{f.count}</div>
                       </button>
                     );
@@ -7393,7 +7456,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                 {/* 商流・担当・品切れフィルター */}
                 <div style={{ display:"flex",gap:6,padding:"8px 12px",
                   background:T.surface,borderBottom:"1px solid "+T.rule,flexWrap:"wrap",alignItems:"center" }}>
-                  <span style={{ fontSize:10,color:T.ink4,fontWeight:700 }}>絞込：</span>
+                  <span style={{ fontSize:FS.fsLabel,color:T.ink4,fontWeight:700 }}>絞込：</span>
                   {[
                     { val:"all",     label:"全商流" },
                     { val:"gaishoo", label:"外商のみ" },
@@ -7401,7 +7464,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                   ].map(function(opt){
                     return (
                       <button key={opt.val} onClick={function(){ setChannelFilter(opt.val); setOrderPage(1); }}
-                        style={{ padding:"3px 10px",borderRadius:4,fontSize:11,fontWeight:700,
+                        style={{ padding:"3px 10px",borderRadius:4,fontSize:FS.fsLabel,fontWeight:700,
                           cursor:"pointer",border:"1px solid "+(channelFilter===opt.val?T.g2:T.rule),
                           background:channelFilter===opt.val?T.g2:"transparent",
                           color:channelFilter===opt.val?"#fff":T.ink4,fontFamily:"inherit" }}>
@@ -7409,7 +7472,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                       </button>
                     );
                   })}
-                  <span style={{ fontSize:10,color:T.ink4,marginLeft:4 }}>|</span>
+                  <span style={{ fontSize:FS.fsLabel,color:T.ink4,marginLeft:4 }}>|</span>
                   {/* 担当フィルター：gaishooロールは「自分の担当」/「全担当」トグル */}
                   {isGaishoo ? (
                     <div style={{ display:"flex",gap:0,borderRadius:6,overflow:"hidden",
@@ -7424,7 +7487,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                               setOrderPage(1);
                               try { localStorage.setItem("sld_my_orders_only", String(opt.val)); } catch(e){}
                             }}
-                            style={{ padding:"3px 12px",fontSize:11,fontWeight:isSel?700:400,
+                            style={{ padding:"3px 12px",fontSize:FS.fsLabel,fontWeight:isSel?700:400,
                               cursor:"pointer",border:"none",fontFamily:"inherit",
                               background:isSel?T.g2:"transparent",
                               color:isSel?"#fff":T.ink4 }}>
@@ -7436,7 +7499,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                   ) : (
                     <select aria-label="担当者フィルター" value={salesRepFilter}
                       onChange={function(e){ setSalesRepFilter(e.target.value); setOrderPage(1); }}
-                      style={{ padding:"3px 8px",borderRadius:4,fontSize:11,border:"1px solid "+T.rule,
+                      style={{ padding:"3px 8px",borderRadius:4,fontSize:FS.fsLabel,border:"1px solid "+T.rule,
                         background:"transparent",cursor:"pointer",color:T.ink3,fontFamily:"inherit" }}>
                       {repOptions.map(function(r){
                         return <option key={r} value={r}>{r==="all"?"全担当":r+" 担当"}</option>;
@@ -7444,7 +7507,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                     </select>
                   )}
                   {outOfStockCount > 0 && (
-                    <span style={{ fontSize:11,fontWeight:700,
+                    <span style={{ fontSize:FS.fsLabel,fontWeight:700,
                       padding:"3px 10px",borderRadius:4,
                       background:T.redPale,color:T.red,border:"1px solid "+T.red+"30" }}>
                       ⚠ 品切れあり {outOfStockCount}件
@@ -7452,7 +7515,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                   )}
                   {/* ソートボタン */}
                   <div style={{ display:"flex",alignItems:"center",gap:3,marginLeft:"auto" }}>
-                    <span style={{ fontSize:10,color:T.ink4,marginRight:2 }}>並替:</span>
+                    <span style={{ fontSize:FS.fsLabel,color:T.ink4,marginRight:2 }}>並替:</span>
                     {[
                       {key:"date",label:"日時"},
                       {key:"total",label:"金額"},
@@ -7468,7 +7531,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                             setOrderPage(1);
                           }}
                           style={{ padding:"3px 8px",borderRadius:5,cursor:"pointer",
-                            fontFamily:"inherit",fontSize:10,fontWeight:isSel?800:400,
+                            fontFamily:"inherit",fontSize:FS.fsLabel,fontWeight:isSel?800:400,
                             background:isSel?T.g2:T.bg,color:isSel?"#fff":T.ink4,
                             border:"1px solid "+(isSel?T.g2:T.rule) }}>
                           {s.label}{isSel?(sortDir==="asc"?" ↑":" ↓"):""}
@@ -7488,14 +7551,14 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
               checked={selected.length===orders.filter(o=>o.fmt==="paper").length && orders.filter(o=>o.fmt==="paper").length>0}
               onChange={e => setSelected(e.target.checked ? orders.filter(o=>o.fmt==="paper").map(o=>o.id) : [])}
               style={{ width:14, height:14, cursor:"pointer" }} />
-            <span style={{ fontSize:12, color:T.ink3 }}>
+            <span style={{ fontSize:FS.fsBody, color:T.ink3 }}>
               紙書籍を全選択
               {selected.length>0 && <strong style={{ color:T.g2, marginLeft:6 }}>{selected.filter(id=>orders.find(o=>o.id===id&&o.fmt==="paper")).length}件選択中</strong>}
             </span>
             <div style={{ marginLeft:"auto",display:"flex",gap:6,alignItems:"center" }}>
               <button onClick={function(){ setExpandAllOrders(function(v){ return !v; }); }}
                 aria-label={expandAllOrders?"一覧を折りたたむ":"一覧を全展開"}
-                style={{ padding:"4px 10px",borderRadius:5,fontSize:10,fontWeight:700,
+                style={{ padding:"4px 10px",borderRadius:5,fontSize:FS.fsLabel,fontWeight:700,
                   border:"1.5px solid "+(expandAllOrders?T.g2:T.rule),
                   background:expandAllOrders?T.okPale:T.white,
                   color:expandAllOrders?T.g2:T.ink4,
@@ -7520,12 +7583,12 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                   <div style={{ display:"flex",gap:6,alignItems:"center" }}>
                     <div style={{ width:4,borderRadius:2,background:ic,flexShrink:0,alignSelf:"stretch",minHeight:36 }} />
                     <div>
-                      <div style={{ fontSize:11,fontWeight:700,color:T.navy,fontFamily:"'Inter'" }}>{r.id}</div>
-                      <div style={{ fontSize:12,fontWeight:600,color:T.ink }}>{r.member}</div>
+                      <div style={{ fontSize:FS.fsLabel,fontWeight:700,color:T.navy,fontFamily:"'Inter'" }}>{r.id}</div>
+                      <div style={{ fontSize:FS.fsBody,fontWeight:600,color:T.ink }}>{r.member}</div>
                       <div style={{ display:"flex",gap:3,marginTop:2,flexWrap:"wrap" }}>
-                        {r.urgent&&<span style={{ fontSize:10,padding:"1px 4px",borderRadius:3,background:T.redPale,color:T.red,fontWeight:800 }}>🚨急ぎ</span>}
-                        {!ap.ok&&r.fmt==="paper"&&<span style={{ fontSize:10,padding:"1px 4px",borderRadius:3,background:T.amberPale,color:T.amber,fontWeight:800 }}>🔒保留</span>}
-                        {r.staffMemo&&<span style={{ fontSize:10,color:T.ink4 }}>📝</span>}
+                        {r.urgent&&<span style={{ fontSize:FS.fsLabel,padding:"1px 4px",borderRadius:3,background:T.redPale,color:T.red,fontWeight:800 }}>🚨急ぎ</span>}
+                        {!ap.ok&&r.fmt==="paper"&&<span style={{ fontSize:FS.fsLabel,padding:"1px 4px",borderRadius:3,background:T.amberPale,color:T.amber,fontWeight:800 }}>🔒保留</span>}
+                        {r.staffMemo&&<span style={{ fontSize:FS.fsLabel,color:T.ink4 }}>📝</span>}
                       </div>
                     </div>
                   </div>
@@ -7534,7 +7597,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
               {key:"st_mob", label:"状態", render:function(r){
                 var lbl=r.status==="pending"?"待機":r.status==="shipped"?"発送済":r.status==="delivered"?"配達済":r.status==="completed"?"完了":"—";
                 var clr=r.status==="pending"?T.amber:r.status==="shipped"?T.g2:r.status==="delivered"?T.g3:r.status==="completed"?T.ok:T.ink4;
-                return <span style={{ fontSize:11,fontWeight:700,color:clr }}>{lbl}</span>;
+                return <span style={{ fontSize:FS.fsLabel,fontWeight:700,color:clr }}>{lbl}</span>;
               }},
               {key:"act_mob", label:"", render:function(r){
                 var ap2=getCachedApproval(r); var isDr2=r.shipMethod==="direct";
@@ -7581,29 +7644,29 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                       background:indColor,marginRight:8,alignSelf:"stretch",minHeight:36 }} />
                     <div style={{ flex:1 }}>
                       <div style={{ display:"flex",gap:4,alignItems:"center",flexWrap:"wrap" }}>
-                        <span style={{ fontFamily:"'Inter'",fontWeight:700,color:T.navy,fontSize:12 }}>{r.id}</span>
+                        <span style={{ fontFamily:"'Inter'",fontWeight:700,color:T.navy,fontSize:FS.fsBody }}>{r.id}</span>
                         {r.urgent && (
                           <span title={"急ぎ期日: "+(r.urgentBy||"")+" / "+r.urgentNote}
-                            style={{ fontSize:10,fontWeight:800,padding:"1px 5px",borderRadius:3,
+                            style={{ fontSize:FS.fsLabel,fontWeight:800,padding:"1px 5px",borderRadius:3,
                               background:T.redPale,color:T.red,cursor:"help",flexShrink:0 }}>
                             🚨 急ぎ {r.urgentBy&&r.urgentBy.slice(5)}
                           </span>
                         )}
                         {isGaishoo && (
-                          <span style={{ fontSize:10,fontWeight:700,padding:"1px 5px",borderRadius:3,
+                          <span style={{ fontSize:FS.fsLabel,fontWeight:700,padding:"1px 5px",borderRadius:3,
                             background:T.amberPale,color:T.amber,flexShrink:0 }}>
                             外商
                           </span>
                         )}
                         {r.assignedTo && (
-                          <span style={{ fontSize:10,color:T.ink4,flexShrink:0 }}>
+                          <span style={{ fontSize:FS.fsLabel,color:T.ink4,flexShrink:0 }}>
                             {r.assignedTo}担当
                           </span>
                         )}
                         {(function(){
                           var pm = PAY_META[r.paymentMethod] || PAY_META.transfer;
                           return (
-                            <span style={{ fontSize:10,fontWeight:700,
+                            <span style={{ fontSize:FS.fsLabel,fontWeight:700,
                               padding:"1px 5px",borderRadius:3,
                               background:pm.bg,color:pm.color,flexShrink:0 }}>
                               {pm.icon} {pm.label}
@@ -7611,7 +7674,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                           );
                         })()}
                         {isHold && (
-                          <span style={{ fontSize:10,fontWeight:800,
+                          <span style={{ fontSize:FS.fsLabel,fontWeight:800,
                             padding:"1px 5px",borderRadius:3,
                             background:"#fbe9e7",color:T.amber,flexShrink:0 }}>
                             🔒 発送保留
@@ -7619,7 +7682,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                         )}
                       </div>
                       {r.caseNo && (
-                        <div style={{ fontSize:10,color:T.ink4,marginTop:1,
+                        <div style={{ fontSize:FS.fsLabel,color:T.ink4,marginTop:1,
                           maxWidth:140,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}
                           title={r.caseNo+" / "+r.caseName}>
                           📂 {r.caseNo}
@@ -7629,15 +7692,15 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                       {st && r.fmt==="paper" && (
                         <div style={{ marginTop:3,display:"flex",gap:4,alignItems:"center" }}>
                           {st.isPod ? (
-                            <span style={{ fontSize:10,padding:"1px 5px",borderRadius:3,
+                            <span style={{ fontSize:FS.fsLabel,padding:"1px 5px",borderRadius:3,
                               background:T.navyPale,color:T.navy,fontWeight:700 }}>🖨 POD</span>
                           ) : st.isOut ? (
-                            <span style={{ fontSize:10,padding:"1px 5px",borderRadius:3,
+                            <span style={{ fontSize:FS.fsLabel,padding:"1px 5px",borderRadius:3,
                               background:T.redPale,color:T.red,fontWeight:800 }}>
                               ⚠ 品切れ
                             </span>
                           ) : (
-                            <span style={{ fontSize:10,color:T.ink4 }}>
+                            <span style={{ fontSize:FS.fsLabel,color:T.ink4 }}>
                               {r.shipFrom==="honsha"?"本社":"霞が関"}
                               <span style={{ fontFamily:"'Inter'",fontWeight:700,
                                 color:st.isLow?T.amber:T.g2,marginLeft:3 }}>
@@ -7654,7 +7717,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                         setMemoModal(r);
                         setMemoInput(r.staffMemo||"");
                       }} title={r.staffMemo||"クリックでメモを追加"}
-                        style={{ marginTop:3,fontSize:10,cursor:"pointer",
+                        style={{ marginTop:3,fontSize:FS.fsLabel,cursor:"pointer",
                           background:r.staffMemo?"#fffde7":"transparent",
                           borderRadius:4,padding:"2px 6px",
                           borderLeft:r.staffMemo?"2px solid #f9a825":"2px solid #ddd",
@@ -7668,7 +7731,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                   </div>
                 );
               }},
-              {key:"date",  label:"日時",   render:r=><span style={{fontSize:12,color:T.ink4}}>{r.date.slice(5)}</span>},
+              {key:"date",  label:"日時",   render:r=><span style={{fontSize:FS.fsBody,color:T.ink4}}>{r.date.slice(5)}</span>},
               {key:"member_items", label:"会員・内容", wrap:true, render:r=>{
                 const sf = SHIP_FROM_META[getShipFrom(r)];
                 // 配送方法メタ
@@ -7681,7 +7744,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                 return (
                   <div style={{ minWidth:160,maxWidth:320 }}>
                     {/* 会員名 */}
-                    <div style={{ fontSize:12,fontWeight:700,color:T.ink,marginBottom:3,
+                    <div style={{ fontSize:FS.fsBody,fontWeight:700,color:T.ink,marginBottom:3,
                       overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
                       {r.member}
                     </div>
@@ -7689,19 +7752,19 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                     {r.fmt!=="elec" && (
                       <div style={{ display:"flex",gap:4,marginBottom:4,flexWrap:"wrap" }}>
                         {r.assignedTo && (
-                          <span style={{ fontSize:10,fontWeight:800,padding:"2px 7px",
+                          <span style={{ fontSize:FS.fsLabel,fontWeight:800,padding:"2px 7px",
                             borderRadius:10,background:T.navyPale,color:T.navy,
                             border:"1px solid "+T.navy+"30" }}>
                             👤 {r.assignedTo}
                           </span>
                         )}
-                        <span style={{ fontSize:10,fontWeight:700,padding:"2px 7px",
+                        <span style={{ fontSize:FS.fsLabel,fontWeight:700,padding:"2px 7px",
                           borderRadius:10,background:sm2.bg,color:sm2.color,
                           border:"1px solid "+sm2.color+"30" }}>
                           {sm2.icon} {sm2.label}
                         </span>
                         {sf && (
-                          <span style={{ fontSize:10,fontWeight:700,padding:"2px 7px",
+                          <span style={{ fontSize:FS.fsLabel,fontWeight:700,padding:"2px 7px",
                             borderRadius:10,background:sf.bg,color:sf.color,
                             border:"1px solid "+sf.color+"30" }}>
                             {sf.icon} {sf.short}
@@ -7714,7 +7777,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                       <div style={{ display:"flex",flexDirection:"column",gap:3 }}>
                         {/* 品目数サマリ */}
                         {r.taxItems.length>1 && (
-                          <div style={{ fontSize:10,fontWeight:700,color:T.ink3,marginBottom:1 }}>
+                          <div style={{ fontSize:FS.fsLabel,fontWeight:700,color:T.ink3,marginBottom:1 }}>
                             📦 {r.taxItems.length}品目・計{r.taxItems.reduce(function(s,it){return s+(it.qty||1);},0)}冊
                           </div>
                         )}
@@ -7727,7 +7790,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                           var isService = !it.bookId;
                           var loc = book && book.stockByLocation ? book.stockByLocation : null;
                           return (
-                            <div key={i} style={{ fontSize:10,padding:"4px 6px",borderRadius:5,
+                            <div key={i} style={{ fontSize:FS.fsLabel,padding:"4px 6px",borderRadius:5,
                               lineHeight:1.4,whiteSpace:"normal",
                               background:stockZero&&!isPod?T.redPale:it.taxRate===8?T.okPale:T.amberPale,
                               border:"1px solid "+(stockZero&&!isPod?T.red+"40":it.taxRate===8?T.g2+"20":T.amber+"20") }}>
@@ -7737,13 +7800,13 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                                   {it.name}
                                 </span>
                                 {qty>1 && (
-                                  <span style={{ fontSize:10,fontWeight:800,padding:"0 4px",borderRadius:3,
+                                  <span style={{ fontSize:FS.fsLabel,fontWeight:800,padding:"0 4px",borderRadius:3,
                                     background:T.ink+"10",color:T.ink3 }}>×{qty}</span>
                                 )}
                               </div>
                               {/* 在庫ステータス（書籍のみ・サービスは非表示） */}
                               {book && !isService && (
-                                <div style={{ display:"flex",alignItems:"center",gap:4,marginTop:2,fontSize:10,flexWrap:"wrap" }}>
+                                <div style={{ display:"flex",alignItems:"center",gap:4,marginTop:2,fontSize:FS.fsLabel,flexWrap:"wrap" }}>
                                   {stockZero && isPod ? (
                                     <span style={{ padding:"1px 5px",borderRadius:3,background:T.purplePale,color:T.purple,fontWeight:700 }}>🖨 POD対応</span>
                                   ) : stockZero ? (
@@ -7765,10 +7828,10 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                         })}
                       </div>
                     ) : (
-                      <div style={{ fontSize:10,color:T.ink4 }}>{r.items}</div>
+                      <div style={{ fontSize:FS.fsLabel,color:T.ink4 }}>{r.items}</div>
                     )}
                     {r.caseNo && (
-                      <div style={{ fontSize:10,color:T.ink4,marginTop:3,
+                      <div style={{ fontSize:FS.fsLabel,color:T.ink4,marginTop:3,
                         overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
                         maxWidth:210 }} title={r.caseNo+" / "+r.caseName}>
                         📂 {r.caseNo}
@@ -7777,13 +7840,13 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                   </div>
                 );
               }},
-              {key:"fmt",   label:"形式",   render:r=><span style={{padding:"2px 7px",borderRadius:4,fontSize:10,fontWeight:700,
+              {key:"fmt",   label:"形式",   render:r=><span style={{padding:"2px 7px",borderRadius:4,fontSize:FS.fsLabel,fontWeight:700,
                 background:r.fmt==="elec"?T.navyPale:r.fmt==="pod"?T.amberPale:T.okPale,
                 color:r.fmt==="elec"?T.navy:r.fmt==="pod"?T.amber:T.g2}}>
                 {r.fmt==="elec"?"電子":r.fmt==="pod"?"POD":"紙"}</span>},
               {key:"total", label:"金額",   render:r=><span style={{fontFamily:"'Inter'",fontWeight:700}}>¥{r.total.toLocaleString()}</span>},
               {key:"status",label:"状態",   render:r=>(
-                <span style={{padding:"2px 8px",borderRadius:6,fontSize:11,fontWeight:700,
+                <span style={{padding:"2px 8px",borderRadius:6,fontSize:FS.fsLabel,fontWeight:700,
                   background:statusColor(r.status)+"18",color:statusColor(r.status)}}>
                   {statusLabel(r.status)}
                 </span>
@@ -7792,10 +7855,10 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                 r.tracking
                   ? <a href={"https://k2k.sagawa-exp.co.jp/p/sagawa/web/okurijyo/okurijyoNoInput.jsp?okurijyoNo1="+r.tracking}
                       target="_blank" rel="noreferrer"
-                      style={{ fontFamily:"'Inter'", fontSize:11, color:T.navy, textDecoration:"underline" }}>
+                      style={{ fontFamily:"'Inter'", fontSize:FS.fsLabel, color:T.navy, textDecoration:"underline" }}>
                       {r.tracking}
                     </a>
-                  : <span style={{ fontSize:11, color:T.ink4 }}>—</span>
+                  : <span style={{ fontSize:FS.fsLabel, color:T.ink4 }}>—</span>
               )},
               {key:"channel", label:"経路", render:function(r){
                 const ch = autoChannel(r);
@@ -7807,7 +7870,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                 };
                 const m = meta[ch] || meta.ec;
                 return (
-                  <span style={{ fontSize:10,fontWeight:700,padding:"2px 7px",
+                  <span style={{ fontSize:FS.fsLabel,fontWeight:700,padding:"2px 7px",
                     borderRadius:4,background:m.bg,color:m.color }}>{m.label}</span>
                 );
               }},
@@ -7815,7 +7878,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                 return (
                   <button onClick={function(e){ e.stopPropagation(); setAssignModal(r); }}
                     title="クリックで担当を変更"
-                    style={{ fontSize:10,padding:"3px 8px",borderRadius:6,cursor:"pointer",
+                    style={{ fontSize:FS.fsLabel,padding:"3px 8px",borderRadius:6,cursor:"pointer",
                       fontFamily:"inherit",fontWeight:700,
                       background:r.assignedTo?T.navyPale:T.bg,
                       color:r.assignedTo?T.navy:T.ink4,
@@ -7831,7 +7894,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                 if(!defaultAddr) return null;
                 const isHome = defaultAddr.type==="home";
                 return (
-                  <span title={defaultAddr.label} style={{ fontSize:11,fontWeight:700,
+                  <span title={defaultAddr.label} style={{ fontSize:FS.fsLabel,fontWeight:700,
                     color:isHome?T.amber:T.g2 }}>
                     {isHome?"🏠 自宅":"🏢 事務所"}
                   </span>
@@ -7848,7 +7911,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                         <Btn small onClick={function(){
                           updateOrderWithUndo(r.id, { shipApproved:true },
                             "✅ "+r.id+" の発送を承認しました");
-                        }} style={{ background:T.g2,color:"#fff",fontSize:10,fontWeight:800 }}>
+                        }} style={{ background:T.g2,color:"#fff",fontSize:FS.fsLabel,fontWeight:800 }}>
                           ✅ 発送承認
                         </Btn>
                         <HelpTip text="入金確認済みの注文を出荷可能にします。銀行振込は入金消し込み画面で確認後に押してください。" color={T.g2} />
@@ -7864,7 +7927,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                           🚴 配達開始
                         </Btn>
                         <span title="配達に出発する際にタップ。ダッシュボードの「配達中」件数に反映されます。担当者が複数いる場合、誰がどこに向かっているかを管理画面から確認できます。"
-                          style={{ fontSize:11,color:T.amber,cursor:"help",
+                          style={{ fontSize:FS.fsLabel,color:T.amber,cursor:"help",
                             background:T.amberPale,borderRadius:"50%",
                             width:16,height:16,display:"inline-flex",
                             alignItems:"center",justifyContent:"center",fontWeight:700 }}>
@@ -7889,7 +7952,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                         ✅ 配達完了
                       </Btn>
                       <span title="書籍を手渡した直後にタップ。配達完了時刻が自動記録され、顧客へのお礼メール下書きが生成されます。"
-                        style={{ fontSize:11,color:T.ok,cursor:"help",
+                        style={{ fontSize:FS.fsLabel,color:T.ok,cursor:"help",
                           background:T.okPale,borderRadius:"50%",
                           width:16,height:16,display:"inline-flex",
                           alignItems:"center",justifyContent:"center",fontWeight:700 }}>
@@ -7900,7 +7963,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                     <Btn variant="secondary" small onClick={function(){ setActionTarget(r); setReturnStep(1); setReturnReason(""); }}>処理</Btn>
                     {r.invoiceHistory&&r.invoiceHistory.length>0 && (
                       <span title={"最終発行: "+r.invoiceHistory[r.invoiceHistory.length-1].issuedAt}
-                        style={{ fontSize:10,color:T.g2,fontWeight:700,
+                        style={{ fontSize:FS.fsLabel,color:T.g2,fontWeight:700,
                           padding:"2px 5px",borderRadius:3,background:T.okPale,cursor:"default" }}>
                         📄{r.invoiceHistory.length}
                       </span>
@@ -7913,7 +7976,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                           style={{ color:T.navy,borderColor:T.navy+"40",fontWeight:700 }}
                           onClick={function(){ openOrderInv(r); }}>📄 請求書</Btn>
                         {r.invoiceHistory&&r.invoiceHistory.length>0 && (
-                          <span style={{ fontSize:10,color:T.g2,fontWeight:700 }}>
+                          <span style={{ fontSize:FS.fsLabel,color:T.g2,fontWeight:700 }}>
                             {"✅ "+r.invoiceHistory.length+"回発行"}
                           </span>
                         )}
@@ -7950,16 +8013,16 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                   {stockIssues.length>0 && (
                     <div style={{ display:"flex",alignItems:"center",gap:10,padding:"8px 14px",marginBottom:10,
                       borderRadius:6,background:T.redPale,border:"1px solid #e5737340" }}>
-                      <span style={{ fontSize:18,flexShrink:0 }}>🚨</span>
-                      <div style={{ flex:1,fontSize:12,color:T.red,fontWeight:600 }}>
+                      <span style={{ fontSize:FS.fsNum,flexShrink:0 }}>🚨</span>
+                      <div style={{ flex:1,fontSize:FS.fsBody,color:T.red,fontWeight:600 }}>
                         欠品 {stockIssues.length}点 — 発注が必要です
-                        <span style={{ fontSize:11,color:"#e5737380",fontWeight:400,marginLeft:8 }}>
+                        <span style={{ fontSize:FS.fsLabel,color:"#e5737380",fontWeight:400,marginLeft:8 }}>
                           {stockIssues.map(function(it){return it.name;}).join("、")}
                         </span>
                       </div>
                       <button onClick={function(e){e.stopPropagation(); if(onPurchaseOrder) onPurchaseOrder(stockIssues[0].isbn||"",stockIssues[0].name);}}
                         style={{ padding:"5px 14px",borderRadius:5,background:T.red,color:"#fff",
-                          fontSize:11,fontWeight:700,border:"none",cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap" }}>
+                          fontSize:FS.fsLabel,fontWeight:700,border:"none",cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap" }}>
                         📠 発注画面へ
                       </button>
                     </div>
@@ -7967,8 +8030,8 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                   {stockWarnings.length>0 && !stockIssues.length && (
                     <div style={{ display:"flex",alignItems:"center",gap:10,padding:"8px 14px",marginBottom:10,
                       borderRadius:6,background:T.amberPale,border:"1px solid "+T.amber+"30" }}>
-                      <span style={{ fontSize:16 }}>⚠</span>
-                      <div style={{ fontSize:12,color:T.amber,fontWeight:600 }}>
+                      <span style={{ fontSize:FS.fsTitle }}>⚠</span>
+                      <div style={{ fontSize:FS.fsBody,color:T.amber,fontWeight:600 }}>
                         在庫不足 {stockWarnings.length}点 — 注文数に対して在庫が足りません
                       </div>
                     </div>
@@ -7988,8 +8051,8 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                       return (
                         <div key={i} style={{ padding:"7px 12px",background:T.white,
                           gridColumn:cell.wide?"span 2":"auto" }}>
-                          <span style={{ fontSize:10,color:T.ink4,marginRight:8 }}>{cell.label}</span>
-                          <span style={{ fontSize:12,fontWeight:cell.bold?700:400,color:cell.accent||T.ink,
+                          <span style={{ fontSize:FS.fsLabel,color:T.ink4,marginRight:8 }}>{cell.label}</span>
+                          <span style={{ fontSize:FS.fsBody,fontWeight:cell.bold?700:400,color:cell.accent||T.ink,
                             fontFamily:cell.accent?"'Inter',sans-serif":"inherit" }}>{cell.val}</span>
                         </div>
                       );
@@ -8000,12 +8063,12 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                   {(r.caseNo||r.staffMemo) && (
                     <div style={{ display:"flex",gap:8,marginBottom:10,flexWrap:"wrap" }}>
                       {r.caseNo && (
-                        <span style={{ fontSize:11,padding:"3px 10px",borderRadius:4,background:T.navyPale,color:T.navy,fontWeight:600 }}>
+                        <span style={{ fontSize:FS.fsLabel,padding:"3px 10px",borderRadius:4,background:T.navyPale,color:T.navy,fontWeight:600 }}>
                           📂 {r.caseNo}{r.caseName?" — "+r.caseName:""}
                         </span>
                       )}
                       {r.staffMemo && (
-                        <span style={{ fontSize:11,padding:"3px 10px",borderRadius:4,background:"#fff8e1",color:T.ink3,fontStyle:"italic" }}>
+                        <span style={{ fontSize:FS.fsLabel,padding:"3px 10px",borderRadius:4,background:"#fff8e1",color:T.ink3,fontStyle:"italic" }}>
                           📝 {r.staffMemo}
                         </span>
                       )}
@@ -8089,20 +8152,20 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
                             padding:"8px 14px", background:T.bg, borderBottom:"1px solid "+T.rule }}>
                             <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                              <span style={{ fontSize:11, fontWeight:700, color:T.ink4 }}>
+                              <span style={{ fontSize:FS.fsLabel, fontWeight:700, color:T.ink4 }}>
                                 品目 {i+1} / {items.length}
                               </span>
                               {statusMeta.label && (
-                                <span style={{ fontSize:11, padding:"2px 8px", borderRadius:10,
+                                <span style={{ fontSize:FS.fsLabel, padding:"2px 8px", borderRadius:10,
                                   background:statusMeta.bg, color:statusMeta.fg, fontWeight:700 }}>
                                   {statusMeta.icon} {statusMeta.label}
                                 </span>
                               )}
                             </div>
-                            <div style={{ fontFamily:"'Inter'", fontSize:16, fontWeight:800, color:T.g2,
+                            <div style={{ fontFamily:"'Inter'", fontSize:FS.fsTitle, fontWeight:800, color:T.g2,
                               textDecoration:itemStatus==="cancelled"?"line-through":"none" }}>
                               ¥{it.amount.toLocaleString()}
-                              <span style={{ fontSize:11, fontWeight:500, color:T.ink4, marginLeft:6 }}>
+                              <span style={{ fontSize:FS.fsLabel, fontWeight:500, color:T.ink4, marginLeft:6 }}>
                                 税{it.taxRate||8}%込
                               </span>
                             </div>
@@ -8112,7 +8175,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                           <div style={{ padding:"12px 14px" }}>
                             {/* 書籍名＋冊数 */}
                             <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:12, marginBottom:10 }}>
-                              <div style={{ flex:1, fontSize:16, fontWeight:700, color:T.ink, lineHeight:1.4,
+                              <div style={{ flex:1, fontSize:FS.fsTitle, fontWeight:700, color:T.ink, lineHeight:1.4,
                                 textDecoration:itemStatus==="cancelled"?"line-through":"none" }}>
                                 {it.name}
                                 {/* ISBNホバーコピー（デスクトップのみ） */}
@@ -8126,7 +8189,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                                       }
                                     }}
                                     aria-label="ISBNをコピー"
-                                    style={{ marginLeft:8, padding:"1px 6px", fontSize:10, border:"1px solid "+T.rule,
+                                    style={{ marginLeft:8, padding:"1px 6px", fontSize:FS.fsLabel, border:"1px solid "+T.rule,
                                       borderRadius:4, background:T.white, color:T.ink4, cursor:"pointer", fontFamily:"inherit" }}>
                                     📋 ISBN
                                   </button>
@@ -8139,22 +8202,22 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                                   onClick={function(e){ e.stopPropagation(); }}
                                   aria-label={"冊数を変更 "+it.name}
                                   style={{ width:60, padding:"6px 8px", textAlign:"center",
-                                    fontFamily:"'Inter'", fontSize:20, fontWeight:800, color:T.ink,
+                                    fontFamily:"'Inter'", fontSize:FS.fsNum, fontWeight:800, color:T.ink,
                                     border:"1.5px solid "+T.rule, borderRadius:6, background:T.white }} />
-                                <span style={{ fontSize:12, color:T.ink4, fontWeight:600 }}>冊</span>
+                                <span style={{ fontSize:FS.fsBody, color:T.ink4, fontWeight:600 }}>冊</span>
                               </div>
                             </div>
 
                             {/* タグ列: 出版社・分野・書籍タグ（★v22.60: 分野タグ15分野・書籍タグ6種） */}
                             <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginBottom:12 }}>
                               {it.publisher && (
-                                <span style={{ fontSize:12, padding:"3px 10px", borderRadius:"var(--border-radius-md,12px)",
+                                <span style={{ fontSize:FS.fsBody, padding:"3px 10px", borderRadius:"var(--border-radius-md,12px)",
                                   background:"#E6F1FB", color:"#0C447C", fontWeight:600 }}>
                                   🏛 {it.publisher}
                                 </span>
                               )}
                               {book && book.genre && (
-                                <span style={{ fontSize:12, padding:"3px 10px", borderRadius:"var(--border-radius-md,12px)",
+                                <span style={{ fontSize:FS.fsBody, padding:"3px 10px", borderRadius:"var(--border-radius-md,12px)",
                                   background:"#E6F1FB", color:"#0C447C", fontWeight:600 }}>
                                   📚 {book.genre}
                                 </span>
@@ -8163,14 +8226,14 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                                 var td = BOOK_TAG_DEFS[tagName];
                                 if(!td) return null;
                                 return (
-                                  <span key={tagName} style={{ fontSize:12, padding:"3px 10px",
+                                  <span key={tagName} style={{ fontSize:FS.fsBody, padding:"3px 10px",
                                     borderRadius:"var(--border-radius-md,12px)", background:td.bg, color:td.fg, fontWeight:600 }}>
                                     {td.icon} {tagName}
                                   </span>
                                 );
                               })}
                               {isPod && stockZero && (
-                                <span style={{ fontSize:12, padding:"3px 10px", borderRadius:"var(--border-radius-md,12px)",
+                                <span style={{ fontSize:FS.fsBody, padding:"3px 10px", borderRadius:"var(--border-radius-md,12px)",
                                   background:T.purplePale, color:T.purple, fontWeight:700 }}>
                                   🖨 POD製造
                                 </span>
@@ -8182,8 +8245,8 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                               <div style={{ background:T.bg, border:"1px solid "+T.rule, borderRadius:6,
                                 padding:"10px 12px", marginBottom:10 }}>
                                 <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
-                                  <span style={{ fontSize:12, fontWeight:700, color:T.ink3 }}>在庫合計</span>
-                                  <span style={{ fontFamily:"'Inter'", fontSize:20, fontWeight:800,
+                                  <span style={{ fontSize:FS.fsBody, fontWeight:700, color:T.ink3 }}>在庫合計</span>
+                                  <span style={{ fontFamily:"'Inter'", fontSize:FS.fsNum, fontWeight:800,
                                     color:stockZero?T.red:stockOk?T.g2:T.amber }}>
                                     {book.stock}冊
                                   </span>
@@ -8196,13 +8259,13 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                                           style={{ flex:"1 1 140px", minWidth:140,
                                             padding:"8px 10px", background:T.white, border:"1px solid "+T.rule,
                                             borderRadius:6, textAlign:"left" }}>
-                                          <div style={{ fontSize:12, color:T.ink3, marginBottom:2 }}>
+                                          <div style={{ fontSize:FS.fsBody, color:T.ink3, marginBottom:2 }}>
                                             {lc.icon} {lc.label}
                                           </div>
-                                          <div style={{ fontSize:12, color:T.ink4, marginBottom:4 }}>
+                                          <div style={{ fontSize:FS.fsBody, color:T.ink4, marginBottom:4 }}>
                                             {lc.genre==="全分野"?"全分野":lc.genre+"エリア"}
                                           </div>
-                                          <div style={{ fontFamily:"'Inter'", fontSize:16, fontWeight:700,
+                                          <div style={{ fontFamily:"'Inter'", fontSize:FS.fsTitle, fontWeight:700,
                                             color:lc.stock>0?T.g2:T.ink4 }}>
                                             {lc.stock}冊
                                           </div>
@@ -8213,11 +8276,11 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                                 )}
                                 {stockZero && !isPod && (
                                   <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:6 }}>
-                                    <span style={{ fontSize:12, color:T.red, fontWeight:700 }}>🚫 在庫切れ</span>
+                                    <span style={{ fontSize:FS.fsBody, color:T.red, fontWeight:700 }}>🚫 在庫切れ</span>
                                     <button onClick={function(e){ e.stopPropagation(); if(onPurchaseOrder) onPurchaseOrder(it.isbn||"",it.name); }}
                                       aria-label="発注画面へ"
                                       style={{ padding:"4px 12px", borderRadius:5, background:T.red, color:"#fff",
-                                        fontSize:11, fontWeight:700, border:"none", cursor:"pointer", fontFamily:"inherit" }}>
+                                        fontSize:FS.fsLabel, fontWeight:700, border:"none", cursor:"pointer", fontFamily:"inherit" }}>
                                       📠 発注画面へ
                                     </button>
                                   </div>
@@ -8241,7 +8304,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                                       background:active?st.color:T.white,
                                       color:active?"#fff":st.color,
                                       border:"1.5px solid "+st.color,
-                                      borderRadius:5, fontSize:12, fontWeight:700,
+                                      borderRadius:5, fontSize:FS.fsBody, fontWeight:700,
                                       cursor:"pointer", fontFamily:"inherit" }}>
                                     {st.icon} {st.label}
                                   </button>
@@ -8251,13 +8314,13 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
 
                             {/* 品目メモ */}
                             <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                              <span style={{ fontSize:14 }}>💬</span>
+                              <span style={{ fontSize:FS.fsTitle }}>💬</span>
                               <input type="text" value={itemNote}
                                 onChange={function(e){ changeNote(e.target.value); }}
                                 onClick={function(e){ e.stopPropagation(); }}
                                 placeholder="品目メモを入力..."
                                 aria-label="品目メモ"
-                                style={{ flex:1, padding:"5px 10px", fontSize:12,
+                                style={{ flex:1, padding:"5px 10px", fontSize:FS.fsBody,
                                   border:"1px solid "+T.rule, borderRadius:5, fontFamily:"inherit" }} />
                             </div>
                           </div>
@@ -8280,31 +8343,31 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
                           flexWrap:"wrap", gap:10 }}>
                           <div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" }}>
-                            <span style={{ fontSize:12, fontWeight:700, color:T.ink3 }}>合計</span>
-                            <span style={{ fontFamily:"'Inter'", fontSize:18, fontWeight:900, color:T.g2 }}>
+                            <span style={{ fontSize:FS.fsBody, fontWeight:700, color:T.ink3 }}>合計</span>
+                            <span style={{ fontFamily:"'Inter'", fontSize:FS.fsNum, fontWeight:900, color:T.g2 }}>
                               ¥{activeTotal.toLocaleString()}
                             </span>
-                            <span style={{ fontSize:12, color:T.ink4 }}>（{activeQty}冊）</span>
+                            <span style={{ fontSize:FS.fsBody, color:T.ink4 }}>（{activeQty}冊）</span>
                             {shippedCnt>0 && (
-                              <span style={{ fontSize:11, padding:"2px 8px", borderRadius:10,
+                              <span style={{ fontSize:FS.fsLabel, padding:"2px 8px", borderRadius:10,
                                 background:T.okPale, color:T.g2, fontWeight:700 }}>
                                 ✅ 出荷済 {shippedCnt}点
                               </span>
                             )}
                             {waitingCnt>0 && (
-                              <span style={{ fontSize:11, padding:"2px 8px", borderRadius:10,
+                              <span style={{ fontSize:FS.fsLabel, padding:"2px 8px", borderRadius:10,
                                 background:T.amberPale, color:T.amber, fontWeight:700 }}>
                                 ⏳ 入荷待ち {waitingCnt}点
                               </span>
                             )}
                             {cancelledCnt>0 && (
-                              <span style={{ fontSize:11, padding:"2px 8px", borderRadius:10,
+                              <span style={{ fontSize:FS.fsLabel, padding:"2px 8px", borderRadius:10,
                                 background:T.redPale, color:T.red, fontWeight:700 }}>
                                 ❌ キャンセル {cancelledCnt}点
                               </span>
                             )}
-                            {r.shippedAt && <span style={{ fontSize:11, color:T.g2 }}>📦 出荷済 {r.shippedAt.slice(5)}</span>}
-                            {r.deliveredAt && <span style={{ fontSize:11, color:T.ok }}>✅ 配達済 {r.deliveredAt.slice(5)}</span>}
+                            {r.shippedAt && <span style={{ fontSize:FS.fsLabel, color:T.g2 }}>📦 出荷済 {r.shippedAt.slice(5)}</span>}
+                            {r.deliveredAt && <span style={{ fontSize:FS.fsLabel, color:T.ok }}>✅ 配達済 {r.deliveredAt.slice(5)}</span>}
                           </div>
                           <div style={{ display:"flex", gap:8 }}>
                             <button
@@ -8313,7 +8376,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                                 printDeliverySlip && printDeliverySlip(r);
                               }}
                               aria-label="納品書印刷"
-                              style={{ padding:"6px 14px", fontSize:12, fontWeight:700, cursor:"pointer",
+                              style={{ padding:"6px 14px", fontSize:FS.fsBody, fontWeight:700, cursor:"pointer",
                                 background:T.g2, color:"#fff", border:"none", borderRadius:5, fontFamily:"inherit" }}>
                               📋 納品書印刷
                             </button>
@@ -8323,7 +8386,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                                 printReceipt && printReceipt(r);
                               }}
                               aria-label="領収書印刷"
-                              style={{ padding:"6px 14px", fontSize:12, fontWeight:700, cursor:"pointer",
+                              style={{ padding:"6px 14px", fontSize:FS.fsBody, fontWeight:700, cursor:"pointer",
                                 background:T.white, color:T.g2, border:"1.5px solid "+T.g2, borderRadius:5, fontFamily:"inherit" }}>
                               🧾 領収書印刷
                             </button>
@@ -8452,7 +8515,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                   disabled={safePg2===1}
                   style={{ padding:"5px 12px",borderRadius:6,border:"1px solid #d8d4c8",
                     background:safePg2===1?T.bg:"#fff",color:safePg2===1?"#aaa":T.ink,
-                    cursor:safePg2===1?"default":"pointer",fontFamily:"inherit",fontSize:12 }}>
+                    cursor:safePg2===1?"default":"pointer",fontFamily:"inherit",fontSize:FS.fsBody }}>
                   ← 前
                 </button>
                 {Array.from({length:Math.min(7,totalPg)},function(_,i){
@@ -8466,7 +8529,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                         border:"1px solid "+(pg===safePg2?T.g2:T.rule),
                         background:pg===safePg2?T.g2:"#fff",
                         color:pg===safePg2?"#fff":T.ink,
-                        cursor:"pointer",fontFamily:"'Inter'",fontSize:12,fontWeight:700 }}>
+                        cursor:"pointer",fontFamily:"'Inter'",fontSize:FS.fsBody,fontWeight:700 }}>
                       {pg}
                     </button>
                   );
@@ -8475,10 +8538,10 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                   disabled={safePg2===totalPg}
                   style={{ padding:"5px 12px",borderRadius:6,border:"1px solid #d8d4c8",
                     background:safePg2===totalPg?T.bg:"#fff",color:safePg2===totalPg?"#aaa":T.ink,
-                    cursor:safePg2===totalPg?"default":"pointer",fontFamily:"inherit",fontSize:12 }}>
+                    cursor:safePg2===totalPg?"default":"pointer",fontFamily:"inherit",fontSize:FS.fsBody }}>
                   次 →
                 </button>
-                <span style={{ fontSize:11,color:T.ink4,marginLeft:4 }}>
+                <span style={{ fontSize:FS.fsLabel,color:T.ink4,marginLeft:4 }}>
                   {total}件中 {(safePg2-1)*ORDER_PAGE_SIZE+1}〜{Math.min(total,safePg2*ORDER_PAGE_SIZE)}件表示
                 </span>
               </div>
@@ -8524,8 +8587,8 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                     return (
                       <div key={i} style={{ padding:"8px 14px",borderRadius:8,
                         background:k.bg,border:"1px solid "+k.color+"30",textAlign:"center" }}>
-                        <div style={{ fontFamily:"'Inter'",fontSize:16,fontWeight:900,color:k.color }}>{k.val}</div>
-                        <div style={{ fontSize:10,color:k.color,fontWeight:700,marginTop:1 }}>{k.label}</div>
+                        <div style={{ fontFamily:"'Inter'",fontSize:FS.fsTitle,fontWeight:900,color:k.color }}>{k.val}</div>
+                        <div style={{ fontSize:FS.fsLabel,color:k.color,fontWeight:700,marginTop:1 }}>{k.label}</div>
                       </div>
                     );
                   })}
@@ -8568,16 +8631,16 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                       <div style={{ display:"flex",alignItems:"center",gap:10,
                         padding:"10px 16px",borderRadius:"8px 8px 0 0",
                         background:m.color,color:"#fff" }}>
-                        <span style={{ fontSize:20 }}>{m.icon}</span>
+                        <span style={{ fontSize:FS.fsNum }}>{m.icon}</span>
                         <div style={{ flex:1 }}>
-                          <div style={{ fontSize:14,fontWeight:800 }}>{m.label}</div>
-                          <div style={{ fontSize:11,opacity:.85 }}>
+                          <div style={{ fontSize:FS.fsTitle,fontWeight:800 }}>{m.label}</div>
+                          <div style={{ fontSize:FS.fsLabel,opacity:.85 }}>
                             {lp.length}件 · 約{locBooks}冊をピックアップ
                           </div>
                         </div>
                         <div style={{ display:"flex",gap:8,alignItems:"center" }}>
                           {lp.filter(function(o){ return o.urgent; }).length>0 && (
-                            <span style={{ fontSize:11,fontWeight:800,padding:"3px 10px",
+                            <span style={{ fontSize:FS.fsLabel,fontWeight:800,padding:"3px 10px",
                               borderRadius:6,background:"rgba(255,255,255,.2)" }}>
                               🚨 急ぎ{lp.filter(function(o){ return o.urgent; }).length}件
                             </span>
@@ -8588,7 +8651,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                               var anyUnchecked=Array.from(allChecked).some(function(c){ return !c.checked; });
                               Array.from(allChecked).forEach(function(c){ c.checked=anyUnchecked; });
                             }}
-                            style={{ fontSize:10,fontWeight:700,padding:"3px 8px",
+                            style={{ fontSize:FS.fsLabel,fontWeight:700,padding:"3px 8px",
                               borderRadius:5,cursor:"pointer",fontFamily:"inherit",
                               background:"rgba(255,255,255,.2)",color:"#fff",border:"none" }}>
                             ☑ 全チェック
@@ -8617,23 +8680,23 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                                 background:o.urgent?T.red:m.color }} />
                               {/* ID・担当・急ぎ */}
                               <div style={{ width:90,flexShrink:0 }}>
-                                <div style={{ fontSize:11,fontWeight:700,color:T.navy }}>{o.id}</div>
-                                <div style={{ fontSize:10,color:T.ink4,marginTop:1 }}>
+                                <div style={{ fontSize:FS.fsLabel,fontWeight:700,color:T.navy }}>{o.id}</div>
+                                <div style={{ fontSize:FS.fsLabel,color:T.ink4,marginTop:1 }}>
                                   {o.assignedTo||"未割当"}
                                 </div>
                                 {o.urgent && (
-                                  <div style={{ fontSize:10,fontWeight:800,color:T.red,marginTop:2 }}>
+                                  <div style={{ fontSize:FS.fsLabel,fontWeight:800,color:T.red,marginTop:2 }}>
                                     🚨 {o.urgentBy&&o.urgentBy.slice(5)}まで
                                   </div>
                                 )}
                               </div>
                               {/* 顧客名 */}
                               <div style={{ width:110,flexShrink:0 }}>
-                                <div style={{ fontSize:11,fontWeight:600,color:T.ink }}>
+                                <div style={{ fontSize:FS.fsLabel,fontWeight:600,color:T.ink }}>
                                   {o.member}
                                 </div>
                                 {o.caseNo && (
-                                  <div style={{ fontSize:10,color:T.ink4,marginTop:1 }}>
+                                  <div style={{ fontSize:FS.fsLabel,color:T.ink4,marginTop:1 }}>
                                     📂 {o.caseNo}
                                   </div>
                                 )}
@@ -8650,10 +8713,10 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                                       <input aria-label="品目選択" type="checkbox"
                                         style={{ width:14,height:14,marginTop:1,
                                           flexShrink:0,cursor:"pointer",accentColor:m.color }} />
-                                      <span style={{ fontSize:11,color:T.ink,lineHeight:1.4 }}>
+                                      <span style={{ fontSize:FS.fsLabel,color:T.ink,lineHeight:1.4 }}>
                                         {it.name}
                                         {qty>1 && (
-                                          <span style={{ marginLeft:5,fontSize:10,fontWeight:800,
+                                          <span style={{ marginLeft:5,fontSize:FS.fsLabel,fontWeight:800,
                                             padding:"1px 5px",borderRadius:3,
                                             background:m.bg,color:m.color }}>
                                             {qty}冊
@@ -8666,11 +8729,11 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                               </div>
                               {/* 金額・帳票 */}
                               <div style={{ width:90,textAlign:"right",flexShrink:0 }}>
-                                <div style={{ fontFamily:"'Inter'",fontSize:12,fontWeight:700,
+                                <div style={{ fontFamily:"'Inter'",fontSize:FS.fsBody,fontWeight:700,
                                   color:T.g2,marginBottom:3 }}>
                                   ¥{o.total.toLocaleString()}
                                 </div>
-                                <div style={{ fontSize:10,fontWeight:700,padding:"1px 5px",
+                                <div style={{ fontSize:FS.fsLabel,fontWeight:700,padding:"1px 5px",
                                   borderRadius:4,display:"inline-block",
                                   background:statusColor(o.status)+"18",
                                   color:statusColor(o.status) }}>
@@ -8680,14 +8743,14 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                                   justifyContent:"flex-end",gap:3 }}>
                                   {o.fmt!=="elec"&&(
                                     <Btn variant="ghost" small
-                                      style={{ fontSize:10,padding:"2px 5px" }}
+                                      style={{ fontSize:FS.fsLabel,padding:"2px 5px" }}
                                       onClick={function(){ setActionTarget(o); setPrintMode("delivery"); }}>
                                       納品書
                                     </Btn>
                                   )}
                                   {(o.paymentMethod==="invoice"||o.shipMethod==="direct") && (
                                     <Btn variant="ghost" small
-                                      style={{ fontSize:10,padding:"2px 5px",color:T.navy }}
+                                      style={{ fontSize:FS.fsLabel,padding:"2px 5px",color:T.navy }}
                                       onClick={function(){ openOrderInv(o); }}>
                                       請求書
                                     </Btn>
@@ -8705,8 +8768,8 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                 {pending.length===0 && (
                   <div style={{ textAlign:"center",padding:"48px 20px",color:T.ink4 }}>
                     <div style={{ fontSize:40,marginBottom:10 }}>📍</div>
-                    <div style={{ fontSize:14,fontWeight:700 }}>出荷待ちの注文はありません</div>
-                    <div style={{ fontSize:12,marginTop:4 }}>ステータスが「確認待」「請求済」の注文がここに表示されます</div>
+                    <div style={{ fontSize:FS.fsTitle,fontWeight:700 }}>出荷待ちの注文はありません</div>
+                    <div style={{ fontSize:FS.fsBody,marginTop:4 }}>ステータスが「確認待」「請求済」の注文がここに表示されます</div>
                   </div>
                 )}
               </div>
@@ -8730,16 +8793,16 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
           <div style={{ display:"flex",justifyContent:"space-between",
             alignItems:"center",marginBottom:10,flexWrap:"wrap",gap:8 }}>
             <div>
-              <div style={{ fontSize:14,fontWeight:800,color:T.ink }}>
+              <div style={{ fontSize:FS.fsTitle,fontWeight:800,color:T.ink }}>
                 🚴 本日の外商直配リスト
               </div>
-              <div style={{ fontSize:11,color:T.ink4,marginTop:2 }}>
+              <div style={{ fontSize:FS.fsLabel,color:T.ink4,marginTop:2 }}>
                 配達待ち・配達中の外商直配注文一覧
               </div>
             </div>
             <div style={{ display:"flex",gap:8,alignItems:"center" }}>
               <select aria-label="配送ソート" value={deliverySort} onChange={function(e){ setDeliverySort(e.target.value); }}
-                style={{ padding:"6px 10px",borderRadius:6,fontSize:12,
+                style={{ padding:"6px 10px",borderRadius:6,fontSize:FS.fsBody,
                   border:"1px solid "+T.rule,background:"#fff",
                   color:T.ink,cursor:"pointer",fontFamily:"inherit" }}>
                 <option value="urgent">急ぎ優先</option>
@@ -8783,8 +8846,8 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
 
             if(directOrds.length===0) return (
               <Card style={{ padding:32,textAlign:"center" }}>
-                <div style={{ fontSize:24,marginBottom:8 }}>✅</div>
-                <div style={{ fontSize:14,fontWeight:700,color:T.g2 }}>
+                <div style={{ fontSize:FS.fsNum,marginBottom:8 }}>✅</div>
+                <div style={{ fontSize:FS.fsTitle,fontWeight:700,color:T.g2 }}>
                   本日の配達待ち注文はありません
                 </div>
               </Card>
@@ -8811,10 +8874,10 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                     return (
                       <div key={i} style={{ padding:"12px 14px",background:k.bg,
                         borderRadius:8,border:"1px solid "+k.color+"30" }}>
-                        <div style={{ fontFamily:"'Inter'",fontSize:20,fontWeight:800,color:k.color }}>
+                        <div style={{ fontFamily:"'Inter'",fontSize:FS.fsNum,fontWeight:800,color:k.color }}>
                           {k.val}
                         </div>
-                        <div style={{ fontSize:10,color:T.ink4,marginTop:2 }}>{k.label}</div>
+                        <div style={{ fontSize:FS.fsLabel,color:T.ink4,marginTop:2 }}>{k.label}</div>
                       </div>
                     );
                   })}
@@ -8832,13 +8895,13 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                           background:"linear-gradient(90deg,"+T.g1+"18,transparent)" }}>
                           <div style={{ width:30,height:30,borderRadius:"50%",
                             background:T.g2,display:"flex",alignItems:"center",
-                            justifyContent:"center",fontSize:13,fontWeight:800,
+                            justifyContent:"center",fontSize:FS.fsBody,fontWeight:800,
                             color:"#fff",flexShrink:0 }}>
                             {rep.slice(0,1)}
                           </div>
                           <div>
-                            <div style={{ fontSize:13,fontWeight:800,color:T.ink }}>{rep} 担当</div>
-                            <div style={{ fontSize:10,color:T.ink4 }}>{repOrds.length}件</div>
+                            <div style={{ fontSize:FS.fsBody,fontWeight:800,color:T.ink }}>{rep} 担当</div>
+                            <div style={{ fontSize:FS.fsLabel,color:T.ink4 }}>{repOrds.length}件</div>
                           </div>
                         </div>
                         {repOrds.map(function(o,i){
@@ -8862,33 +8925,33 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                                   <div style={{ display:"flex",gap:6,alignItems:"center",
                                     marginBottom:4,flexWrap:"wrap" }}>
                                     <span style={{ fontFamily:"'Inter'",fontWeight:700,
-                                      fontSize:12,color:T.navy }}>{o.id}</span>
+                                      fontSize:FS.fsBody,color:T.navy }}>{o.id}</span>
                                     {o.urgent && (
-                                      <span style={{ fontSize:10,fontWeight:800,padding:"1px 5px",
+                                      <span style={{ fontSize:FS.fsLabel,fontWeight:800,padding:"1px 5px",
                                         borderRadius:3,background:T.redPale,color:T.red }}>
                                         🚨 急ぎ {o.urgentBy&&o.urgentBy.slice(5)}
                                       </span>
                                     )}
                                     {isDeliv && (
-                                      <span style={{ fontSize:10,fontWeight:700,padding:"1px 5px",
+                                      <span style={{ fontSize:FS.fsLabel,fontWeight:700,padding:"1px 5px",
                                         borderRadius:3,background:T.navyPale,color:"#0277bd" }}>
                                         🚴 配達中
                                       </span>
                                     )}
                                   </div>
-                                  <div style={{ fontSize:13,fontWeight:700,color:T.ink,marginBottom:2 }}>
+                                  <div style={{ fontSize:FS.fsBody,fontWeight:700,color:T.ink,marginBottom:2 }}>
                                     {o.member}
                                   </div>
-                                  <div style={{ fontSize:11,color:T.ink3,marginBottom:4 }}>
+                                  <div style={{ fontSize:FS.fsLabel,color:T.ink3,marginBottom:4 }}>
                                     📚 {o.items}　¥{o.total.toLocaleString()}
                                   </div>
                                   {addr && (
-                                    <div style={{ fontSize:11,color:T.ink4,marginBottom:4 }}>
+                                    <div style={{ fontSize:FS.fsLabel,color:T.ink4,marginBottom:4 }}>
                                       📍 {addr.addr1} {addr.addr2}　{addr.tel}
                                     </div>
                                   )}
                                   {o.staffMemo && (
-                                    <div style={{ fontSize:11,color:"#795548",
+                                    <div style={{ fontSize:FS.fsLabel,color:"#795548",
                                       background:"#fffde7",borderRadius:4,
                                       padding:"4px 8px",borderLeft:"3px solid #f9a825" }}>
                                       📝 {o.staffMemo}
@@ -8944,22 +9007,22 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                 border:"2px solid "+(tdDone?T.ok+"60":T.amber+"60") }}>
                 <div style={{ background:tdDone?"linear-gradient(90deg,"+T.g1+","+T.g2+")":"linear-gradient(90deg,#e65100,#bf360c)",
                   padding:"10px 16px",display:"flex",alignItems:"center",gap:10 }}>
-                  <span style={{ fontSize:16 }}>🚚</span>
+                  <span style={{ fontSize:FS.fsTitle }}>🚚</span>
                   <div style={{ flex:1 }}>
-                    <div style={{ fontSize:13,fontWeight:800,color:"#fff" }}>
+                    <div style={{ fontSize:FS.fsBody,fontWeight:800,color:"#fff" }}>
                       霞が関 → 本社 中継確認
                     </div>
-                    <div style={{ fontSize:11,color:"rgba(255,255,255,.75)" }}>
+                    <div style={{ fontSize:FS.fsLabel,color:"rgba(255,255,255,.75)" }}>
                       霞が関・倉庫発送分　{kasOrds.length}件　
                       （13:00頃 取次配送）
                     </div>
                   </div>
                   {tdDone ? (
                     <div style={{ textAlign:"right" }}>
-                      <div style={{ fontSize:13,fontWeight:800,color:"#fff" }}>
+                      <div style={{ fontSize:FS.fsBody,fontWeight:800,color:"#fff" }}>
                         ✅ {transitRecord.time} 確認済み
                       </div>
-                      <div style={{ fontSize:10,color:"rgba(255,255,255,.7)" }}>
+                      <div style={{ fontSize:FS.fsLabel,color:"rgba(255,255,255,.7)" }}>
                         確認者：{transitRecord.by||"—"}
                       </div>
                     </div>
@@ -8973,7 +9036,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                   )}
                 </div>
                 {kasOrds.length>0 && !tdDone && (
-                  <div style={{ padding:"8px 16px",background:T.amberPale,fontSize:11,color:T.amber }}>
+                  <div style={{ padding:"8px 16px",background:T.amberPale,fontSize:FS.fsLabel,color:T.amber }}>
                     未確認 {kasOrds.length}件 → {kasOrds.map(function(o){ return o.id; }).join("　")}
                   </div>
                 )}
@@ -8983,7 +9046,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
 
           {/* フロー説明 */}
           <div style={{ background:T.navyPale, border:"1px solid "+T.navy+"20",
-            borderRadius:8, padding:"12px 16px", fontSize:12, color:T.ink3, lineHeight:1.8 }}>
+            borderRadius:8, padding:"12px 16px", fontSize:FS.fsBody, color:T.ink3, lineHeight:1.8 }}>
             <strong style={{ color:T.navy }}>📦 佐川 e飛伝III 連携フロー</strong><br/>
             <span>① 注文一覧で紙書籍にチェック　→　② CSV出力ボタン　→　③ e飛伝IIIへ取込・印刷　→　④ 追跡番号CSVをここに貼り付けて一括反映</span>
           </div>
@@ -8993,9 +9056,9 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
             <div style={{ background:T.redPale,border:"2px solid "+T.red+"60",
               borderRadius:8,padding:"12px 16px",
               display:"flex",gap:10,alignItems:"flex-start" }}>
-              <span style={{ fontSize:20 }}>🚨</span>
+              <span style={{ fontSize:FS.fsNum }}>🚨</span>
               <div style={{ flex:1 }}>
-                <div style={{ fontSize:13,fontWeight:800,color:T.red,marginBottom:6 }}>
+                <div style={{ fontSize:FS.fsBody,fontWeight:800,color:T.red,marginBottom:6 }}>
                   急ぎ出荷が必要な注文 {orders.filter(o=>o.urgent&&o.status==="pending"&&o.fmt==="paper").length}件
                 </div>
                 {orders.filter(o=>o.urgent&&o.status==="pending"&&o.fmt==="paper")
@@ -9003,11 +9066,11 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                   .map((o,i)=>(
                   <div key={i} style={{ display:"flex",gap:10,alignItems:"center",
                     marginBottom:6,padding:"6px 10px",background:"rgba(255,255,255,.7)",
-                    borderRadius:6,fontSize:12 }}>
+                    borderRadius:6,fontSize:FS.fsBody }}>
                     <span style={{ fontFamily:"'Inter'",fontWeight:700,color:T.navy,minWidth:80 }}>{o.id}</span>
                     <span style={{ flex:1,color:T.ink }}>{o.member}</span>
-                    {o.caseNo && <span style={{ fontSize:10,color:T.ink4 }}>📂 {o.caseNo}</span>}
-                    <span style={{ fontWeight:700,color:T.red,fontSize:11 }}>
+                    {o.caseNo && <span style={{ fontSize:FS.fsLabel,color:T.ink4 }}>📂 {o.caseNo}</span>}
+                    <span style={{ fontWeight:700,color:T.red,fontSize:FS.fsLabel }}>
                       ⏰ 期日：{o.urgentBy}
                     </span>
                   </div>
@@ -9018,11 +9081,11 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
 
           {/* STEP1: 対象注文 */}
           <Card style={{ padding:"16px 20px" }}>
-            <div style={{ fontSize:13, fontWeight:700, color:T.ink, marginBottom:12 }}>
+            <div style={{ fontSize:FS.fsBody, fontWeight:700, color:T.ink, marginBottom:12 }}>
               STEP 1　出荷対象を選択（注文一覧タブでチェック）
             </div>
             {orders.filter(o=>o.fmt==="paper").length === 0 ? (
-              <div style={{ fontSize:12, color:T.ink4 }}>紙書籍の注文がありません</div>
+              <div style={{ fontSize:FS.fsBody, color:T.ink4 }}>紙書籍の注文がありません</div>
             ) : (
               <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
                 {orders.filter(o=>o.fmt==="paper").map(o=>(
@@ -9034,13 +9097,13 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                       onChange={e=>setSelected(prev=>e.target.checked?[...prev,o.id]:prev.filter(x=>x!==o.id))}
                       style={{ width:14, height:14, cursor:"pointer" }} />
                     <div style={{ flex:1 }}>
-                      <span style={{ fontFamily:"'Inter'", fontWeight:700, fontSize:12, color:T.navy }}>{o.id}</span>
-                      <span style={{ fontSize:12, color:T.ink3, marginLeft:10 }}>{o.member}</span>
-                      <span style={{ fontSize:11, color:T.ink4, marginLeft:10 }}>{o.items}</span>
+                      <span style={{ fontFamily:"'Inter'", fontWeight:700, fontSize:FS.fsBody, color:T.navy }}>{o.id}</span>
+                      <span style={{ fontSize:FS.fsBody, color:T.ink3, marginLeft:10 }}>{o.member}</span>
+                      <span style={{ fontSize:FS.fsLabel, color:T.ink4, marginLeft:10 }}>{o.items}</span>
                     </div>
-                    <div style={{ fontSize:12, fontWeight:700, color:T.ink }}>¥{o.total.toLocaleString()}</div>
+                    <div style={{ fontSize:FS.fsBody, fontWeight:700, color:T.ink }}>¥{o.total.toLocaleString()}</div>
                     {o.tracking && (
-                      <span style={{ fontSize:11, color:T.ok, fontWeight:700 }}>✅ 追跡番号登録済</span>
+                      <span style={{ fontSize:FS.fsLabel, color:T.ok, fontWeight:700 }}>✅ 追跡番号登録済</span>
                     )}
                   </div>
                 ))}
@@ -9056,17 +9119,17 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
 
           {/* STEP2: 追跡番号インポート */}
           <Card style={{ padding:"16px 20px" }}>
-            <div style={{ fontSize:13, fontWeight:700, color:T.ink, marginBottom:6 }}>
+            <div style={{ fontSize:FS.fsBody, fontWeight:700, color:T.ink, marginBottom:6 }}>
               STEP 2　追跡番号を一括インポート（e飛伝III出荷後）
             </div>
-            <div style={{ fontSize:12, color:T.ink3, marginBottom:10, lineHeight:1.7 }}>
+            <div style={{ fontSize:FS.fsBody, color:T.ink3, marginBottom:10, lineHeight:1.7 }}>
               e飛伝IIIの「出荷履歴データ出力」で取得したCSVの内容を貼り付けてください。<br/>
               フォーマット：<code style={{ background:T.bg, padding:"1px 5px", borderRadius:3 }}>注文ID,追跡番号</code>（1行1件）
             </div>
             <textarea aria-label="追跡番号CSV入力" value={trackingInput} onChange={e=>setTrackingInput(e.target.value)}
               placeholder={"ORD-2841,123456789012\nORD-2839,234567890123\nORD-2837,345678901234"}
               style={{ width:"100%", height:100, padding:"8px 10px", borderRadius:7,
-                border:`1.5px solid ${T.rule}`, fontSize:12, fontFamily:"monospace",
+                border:`1.5px solid ${T.rule}`, fontSize:FS.fsBody, fontFamily:"monospace",
                 outline:"none", resize:"vertical", boxSizing:"border-box", marginBottom:10 }} />
             <Btn onClick={importTracking}
               disabled={trackingInput.trim().length===0}>
@@ -9077,7 +9140,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
           {/* 発送済み一覧 */}
           {orders.filter(o=>o.tracking).length>0 && (
             <Card style={{ padding:"16px 20px" }}>
-              <div style={{ fontSize:13, fontWeight:700, color:T.ink, marginBottom:10 }}>
+              <div style={{ fontSize:FS.fsBody, fontWeight:700, color:T.ink, marginBottom:10 }}>
                 📋 追跡番号登録済み注文
               </div>
               <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
@@ -9085,14 +9148,14 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                   <div key={o.id} style={{ display:"flex", alignItems:"center", gap:10,
                     padding:"8px 14px", background:T.okPale, borderRadius:6,
                     border:`1px solid ${T.ok}30` }}>
-                    <span style={{ fontFamily:"'Inter'", fontWeight:700, fontSize:12, color:T.navy }}>{o.id}</span>
-                    <span style={{ fontSize:12, color:T.ink3, flex:1 }}>{o.member}</span>
+                    <span style={{ fontFamily:"'Inter'", fontWeight:700, fontSize:FS.fsBody, color:T.navy }}>{o.id}</span>
+                    <span style={{ fontSize:FS.fsBody, color:T.ink3, flex:1 }}>{o.member}</span>
                     <a href={`https://k2k.sagawa-exp.co.jp/p/sagawa/web/okurijyo/okurijyoNoInput.jsp?okurijyoNo1=${o.tracking}`}
                       target="_blank" rel="noreferrer"
-                      style={{ fontFamily:"'Inter'", fontSize:12, color:T.navy, textDecoration:"underline", fontWeight:700 }}>
+                      style={{ fontFamily:"'Inter'", fontSize:FS.fsBody, color:T.navy, textDecoration:"underline", fontWeight:700 }}>
                       {o.tracking} 🔗
                     </a>
-                    <span style={{ fontSize:11, color:T.ok, fontWeight:700 }}>発送済</span>
+                    <span style={{ fontSize:FS.fsLabel, color:T.ok, fontWeight:700 }}>発送済</span>
                   </div>
                 ))}
               </div>
@@ -9101,7 +9164,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
           {/* 出力履歴 */}
           {sagawaHistory.length > 0 && (
             <Card style={{ padding:"16px 20px" }}>
-              <div style={{ fontSize:13,fontWeight:700,color:T.ink,marginBottom:12 }}>
+              <div style={{ fontSize:FS.fsBody,fontWeight:700,color:T.ink,marginBottom:12 }}>
                 📋 CSV出力履歴
               </div>
               <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
@@ -9110,9 +9173,9 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                     {/* 履歴ヘッダ */}
                     <div style={{ padding:"10px 14px",background:T.bg,
                       display:"flex",alignItems:"center",gap:12,flexWrap:"wrap" }}>
-                      <span style={{ fontSize:12,fontWeight:700,color:T.ink }}>{h.filename}</span>
-                      <span style={{ fontSize:11,color:T.ink4 }}>{h.date}</span>
-                      <span style={{ fontSize:11,fontWeight:700,color:T.g2 }}>{h.count}件</span>
+                      <span style={{ fontSize:FS.fsBody,fontWeight:700,color:T.ink }}>{h.filename}</span>
+                      <span style={{ fontSize:FS.fsLabel,color:T.ink4 }}>{h.date}</span>
+                      <span style={{ fontSize:FS.fsLabel,fontWeight:700,color:T.g2 }}>{h.count}件</span>
                       <Btn variant="ghost" small onClick={()=>{
                         setSagawaRows(h.rows.map(r=>(Object.assign({}, r))));
                         setSagawaModal(true); setSagawaStep("edit");
@@ -9132,12 +9195,12 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                     </div>
                     {/* 履歴行データ（折りたたみ表示） */}
                     <div style={{ overflowX:"auto" }}>
-                      <table style={{ width:"100%",borderCollapse:"collapse",fontSize:11 }}>
+                      <table style={{ width:"100%",borderCollapse:"collapse",fontSize:FS.fsLabel }}>
                         <thead>
                           <tr style={{ background:T.rule2 }}>
                             {["注文ID","名称","〒","住所","電話","品名","重量","個数","便種","メモ"].map((h,i)=>(
                               <th key={i} style={{ padding:"5px 8px",textAlign:"left",
-                                color:T.ink3,fontWeight:700,fontSize:10 }}>{h}</th>
+                                color:T.ink3,fontWeight:700,fontSize:FS.fsLabel }}>{h}</th>
                             ))}
                           </tr>
                         </thead>
@@ -9145,16 +9208,16 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                           {h.rows.map((r,ri)=>(
                             <tr key={ri} style={{ borderBottom:`1px solid ${T.rule}`,
                               background:ri%2===0?T.white:T.bg }}>
-                              <td style={{ padding:"5px 8px",fontFamily:"'Inter'",fontWeight:700,color:T.navy,fontSize:11 }}>{r.orderId}</td>
-                              <td style={{ padding:"5px 8px",fontSize:11 }}>{r.name}</td>
-                              <td style={{ padding:"5px 8px",fontSize:11,color:T.ink3 }}>{r.zip}</td>
-                              <td style={{ padding:"5px 8px",fontSize:11,maxWidth:160,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{r.addr1} {r.addr2}</td>
-                              <td style={{ padding:"5px 8px",fontSize:11,color:T.ink3 }}>{r.tel}</td>
-                              <td style={{ padding:"5px 8px",fontSize:11 }}>{r.hinmei}</td>
-                              <td style={{ padding:"5px 8px",fontSize:11 }}>{r.weight}kg</td>
-                              <td style={{ padding:"5px 8px",fontSize:11 }}>{r.qty}</td>
-                              <td style={{ padding:"5px 8px",fontSize:11,color:T.ink3 }}>{r.binshurui}</td>
-                              <td style={{ padding:"5px 8px",fontSize:11,color:T.ink4 }}>{r.note}</td>
+                              <td style={{ padding:"5px 8px",fontFamily:"'Inter'",fontWeight:700,color:T.navy,fontSize:FS.fsLabel }}>{r.orderId}</td>
+                              <td style={{ padding:"5px 8px",fontSize:FS.fsLabel }}>{r.name}</td>
+                              <td style={{ padding:"5px 8px",fontSize:FS.fsLabel,color:T.ink3 }}>{r.zip}</td>
+                              <td style={{ padding:"5px 8px",fontSize:FS.fsLabel,maxWidth:160,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{r.addr1} {r.addr2}</td>
+                              <td style={{ padding:"5px 8px",fontSize:FS.fsLabel,color:T.ink3 }}>{r.tel}</td>
+                              <td style={{ padding:"5px 8px",fontSize:FS.fsLabel }}>{r.hinmei}</td>
+                              <td style={{ padding:"5px 8px",fontSize:FS.fsLabel }}>{r.weight}kg</td>
+                              <td style={{ padding:"5px 8px",fontSize:FS.fsLabel }}>{r.qty}</td>
+                              <td style={{ padding:"5px 8px",fontSize:FS.fsLabel,color:T.ink3 }}>{r.binshurui}</td>
+                              <td style={{ padding:"5px 8px",fontSize:FS.fsLabel,color:T.ink4 }}>{r.note}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -9176,9 +9239,9 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                 <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10 }}>
                   <div>
                     <div style={{ display:"flex",gap:8,marginBottom:4 }}>
-                      <span style={{ fontSize:12,fontWeight:700,color:T.ink }}>📠 {fax.id}</span>
-                      <span style={{ fontSize:11,color:T.ink4 }}>{fax.receivedAt}</span>
-                      <span style={{ fontSize:10,padding:"1px 6px",borderRadius:4,fontWeight:700,
+                      <span style={{ fontSize:FS.fsBody,fontWeight:700,color:T.ink }}>📠 {fax.id}</span>
+                      <span style={{ fontSize:FS.fsLabel,color:T.ink4 }}>{fax.receivedAt}</span>
+                      <span style={{ fontSize:FS.fsLabel,padding:"1px 6px",borderRadius:4,fontWeight:700,
                         background:fax.status==="registered"?T.okPale:fax.status==="ai_parsed"?T.navyPale:T.amberPale,
                         color:fax.status==="registered"?T.ok:fax.status==="ai_parsed"?T.navy:T.amber }}>
                         {fax.status==="registered"?"✅ 登録済":fax.status==="ai_parsed"?"🤖 AI解析済":"⏳ 解析待ち"}
@@ -9193,7 +9256,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                 </div>
                 {/* OCRテキスト */}
                 <div style={{ padding:"10px 12px",background:T.bg,borderRadius:7,
-                  border:`1px solid ${T.rule}`,fontFamily:"monospace",fontSize:11,
+                  border:`1px solid ${T.rule}`,fontFamily:"monospace",fontSize:FS.fsLabel,
                   color:T.ink3,marginBottom:10,maxHeight:80,overflow:"auto",
                   whiteSpace:"pre-wrap",lineHeight:1.6 }}>
                   {fax.rawText}
@@ -9202,18 +9265,18 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                 {fax.parsed&&(
                   <div style={{ padding:"10px 14px",background:T.navyPale,borderRadius:8,
                     border:`1px solid ${T.navy}20`,marginBottom:10 }}>
-                    <div style={{ fontSize:11,fontWeight:700,color:T.navy,marginBottom:6 }}>
+                    <div style={{ fontSize:FS.fsLabel,fontWeight:700,color:T.navy,marginBottom:6 }}>
                       🤖 AI解析結果（信頼度 {fax.confidence}%）
                     </div>
                     <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:6 }}>
-                      <div style={{ fontSize:12,color:T.ink }}>
+                      <div style={{ fontSize:FS.fsBody,color:T.ink }}>
                         <strong>注文者：</strong>{fax.parsed.customer}
                       </div>
-                      <div style={{ fontSize:12,color:T.ink }}>
+                      <div style={{ fontSize:FS.fsBody,color:T.ink }}>
                         <strong>支払：</strong>{fax.parsed.payment}
                       </div>
                     </div>
-                    <div style={{ fontSize:12,color:T.ink,marginTop:4 }}>
+                    <div style={{ fontSize:FS.fsBody,color:T.ink,marginTop:4 }}>
                       <strong>注文内容：</strong>
                       {fax.parsed.items.map((item,i)=>(
                         <span key={i} style={{ marginLeft:6 }}>
@@ -9254,41 +9317,41 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
               boxShadow:"0 8px 48px rgba(0,0,0,.3)" }}>
             <div style={{ padding:"14px 20px",borderBottom:"1px solid "+T.rule,
               display:"flex",justifyContent:"space-between",alignItems:"center" }}>
-              <div style={{ fontSize:14,fontWeight:800,color:T.ink }}>
+              <div style={{ fontSize:FS.fsTitle,fontWeight:800,color:T.ink }}>
                 ✏ FAX注文を修正して登録
               </div>
               <button onClick={function(){ setFaxEditId(null); }}
                 style={{ background:T.bg,border:"1px solid "+T.rule,borderRadius:6,
-                  padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12 }} aria-label="閉じる">✕</button>
+                  padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:FS.fsBody }} aria-label="閉じる">✕</button>
             </div>
             <div style={{ padding:"18px 20px" }}>
               <div style={{ display:"flex",flexDirection:"column",gap:12 }}>
                 {/* 注文者 */}
                 <div>
-                  <div style={{ fontSize:11,fontWeight:700,color:T.ink3,marginBottom:4 }}>注文者・事務所名</div>
+                  <div style={{ fontSize:FS.fsLabel,fontWeight:700,color:T.ink3,marginBottom:4 }}>注文者・事務所名</div>
                   <input aria-label="注文者名" value={faxEditData.customer||""}
                     onChange={function(e){ setFaxEditData(function(p){ return Object.assign({},p,{customer:e.target.value}); }); }}
                     style={{ width:"100%",padding:"8px 10px",borderRadius:7,
-                      border:"1.5px solid "+T.rule,fontSize:13,fontFamily:"inherit",
+                      border:"1.5px solid "+T.rule,fontSize:FS.fsBody,fontFamily:"inherit",
                       boxSizing:"border-box",outline:"none" }}
                     placeholder="例：山田法律事務所" />
                 </div>
                 {/* 注文内容 */}
                 <div>
-                  <div style={{ fontSize:11,fontWeight:700,color:T.ink3,marginBottom:4 }}>
+                  <div style={{ fontSize:FS.fsLabel,fontWeight:700,color:T.ink3,marginBottom:4 }}>
                     注文内容（1行1品目　例：民法改正と実務対応×2）
                   </div>
                   <textarea aria-label="注文内容" value={faxEditData.items||""}
                     onChange={function(e){ setFaxEditData(function(p){ return Object.assign({},p,{items:e.target.value}); }); }}
                     rows={3}
                     style={{ width:"100%",padding:"8px 10px",borderRadius:7,
-                      border:"1.5px solid "+T.rule,fontSize:12,fontFamily:"inherit",
+                      border:"1.5px solid "+T.rule,fontSize:FS.fsBody,fontFamily:"inherit",
                       boxSizing:"border-box",resize:"vertical",outline:"none" }}
                     placeholder={"民法改正と実務対応【第3版】×3\n会社法実務ハンドブック×1"} />
                 </div>
                 {/* 支払方法 */}
                 <div>
-                  <div style={{ fontSize:11,fontWeight:700,color:T.ink3,marginBottom:4 }}>支払方法</div>
+                  <div style={{ fontSize:FS.fsLabel,fontWeight:700,color:T.ink3,marginBottom:4 }}>支払方法</div>
                   <div style={{ display:"flex",gap:8 }}>
                     {[
                       {v:"bank_transfer",l:"銀行振込"},
@@ -9300,7 +9363,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                         <button key={opt.v}
                           onClick={function(){ setFaxEditData(function(p){ return Object.assign({},p,{payment:opt.v}); }); }}
                           style={{ flex:1,padding:"7px 0",borderRadius:7,cursor:"pointer",
-                            fontFamily:"inherit",fontSize:12,fontWeight:isSel?700:400,
+                            fontFamily:"inherit",fontSize:FS.fsBody,fontWeight:isSel?700:400,
                             background:isSel?T.okPale:T.bg,color:isSel?T.g2:T.ink4,
                             border:"1.5px solid "+(isSel?T.g2:T.rule) }}>
                           {opt.l}
@@ -9355,39 +9418,39 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
               boxShadow:"0 8px 48px rgba(0,0,0,.25)" }}>
             <div style={{ padding:"14px 20px",borderBottom:"1px solid "+T.rule,
               display:"flex",justifyContent:"space-between",alignItems:"center" }}>
-              <div style={{ fontSize:14,fontWeight:800,color:T.ink }}>
+              <div style={{ fontSize:FS.fsTitle,fontWeight:800,color:T.ink }}>
                 ✏ FAX注文内容を修正して登録
               </div>
               <button onClick={function(){ setFaxEditId(null); }}
                 style={{ background:T.bg,border:"1px solid "+T.rule,borderRadius:6,
-                  padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12 }} aria-label="閉じる">✕</button>
+                  padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:FS.fsBody }} aria-label="閉じる">✕</button>
             </div>
             <div style={{ padding:"18px 20px",display:"flex",flexDirection:"column",gap:12 }}>
               <div>
-                <div style={{ fontSize:11,fontWeight:700,color:T.ink3,marginBottom:5 }}>注文者名</div>
+                <div style={{ fontSize:FS.fsLabel,fontWeight:700,color:T.ink3,marginBottom:5 }}>注文者名</div>
                 <input aria-label="注文者名" value={faxEditData.customer||""}
                   onChange={function(e){ setFaxEditData(function(p){ return Object.assign({},p,{customer:e.target.value}); }); }}
                   style={{ width:"100%",padding:"8px 10px",borderRadius:7,
-                    border:"1.5px solid "+T.rule,fontSize:13,fontFamily:"inherit",
+                    border:"1.5px solid "+T.rule,fontSize:FS.fsBody,fontFamily:"inherit",
                     boxSizing:"border-box" }} />
               </div>
               <div>
-                <div style={{ fontSize:11,fontWeight:700,color:T.ink3,marginBottom:5 }}>
+                <div style={{ fontSize:FS.fsLabel,fontWeight:700,color:T.ink3,marginBottom:5 }}>
                   注文内容（1行1品目：書名 ×数量）
                 </div>
                 <textarea aria-label="注文内容" value={faxEditData.items||""}
                   onChange={function(e){ setFaxEditData(function(p){ return Object.assign({},p,{items:e.target.value}); }); }}
                   rows={4}
                   style={{ width:"100%",padding:"8px 10px",borderRadius:7,
-                    border:"1.5px solid "+T.rule,fontSize:12,fontFamily:"inherit",
+                    border:"1.5px solid "+T.rule,fontSize:FS.fsBody,fontFamily:"inherit",
                     resize:"vertical",boxSizing:"border-box",lineHeight:1.6 }}
                   placeholder={"会社法実務ハンドブック ×3\n民法改正と実務対応 ×1"} />
-                <div style={{ fontSize:10,color:T.ink4,marginTop:3 }}>
+                <div style={{ fontSize:FS.fsLabel,color:T.ink4,marginTop:3 }}>
                   各行を確認・修正してください
                 </div>
               </div>
               <div>
-                <div style={{ fontSize:11,fontWeight:700,color:T.ink3,marginBottom:5 }}>支払方法</div>
+                <div style={{ fontSize:FS.fsLabel,fontWeight:700,color:T.ink3,marginBottom:5 }}>支払方法</div>
                 <div style={{ display:"flex",gap:8 }}>
                   {[
                     {v:"bank_transfer",l:"銀行振込"},
@@ -9403,7 +9466,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                         <input aria-label={opt.label} type="radio" name="faxPayment" value={opt.v}
                           checked={isSel}
                           onChange={function(){ setFaxEditData(function(p){ return Object.assign({},p,{payment:opt.v}); }); }} />
-                        <span style={{ fontSize:12 }}>{opt.l}</span>
+                        <span style={{ fontSize:FS.fsBody }}>{opt.l}</span>
                       </label>
                     );
                   })}
@@ -9446,49 +9509,49 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
             border:`1px solid ${T.navy}20`,marginBottom:14,
             display:"flex",justifyContent:"space-between",alignItems:"center" }}>
             <div>
-              <div style={{ fontSize:13,fontWeight:700,color:T.navy }}>📋 一括注文CSVフォーマット</div>
-              <div style={{ fontSize:11,color:T.ink4,marginTop:2 }}>
+              <div style={{ fontSize:FS.fsBody,fontWeight:700,color:T.navy }}>📋 一括注文CSVフォーマット</div>
+              <div style={{ fontSize:FS.fsLabel,color:T.ink4,marginTop:2 }}>
                 このフォーマットに沿って作成したCSVをCSV一括注文からアップロードしてください
               </div>
             </div>
             <Btn small onClick={()=>onToast("サンプルCSVをダウンロード（デモ）")}>⬇ サンプルCSVDL</Btn>
           </div>
           <div style={{ overflowX:"auto" }}>
-            <table style={{ width:"100%",borderCollapse:"collapse",fontSize:12 }}>
+            <table style={{ width:"100%",borderCollapse:"collapse",fontSize:FS.fsBody }}>
               <thead>
                 <tr style={{ background:T.g1,color:"#fff" }}>
                   {["列名（英語）","表示名","必須","サンプル値","説明"].map((h,i)=>(
-                    <th key={i} style={{ padding:"8px 10px",textAlign:"left",fontWeight:700,fontSize:11 }}>{h}</th>
+                    <th key={i} style={{ padding:"8px 10px",textAlign:"left",fontWeight:700,fontSize:FS.fsLabel }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {CSV_ORDER_COLUMNS.map((col,i)=>(
                   <tr key={col.key} style={{ background:i%2===0?T.white:T.bg,borderBottom:`1px solid ${T.rule}` }}>
-                    <td style={{ padding:"9px 10px",fontFamily:"monospace",fontSize:12,color:T.navy,fontWeight:700 }}>
+                    <td style={{ padding:"9px 10px",fontFamily:"monospace",fontSize:FS.fsBody,color:T.navy,fontWeight:700 }}>
                       {col.key}
                     </td>
                     <td style={{ padding:"9px 10px",fontWeight:700,color:T.ink }}>{col.label}</td>
                     <td style={{ padding:"9px 10px",textAlign:"center" }}>
                       {col.required?(
                         <span style={{ padding:"2px 8px",borderRadius:4,background:T.redPale,
-                          color:T.red,fontWeight:800,fontSize:11 }}>必須</span>
+                          color:T.red,fontWeight:800,fontSize:FS.fsLabel }}>必須</span>
                       ):(
                         <span style={{ padding:"2px 8px",borderRadius:4,background:T.bg,
-                          color:T.ink4,fontSize:11 }}>任意</span>
+                          color:T.ink4,fontSize:FS.fsLabel }}>任意</span>
                       )}
                     </td>
-                    <td style={{ padding:"9px 10px",fontFamily:"monospace",fontSize:11,color:T.ink3 }}>
+                    <td style={{ padding:"9px 10px",fontFamily:"monospace",fontSize:FS.fsLabel,color:T.ink3 }}>
                       {col.example}
                     </td>
-                    <td style={{ padding:"9px 10px",fontSize:11,color:T.ink4 }}>{col.note}</td>
+                    <td style={{ padding:"9px 10px",fontSize:FS.fsLabel,color:T.ink4 }}>{col.note}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
           <div style={{ marginTop:12,padding:"12px 16px",background:T.amberPale,borderRadius:8,
-            border:`1px solid ${T.amber}30`,fontSize:12,color:T.ink3 }}>
+            border:`1px solid ${T.amber}30`,fontSize:FS.fsBody,color:T.ink3 }}>
             ⚠ 1行に書籍1点。複数冊の場合は同じ顧客情報で行を分けてください。
             エラー行は自動スキップしてプレビュー時に表示します。
           </div>
@@ -9508,22 +9571,22 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
               boxShadow:"0 8px 48px rgba(0,0,0,.25)" }}>
             <div style={{ background:"linear-gradient(135deg,"+T.g1+","+T.g2+")",
               padding:"16px 20px",color:"#fff" }}>
-              <div style={{ fontSize:15,fontWeight:800,marginBottom:4 }}>
+              <div style={{ fontSize:FS.fsTitle,fontWeight:800,marginBottom:4 }}>
                 ✅ 配達完了 — お客様への連絡
               </div>
-              <div style={{ fontSize:11,opacity:.8 }}>
+              <div style={{ fontSize:FS.fsLabel,opacity:.8 }}>
                 {noticeModal.order.id}　{noticeModal.order.member}　{noticeModal.hhmm}完了
               </div>
             </div>
             <div style={{ padding:"18px 20px" }}>
               {!noticeDraft && !noticeLoading && (
                 <div>
-                  <div style={{ fontSize:12,color:T.ink3,marginBottom:14,lineHeight:1.7 }}>
+                  <div style={{ fontSize:FS.fsBody,color:T.ink3,marginBottom:14,lineHeight:1.7 }}>
                     配達完了のご連絡メール下書きをAIで自動生成します。
                     生成後に内容を確認・編集してからお客様にお送りください。
                   </div>
                   <div style={{ padding:"12px 14px",background:T.bg,borderRadius:8,
-                    border:"1px solid "+T.rule,fontSize:12,color:T.ink3,
+                    border:"1px solid "+T.rule,fontSize:FS.fsBody,color:T.ink3,
                     marginBottom:14,lineHeight:1.8 }}>
                     <strong>注文情報：</strong><br/>
                     📦 {noticeModal.order.items}<br/>
@@ -9561,13 +9624,13 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
               )}
               {noticeLoading && (
                 <div style={{ textAlign:"center",padding:"32px 0",color:T.ink4 }}>
-                  <div style={{ fontSize:24,marginBottom:8 }}>🤖</div>
+                  <div style={{ fontSize:FS.fsNum,marginBottom:8 }}>🤖</div>
                   <div>通知文を生成中...</div>
                 </div>
               )}
               {noticeDraft && (
                 <div>
-                  <div style={{ fontSize:11,fontWeight:700,color:T.ink3,marginBottom:6 }}>
+                  <div style={{ fontSize:FS.fsLabel,fontWeight:700,color:T.ink3,marginBottom:6 }}>
                     生成された通知文（編集可能）
                   </div>
                   <textarea aria-label="通知文"
@@ -9575,7 +9638,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                     onChange={function(e){ setNoticeDraft(e.target.value); }}
                     rows={12}
                     style={{ width:"100%",padding:"10px 12px",borderRadius:8,
-                      border:"1.5px solid "+T.rule,fontSize:12,resize:"vertical",
+                      border:"1.5px solid "+T.rule,fontSize:FS.fsBody,resize:"vertical",
                       outline:"none",fontFamily:"inherit",boxSizing:"border-box",
                       lineHeight:1.8 }} />
                   <div style={{ display:"flex",gap:8,marginTop:10 }}>
@@ -9610,8 +9673,8 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
             style={{ background:"#fff",borderRadius:12,width:400,
               boxShadow:"0 8px 32px rgba(0,0,0,.2)",overflow:"hidden" }}>
             <div style={{ background:"#f9a825",padding:"12px 18px" }}>
-              <div style={{ fontSize:13,fontWeight:800,color:"#fff" }}>📝 申し送りメモを編集</div>
-              <div style={{ fontSize:11,color:"rgba(255,255,255,.8)",marginTop:2 }}>
+              <div style={{ fontSize:FS.fsBody,fontWeight:800,color:"#fff" }}>📝 申し送りメモを編集</div>
+              <div style={{ fontSize:FS.fsLabel,color:"rgba(255,255,255,.8)",marginTop:2 }}>
                 {memoModal.id}　{memoModal.member}
               </div>
             </div>
@@ -9622,10 +9685,10 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                 placeholder={"例：霞が関地裁3Fに直接持参 / 月末まとめて請求 / 配達前に電話を入れること"}
                 rows={4}
                 style={{ width:"100%",padding:"10px 12px",borderRadius:8,
-                  border:"1.5px solid "+T.g2,fontSize:12,resize:"vertical",
+                  border:"1.5px solid "+T.g2,fontSize:FS.fsBody,resize:"vertical",
                   outline:"none",fontFamily:"inherit",boxSizing:"border-box",
                   lineHeight:1.7 }} />
-              <div style={{ fontSize:10,color:T.ink4,marginTop:4,marginBottom:12 }}>
+              <div style={{ fontSize:FS.fsLabel,color:T.ink4,marginTop:4,marginBottom:12 }}>
                 このメモは注文行に表示されます。担当者間の申し送りに使用してください。
               </div>
               <div style={{ display:"flex",gap:8,justifyContent:"flex-end" }}>
@@ -9657,8 +9720,8 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
             style={{ background:"#fff",borderRadius:12,width:320,
               boxShadow:"0 8px 32px rgba(0,0,0,.2)",overflow:"hidden" }}>
             <div style={{ background:T.g1,padding:"14px 18px",color:"#fff" }}>
-              <div style={{ fontSize:14,fontWeight:800 }}>担当者を変更</div>
-              <div style={{ fontSize:11,opacity:.7,marginTop:2 }}>{assignModal.id}　{assignModal.member}</div>
+              <div style={{ fontSize:FS.fsTitle,fontWeight:800 }}>担当者を変更</div>
+              <div style={{ fontSize:FS.fsLabel,opacity:.7,marginTop:2 }}>{assignModal.id}　{assignModal.member}</div>
             </div>
             <div style={{ padding:"14px 18px" }}>
               <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
@@ -9677,14 +9740,14 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                       <div style={{ width:28,height:28,borderRadius:"50%",
                         background:isCurrent?T.g2:T.ink4+"30",
                         display:"flex",alignItems:"center",justifyContent:"center",
-                        fontSize:11,fontWeight:800,color:isCurrent?"#fff":T.ink3,flexShrink:0 }}>
+                        fontSize:FS.fsLabel,fontWeight:800,color:isCurrent?"#fff":T.ink3,flexShrink:0 }}>
                         {s.name.slice(0,1)}
                       </div>
                       <div style={{ flex:1 }}>
-                        <div style={{ fontSize:12,fontWeight:700,color:T.ink }}>{s.name}</div>
-                        <div style={{ fontSize:10,color:T.ink4 }}>{s.store}</div>
+                        <div style={{ fontSize:FS.fsBody,fontWeight:700,color:T.ink }}>{s.name}</div>
+                        <div style={{ fontSize:FS.fsLabel,color:T.ink4 }}>{s.store}</div>
                       </div>
-                      {isCurrent && <span style={{ fontSize:10,color:T.g2,fontWeight:700 }}>現在</span>}
+                      {isCurrent && <span style={{ fontSize:FS.fsLabel,color:T.g2,fontWeight:700 }}>現在</span>}
                     </button>
                   );
                 })}
@@ -9692,7 +9755,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                   updateOrderWithUndo(assignModal.id, { assignedTo:"" }, "担当者を未割当に変更しました");
                   setAssignModal(null);
                 }} style={{ padding:"8px 14px",borderRadius:7,border:"1px dashed #ccc",
-                  background:"transparent",cursor:"pointer",fontSize:12,color:T.ink4,
+                  background:"transparent",cursor:"pointer",fontSize:FS.fsBody,color:T.ink4,
                   fontFamily:"inherit" }}>
                   未割当に戻す
                 </button>
@@ -9720,27 +9783,27 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
               display:"flex",justifyContent:"space-between",alignItems:"center",
               position:"sticky",top:0,background:T.white,zIndex:10 }}>
               <div>
-                <div style={{ fontSize:15,fontWeight:800,color:T.ink }}>📦 佐川 e飛伝III CSV出力</div>
+                <div style={{ fontSize:FS.fsTitle,fontWeight:800,color:T.ink }}>📦 佐川 e飛伝III CSV出力</div>
                 <div style={{ display:"flex",gap:12,marginTop:6 }}>
                   {["confirm","edit","done"].map((s,i)=>(
                     <div key={s} style={{ display:"flex",alignItems:"center",gap:4 }}>
-                      <div style={{ width:20,height:20,borderRadius:"50%",fontSize:11,fontWeight:700,
+                      <div style={{ width:20,height:20,borderRadius:"50%",fontSize:FS.fsLabel,fontWeight:700,
                         display:"flex",alignItems:"center",justifyContent:"center",
                         background: sagawaStep===s ? T.g2 : (["confirm","edit","done"].indexOf(sagawaStep) > i ? T.ok : T.rule),
                         color: sagawaStep===s || ["confirm","edit","done"].indexOf(sagawaStep) > i ? "#fff" : T.ink4 }}>
                         {["confirm","edit","done"].indexOf(sagawaStep) > i ? "✓" : i+1}
                       </div>
-                      <span style={{ fontSize:11,color: sagawaStep===s ? T.g2 : T.ink4, fontWeight: sagawaStep===s ? 700 : 400 }}>
+                      <span style={{ fontSize:FS.fsLabel,color: sagawaStep===s ? T.g2 : T.ink4, fontWeight: sagawaStep===s ? 700 : 400 }}>
                         {s==="confirm"?"対象確認":s==="edit"?"内容編集":s==="done"?"完了":null}
                       </span>
-                      {i<2 && <span style={{ fontSize:11,color:T.rule2,marginLeft:2 }}>›</span>}
+                      {i<2 && <span style={{ fontSize:FS.fsLabel,color:T.rule2,marginLeft:2 }}>›</span>}
                     </div>
                   ))}
                 </div>
               </div>
               <button onClick={()=>{setSagawaModal(false);setSagawaStep("confirm");}}
                 style={{ background:T.bg,border:`1px solid ${T.rule}`,borderRadius:6,
-                  padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12 }} aria-label="閉じる">✕</button>
+                  padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:FS.fsBody }} aria-label="閉じる">✕</button>
             </div>
 
             <div style={{ padding:"18px 22px" }}>
@@ -9748,27 +9811,27 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
               {/* ── STEP 1: 対象確認 ── */}
               {sagawaStep==="confirm" && (
                 <>
-                  <div style={{ fontSize:12,fontWeight:700,color:T.ink,marginBottom:10 }}>
+                  <div style={{ fontSize:FS.fsBody,fontWeight:700,color:T.ink,marginBottom:10 }}>
                     出力対象：{selected.filter(id=>orders.find(o=>o.id===id&&o.fmt==="paper")).length}件（紙書籍のみ）
                   </div>
                   <div style={{ display:"flex",flexDirection:"column",gap:6,marginBottom:16 }}>
                     {orders.filter(o=>selected.includes(o.id)&&o.fmt==="paper").map(o=>(
                       <div key={o.id} style={{ display:"flex",gap:10,alignItems:"center",
                         padding:"8px 12px",background:T.okPale,borderRadius:7,
-                        border:`1px solid ${T.ok}30`,fontSize:12 }}>
+                        border:`1px solid ${T.ok}30`,fontSize:FS.fsBody }}>
                         <span style={{ fontFamily:"'Inter'",fontWeight:700,color:T.navy,minWidth:80 }}>{o.id}</span>
                         <span style={{ flex:1,color:T.ink }}>{o.member}</span>
                         <span style={{ color:T.ink3 }}>{o.items}</span>
                       </div>
                     ))}
                     {orders.filter(o=>selected.includes(o.id)&&o.fmt!=="paper").length>0 && (
-                      <div style={{ fontSize:11,color:T.amber,padding:"6px 10px",
+                      <div style={{ fontSize:FS.fsLabel,color:T.amber,padding:"6px 10px",
                         background:T.amberPale,borderRadius:6 }}>
                         ⚠ 電子書籍・POD {orders.filter(o=>selected.includes(o.id)&&o.fmt!=="paper").length}件は除外されます
                       </div>
                     )}
                   </div>
-                  <div style={{ fontSize:11,color:T.ink4,background:T.bg,borderRadius:6,
+                  <div style={{ fontSize:FS.fsLabel,color:T.ink4,background:T.bg,borderRadius:6,
                     padding:"8px 12px",marginBottom:16,lineHeight:1.8 }}>
                     <strong>出力列（e飛伝III 標準テンプレート）：</strong><br/>
                     お届け先郵便番号・住所1・住所2・名称・電話番号 / ご依頼主情報（至誠堂書店固定）/ 品名・荷姿・重量・個数・便種
@@ -9783,7 +9846,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
               {/* ── STEP 2: 内容編集テーブル ── */}
               {sagawaStep==="edit" && (
                 <>
-                  <div style={{ fontSize:12,color:T.ink3,marginBottom:12,lineHeight:1.7 }}>
+                  <div style={{ fontSize:FS.fsBody,color:T.ink3,marginBottom:12,lineHeight:1.7 }}>
                     各行を直接編集できます。住所・氏名・重量・個数などを修正してからCSVをダウンロードしてください。
                   </div>
                   {/* 自宅宛て警告 */}
@@ -9791,8 +9854,8 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                     <div style={{ background:T.amberPale,border:"1.5px solid "+T.amber,
                       borderRadius:8,padding:"10px 14px",marginBottom:12,
                       display:"flex",gap:10,alignItems:"center" }}>
-                      <span style={{ fontSize:18 }}>⚠</span>
-                      <div style={{ fontSize:12,color:T.ink,lineHeight:1.6 }}>
+                      <span style={{ fontSize:FS.fsNum }}>⚠</span>
+                      <div style={{ fontSize:FS.fsBody,color:T.ink,lineHeight:1.6 }}>
                         <strong style={{ color:T.amber }}>
                           {sagawaRows.filter(r=>r.addrType==="home").length}件が個人宅宛てです
                         </strong>（
@@ -9805,14 +9868,14 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
 
                   {/* ご依頼主（固定表示） */}
                   <div style={{ background:T.navyPale,borderRadius:8,padding:"10px 14px",
-                    marginBottom:14,fontSize:12,color:T.ink3 }}>
+                    marginBottom:14,fontSize:FS.fsBody,color:T.ink3 }}>
                     <strong style={{ color:T.navy }}>ご依頼主（固定）：</strong>
                     {SENDER_INFO.name}　〒{SENDER_INFO.zip}　{SENDER_INFO.addr1}　{SENDER_INFO.tel}
                   </div>
 
                   {/* 編集テーブル */}
                   <div style={{ overflowX:"auto",marginBottom:16 }}>
-                    <table style={{ width:"100%",borderCollapse:"collapse",fontSize:11 }}>
+                    <table style={{ width:"100%",borderCollapse:"collapse",fontSize:FS.fsLabel }}>
                       <thead>
                         <tr style={{ background:T.g1,color:"#fff" }}>
                           {[
@@ -9831,7 +9894,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                           ].map(function(col,i){
                             return (
                               <th key={i} style={{ padding:"7px 8px",textAlign:"left",
-                                fontWeight:700,fontSize:10,whiteSpace:"nowrap" }}>
+                                fontWeight:700,fontSize:FS.fsLabel,whiteSpace:"nowrap" }}>
                                 {col.h}
                                 {col.tip && <HelpTip text={col.tip} size={12} />}
                               </th>
@@ -9846,13 +9909,13 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                               onChange={e=>updateSagawaRow(i,field,e.target.value)}
                               placeholder={placeholder||""}
                               style={{ width:w||"100%",padding:"4px 6px",borderRadius:4,
-                                border:`1.5px solid ${T.rule}`,fontSize:11,
+                                border:`1.5px solid ${T.rule}`,fontSize:FS.fsLabel,
                                 fontFamily:"inherit",outline:"none",boxSizing:"border-box" }} />
                           );
                           const sel = (field, opts) => (
                             <select aria-label="佐川CSV項目" value={r[field]} onChange={e=>updateSagawaRow(i,field,e.target.value)}
                               style={{ padding:"4px 6px",borderRadius:4,border:`1.5px solid ${T.rule}`,
-                                fontSize:11,outline:"none",background:T.white }}>
+                                fontSize:FS.fsLabel,outline:"none",background:T.white }}>
                               {opts.map(o=><option key={o} value={o}>{o}</option>)}
                             </select>
                           );
@@ -9861,16 +9924,16 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                               borderBottom:`1px solid ${T.rule}` }}>
                               <td style={{ padding:"6px 8px",whiteSpace:"nowrap" }}>
                                 <span style={{ fontFamily:"'Inter'",fontWeight:700,
-                                  color:T.navy,fontSize:11 }}>{r.orderId}</span>
+                                  color:T.navy,fontSize:FS.fsLabel }}>{r.orderId}</span>
                                 <div style={{ display:"flex",gap:4,marginTop:2,alignItems:"center" }}>
-                                  <span style={{ fontSize:10,fontWeight:700,padding:"1px 5px",
+                                  <span style={{ fontSize:FS.fsLabel,fontWeight:700,padding:"1px 5px",
                                     borderRadius:3,
                                     background:r.addrType==="home"?T.amberPale:T.okPale,
                                     color:r.addrType==="home"?T.amber:T.g2 }}>
                                     {r.addrType==="home"?"🏠 自宅":"🏢 事務所"}
                                   </span>
                                 </div>
-                                <div style={{ fontSize:10,color:T.ink4,marginTop:1 }}>{r.items}</div>
+                                <div style={{ fontSize:FS.fsLabel,color:T.ink4,marginTop:1 }}>{r.items}</div>
                               </td>
                               <td style={{ padding:"4px 6px",minWidth:140 }}>{inp("name",140)}</td>
                               <td style={{ padding:"4px 6px",minWidth:90 }}>{inp("zip",90,"000-0000")}</td>
@@ -9884,9 +9947,9 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                                       <input aria-label="住所1" value={val} onChange={function(e){ updateSagawaRow(i,"addr1",e.target.value); }}
                                         style={{ width:160,padding:"4px 6px",borderRadius:4,
                                           border:"1.5px solid "+(over?T.red:T.rule),
-                                          fontSize:11,fontFamily:"inherit",outline:"none",
+                                          fontSize:FS.fsLabel,fontFamily:"inherit",outline:"none",
                                           boxSizing:"border-box",background:over?"#fff5f5":T.white }} />
-                                      {over && <div style={{ fontSize:10,color:T.red }}>⚠ 全角{Math.ceil(len/2)}文字超（上限16）</div>}
+                                      {over && <div style={{ fontSize:FS.fsLabel,color:T.red }}>⚠ 全角{Math.ceil(len/2)}文字超（上限16）</div>}
                                     </div>
                                   );
                                 })()}
@@ -9901,9 +9964,9 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                                       <input aria-label="住所2" value={val} onChange={function(e){ updateSagawaRow(i,"addr2",e.target.value); }}
                                         style={{ width:120,padding:"4px 6px",borderRadius:4,
                                           border:"1.5px solid "+(over?T.red:T.rule),
-                                          fontSize:11,fontFamily:"inherit",outline:"none",
+                                          fontSize:FS.fsLabel,fontFamily:"inherit",outline:"none",
                                           boxSizing:"border-box",background:over?"#fff5f5":T.white }} />
-                                      {over && <div style={{ fontSize:10,color:T.red }}>⚠ 全角{Math.ceil(len/2)}文字超（上限16）</div>}
+                                      {over && <div style={{ fontSize:FS.fsLabel,color:T.red }}>⚠ 全角{Math.ceil(len/2)}文字超（上限16）</div>}
                                     </div>
                                   );
                                 })()}
@@ -9932,11 +9995,11 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                                         onChange={function(e){ updateSagawaRow(i,"note",e.target.value); }}
                                         style={{ width:100,padding:"4px 6px",borderRadius:4,
                                           border:"1.5px solid "+(over?T.red:T.rule),
-                                          fontSize:11,fontFamily:"inherit",outline:"none",
+                                          fontSize:FS.fsLabel,fontFamily:"inherit",outline:"none",
                                           boxSizing:"border-box",
                                           background:over?"#fff5f5":T.white }} />
                                       {over && (
-                                        <div style={{ fontSize:10,color:T.red,marginTop:1 }}>
+                                        <div style={{ fontSize:FS.fsLabel,color:T.red,marginTop:1 }}>
                                           ⚠ 全角{Math.ceil(len/2)}文字（上限16）
                                         </div>
                                       )}
@@ -9963,13 +10026,13 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                       <div style={{ display:"flex",flexDirection:"column",gap:6,marginBottom:12 }}>
                         {emptyRows.length>0 && (
                           <div style={{ background:T.amberPale,border:"1px solid "+T.amber+"40",
-                            borderRadius:7,padding:"8px 12px",fontSize:11,color:T.amber }}>
+                            borderRadius:7,padding:"8px 12px",fontSize:FS.fsLabel,color:T.amber }}>
                             ⚠ {emptyRows.map(function(r){ return r.orderId; }).join("・")}：郵便番号・住所1・名称が未入力です
                           </div>
                         )}
                         {overRows.length>0 && (
                           <div style={{ background:T.redPale,border:"1px solid "+T.red+"40",
-                            borderRadius:7,padding:"8px 12px",fontSize:11,color:T.red }}>
+                            borderRadius:7,padding:"8px 12px",fontSize:FS.fsLabel,color:T.red }}>
                             ❌ {overRows.map(function(r){ return r.orderId; }).join("・")}：住所またはメモが全角16文字を超えています（e飛伝IIIエラーの原因）
                           </div>
                         )}
@@ -10001,11 +10064,11 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                 <>
                   <div style={{ textAlign:"center",padding:"20px 0 16px" }}>
                     <div style={{ fontSize:36,marginBottom:10 }}>✅</div>
-                    <div style={{ fontSize:14,fontWeight:700,color:T.ok,marginBottom:4 }}>CSVをダウンロードしました</div>
-                    <div style={{ fontSize:12,color:T.ink4 }}>{sagawaRows.length}件 / {new Date().toLocaleString("ja-JP")}</div>
+                    <div style={{ fontSize:FS.fsTitle,fontWeight:700,color:T.ok,marginBottom:4 }}>CSVをダウンロードしました</div>
+                    <div style={{ fontSize:FS.fsBody,color:T.ink4 }}>{sagawaRows.length}件 / {new Date().toLocaleString("ja-JP")}</div>
                   </div>
                   <div style={{ background:T.navyPale,borderRadius:8,padding:"12px 16px",
-                    marginBottom:16,fontSize:12,color:T.ink3,lineHeight:1.9 }}>
+                    marginBottom:16,fontSize:FS.fsBody,color:T.ink3,lineHeight:1.9 }}>
                     <strong style={{ color:T.navy }}>次の手順：</strong><br/>
                     1. e飛伝IIIにログイン<br/>
                     2. 「送り状データ取込」→「標準_飛脚宅配便_CSV_ヘッダ有」を選択<br/>
@@ -10042,39 +10105,39 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
               display:"flex",justifyContent:"space-between",alignItems:"center" }}>
               <div>
                 <div style={{ display:"flex",gap:6,alignItems:"center" }}>
-                  <div style={{ fontSize:15,fontWeight:800,color:T.ink }}>
+                  <div style={{ fontSize:FS.fsTitle,fontWeight:800,color:T.ink }}>
                     🔄 注文処理：{actionTarget.id}
                   </div>
                   {actionTarget.urgent && (
-                    <span style={{ fontSize:10,fontWeight:800,padding:"2px 7px",borderRadius:4,
+                    <span style={{ fontSize:FS.fsLabel,fontWeight:800,padding:"2px 7px",borderRadius:4,
                       background:T.redPale,color:T.red }}>
                       🚨 急ぎ
                     </span>
                   )}
                 </div>
-                <div style={{ fontSize:11,color:T.ink4,marginTop:2 }}>
+                <div style={{ fontSize:FS.fsLabel,color:T.ink4,marginTop:2 }}>
                   {actionTarget.member} / ¥{actionTarget.total.toLocaleString()} / 現在：{statusLabel(actionTarget.status)}
                 </div>
                 {actionTarget.caseNo && (
-                  <div style={{ fontSize:11,color:T.g2,marginTop:2 }}>
+                  <div style={{ fontSize:FS.fsLabel,color:T.g2,marginTop:2 }}>
                     📂 事件番号：{actionTarget.caseNo}　{actionTarget.caseName}
                   </div>
                 )}
                 {actionTarget.urgent && actionTarget.urgentBy && (
-                  <div style={{ fontSize:11,color:T.red,marginTop:2,fontWeight:700 }}>
+                  <div style={{ fontSize:FS.fsLabel,color:T.red,marginTop:2,fontWeight:700 }}>
                     ⏰ 急ぎ期日：{actionTarget.urgentBy}　{actionTarget.urgentNote}
                   </div>
                 )}
               </div>
               <button onClick={()=>{ setActionTarget(null); setReturnStep(1); }}
                 style={{ background:T.bg,border:`1px solid ${T.rule}`,borderRadius:6,
-                  padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12 }} aria-label="閉じる">✕</button>
+                  padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:FS.fsBody }} aria-label="閉じる">✕</button>
             </div>
 
             <div style={{ padding:"18px 22px" }}>
               {returnStep===1 && (
                 <>
-                  <div style={{ fontSize:12,color:T.ink3,marginBottom:14 }}>
+                  <div style={{ fontSize:FS.fsBody,color:T.ink3,marginBottom:14 }}>
                     ステータスを変更してください
                   </div>
                   <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
@@ -10107,10 +10170,10 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                           textAlign:"left",opacity:opt.disabled?0.4:1,width:"100%",
                           fontFamily:"inherit" }}>
                         <div style={{ flex:1 }}>
-                          <div style={{ fontSize:13,fontWeight:700,color:opt.disabled?T.ink4:opt.color }}>{opt.label}</div>
-                          <div style={{ fontSize:11,color:T.ink4,marginTop:2 }}>{opt.desc}</div>
+                          <div style={{ fontSize:FS.fsBody,fontWeight:700,color:opt.disabled?T.ink4:opt.color }}>{opt.label}</div>
+                          <div style={{ fontSize:FS.fsLabel,color:T.ink4,marginTop:2 }}>{opt.desc}</div>
                         </div>
-                        {!opt.disabled && <span style={{ color:opt.color,fontSize:16 }}>→</span>}
+                        {!opt.disabled && <span style={{ color:opt.color,fontSize:FS.fsTitle }}>→</span>}
                       </button>
                     ))}
                   </div>
@@ -10120,15 +10183,15 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                     <div style={{ marginTop:12,padding:"12px 14px",
                       background:T.amberPale,borderRadius:8,
                       border:"1.5px solid #e65100" }}>
-                      <div style={{ fontSize:11,fontWeight:700,color:T.amber,marginBottom:6 }}>
+                      <div style={{ fontSize:FS.fsLabel,fontWeight:700,color:T.amber,marginBottom:6 }}>
                         ⚠ 管理者権限：完了ステータスの取り消し
                       </div>
-                      <div style={{ fontSize:10,color:T.ink4,marginBottom:8,lineHeight:1.6 }}>
+                      <div style={{ fontSize:FS.fsLabel,color:T.ink4,marginBottom:8,lineHeight:1.6 }}>
                         完了済み注文を「確認待」に戻します。
                         入金済みの場合は入金消し込みの修正も合わせて行ってください。
                       </div>
                       <Btn variant="ghost"
-                        style={{ color:T.amber,borderColor:T.amber,fontSize:11 }}
+                        style={{ color:T.amber,borderColor:T.amber,fontSize:FS.fsLabel }}
                         onClick={function(){
                           updateOrderWithUndo(actionTarget.id,
                             {status:"pending"},
@@ -10146,11 +10209,11 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
               {/* ── 品目選択ステップ（新STEP2）── */}
               {returnStep===2 && actionTarget && (
                 <>
-                  <div style={{ fontSize:13,fontWeight:700,color:T.purple,marginBottom:12 }}>
+                  <div style={{ fontSize:FS.fsBody,fontWeight:700,color:T.purple,marginBottom:12 }}>
                     ↩ 返品処理 STEP 2/4：返品する品目・数量を選択
                   </div>
                   <div style={{ background:T.purplePale,borderRadius:8,padding:"10px 14px",
-                    marginBottom:12,border:"1px solid "+T.purple+"25",fontSize:12 }}>
+                    marginBottom:12,border:"1px solid "+T.purple+"25",fontSize:FS.fsBody }}>
                     <strong>注文：</strong>{actionTarget.id}　
                     <strong>合計：</strong>¥{actionTarget.total.toLocaleString()}
                   </div>
@@ -10170,10 +10233,10 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                           <div style={{ display:"flex",justifyContent:"space-between",
                             alignItems:"flex-start",gap:8 }}>
                             <div style={{ flex:1 }}>
-                              <div style={{ fontSize:12,fontWeight:700,color:T.ink,marginBottom:4 }}>
+                              <div style={{ fontSize:FS.fsBody,fontWeight:700,color:T.ink,marginBottom:4 }}>
                                 {it.name.replace(/[×x×][0-9]+/,"")}
                               </div>
-                              <div style={{ fontSize:10,color:T.ink4 }}>
+                              <div style={{ fontSize:FS.fsLabel,color:T.ink4 }}>
                                 単価 ¥{unitPrice.toLocaleString()} × {maxQty}冊
                                 <span style={{ marginLeft:6,
                                   color:it.taxRate===8?T.g2:T.amber,fontWeight:700 }}>
@@ -10182,7 +10245,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                               </div>
                             </div>
                             <div style={{ display:"flex",alignItems:"center",gap:6,flexShrink:0 }}>
-                              <span style={{ fontSize:11,color:T.ink4 }}>返品数:</span>
+                              <span style={{ fontSize:FS.fsLabel,color:T.ink4 }}>返品数:</span>
                               <button onClick={function(){
                                 setReturnItems(function(prev){
                                   var p=Object.assign({},prev);
@@ -10190,9 +10253,9 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                                   return p;
                                 });
                               }} style={{ width:26,height:26,borderRadius:6,cursor:"pointer",
-                                border:"1px solid "+T.rule,background:T.bg,fontSize:14,
+                                border:"1px solid "+T.rule,background:T.bg,fontSize:FS.fsTitle,
                                 fontWeight:700,fontFamily:"inherit" }}>−</button>
-                              <span style={{ fontFamily:"'Inter'",fontSize:14,fontWeight:800,
+                              <span style={{ fontFamily:"'Inter'",fontSize:FS.fsTitle,fontWeight:800,
                                 minWidth:24,textAlign:"center",
                                 color:curQty>0?T.purple:T.ink4 }}>{curQty}</span>
                               <button onClick={function(){
@@ -10202,13 +10265,13 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                                   return p;
                                 });
                               }} style={{ width:26,height:26,borderRadius:6,cursor:"pointer",
-                                border:"1px solid "+T.rule,background:T.bg,fontSize:14,
+                                border:"1px solid "+T.rule,background:T.bg,fontSize:FS.fsTitle,
                                 fontWeight:700,fontFamily:"inherit" }}>+</button>
-                              <span style={{ fontSize:11,color:T.ink4 }}>/{maxQty}</span>
+                              <span style={{ fontSize:FS.fsLabel,color:T.ink4 }}>/{maxQty}</span>
                             </div>
                           </div>
                           {curQty>0 && (
-                            <div style={{ marginTop:6,fontSize:11,fontWeight:700,
+                            <div style={{ marginTop:6,fontSize:FS.fsLabel,fontWeight:700,
                               color:T.purple,textAlign:"right" }}>
                               返金額: ¥{(unitPrice*curQty).toLocaleString()}
                             </div>
@@ -10235,17 +10298,17 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                         background:isPartial?T.amberPale:T.purplePale,
                         border:"1px solid "+(isPartial?T.amber:T.purple)+"30" }}>
                         <div style={{ display:"flex",justifyContent:"space-between" }}>
-                          <span style={{ fontSize:12,fontWeight:700,
+                          <span style={{ fontSize:FS.fsBody,fontWeight:700,
                             color:isPartial?T.amber:T.purple }}>
                             {isPartial?"⚡ 部分返品":"🔄 全額返品"}
                           </span>
-                          <span style={{ fontFamily:"'Inter'",fontSize:14,fontWeight:900,
+                          <span style={{ fontFamily:"'Inter'",fontSize:FS.fsTitle,fontWeight:900,
                             color:isPartial?T.amber:T.purple }}>
                             ▲¥{refAmt.toLocaleString()}
                           </span>
                         </div>
                         {isPartial && (
-                          <div style={{ fontSize:10,color:T.ink4,marginTop:3 }}>
+                          <div style={{ fontSize:FS.fsLabel,color:T.ink4,marginTop:3 }}>
                             残り ¥{(actionTarget.total-refAmt).toLocaleString()} は注文継続
                           </div>
                         )}
@@ -10278,11 +10341,11 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
               {/* ── 返品理由ステップ（旧STEP2→新STEP3）── */}
               {returnStep===3 && (
                 <>
-                  <div style={{ fontSize:13,fontWeight:700,color:T.purple,marginBottom:12 }}>
+                  <div style={{ fontSize:FS.fsBody,fontWeight:700,color:T.purple,marginBottom:12 }}>
                     ↩ 返品処理 STEP 3/4：返品理由を入力
                   </div>
                   <div style={{ marginBottom:14 }}>
-                    <div style={{ fontSize:11,fontWeight:700,color:T.ink3,marginBottom:6 }}>返品理由</div>
+                    <div style={{ fontSize:FS.fsLabel,fontWeight:700,color:T.ink3,marginBottom:6 }}>返品理由</div>
                     <div style={{ display:"flex",flexDirection:"column",gap:6,marginBottom:10 }}>
                       {["品質・商品不良","注文ミス（顧客）","注文ミス（当社）","在庫不足による未出荷","その他"].map((r,i)=>(
                         <label key={i} style={{ display:"flex",gap:8,alignItems:"center",
@@ -10291,7 +10354,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                           border:`1.5px solid ${returnReason===r?T.purple:T.rule}` }}>
                           <input aria-label={r} type="radio" name="returnReason" value={r}
                             checked={returnReason===r} onChange={()=>setReturnReason(r)} />
-                          <span style={{ fontSize:12,color:T.ink }}>{r}</span>
+                          <span style={{ fontSize:FS.fsBody,color:T.ink }}>{r}</span>
                         </label>
                       ))}
                     </div>
@@ -10299,7 +10362,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                       onChange={e=>setReturnReason(e.target.value)}
                       placeholder="詳細メモ（任意）"
                       style={{ width:"100%",height:60,padding:"8px 10px",borderRadius:6,
-                        border:`1.5px solid ${T.rule}`,fontSize:12,fontFamily:"inherit",
+                        border:`1.5px solid ${T.rule}`,fontSize:FS.fsBody,fontFamily:"inherit",
                         outline:"none",resize:"none",boxSizing:"border-box" }} />
                   </div>
                   <div style={{ display:"flex",gap:8,justifyContent:"space-between" }}>
@@ -10311,13 +10374,13 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
 
               {returnStep===4 && actionTarget && (
                 <>
-                  <div style={{ fontSize:13,fontWeight:700,color:T.purple,marginBottom:12 }}>
+                  <div style={{ fontSize:FS.fsBody,fontWeight:700,color:T.purple,marginBottom:12 }}>
                     ↩ 返品処理 STEP 4/4：在庫・返金対応の確認
                   </div>
                   {/* 返品概要 */}
                   <div style={{ background:T.purplePale,borderRadius:8,padding:"12px 14px",
                     marginBottom:12,border:"1px solid "+T.purple+"30" }}>
-                    <div style={{ fontSize:12,color:T.ink,lineHeight:1.9 }}>
+                    <div style={{ fontSize:FS.fsBody,color:T.ink,lineHeight:1.9 }}>
                       <strong>注文：</strong>{actionTarget.id}　<strong>金額：</strong>¥{actionTarget.total.toLocaleString()}<br/>
                       <strong>返品者：</strong>{actionTarget.member}<br/>
                       <strong>返品理由：</strong>{returnReason}<br/>
@@ -10331,7 +10394,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                   </div>
 
                   {/* 支払方法別の自動処理サマリー */}
-                  <div style={{ marginBottom:12,fontSize:11,color:T.ink3,
+                  <div style={{ marginBottom:12,fontSize:FS.fsLabel,color:T.ink3,
                     background:T.okPale,borderRadius:8,padding:"10px 14px",
                     border:"1px solid "+T.g2+"30" }}>
                     <div style={{ fontWeight:700,color:T.g2,marginBottom:6 }}>
@@ -10365,12 +10428,12 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                   {/* 在庫返品の確認 */}
                   {actionTarget.fmt==="paper" && (
                     <div style={{ marginBottom:12,padding:"10px 14px",background:T.amberPale,
-                      borderRadius:8,border:"1px solid "+T.amber+"30",fontSize:11,color:T.ink3 }}>
+                      borderRadius:8,border:"1px solid "+T.amber+"30",fontSize:FS.fsLabel,color:T.ink3 }}>
                       <div style={{ fontWeight:700,color:T.amber,marginBottom:4 }}>
                         📦 在庫について（手動対応が必要）
                       </div>
                       返品書籍の状態を確認の上、「在庫管理」から該当書籍の在庫を手動で戻してください。<br/>
-                      <span style={{ fontSize:10,color:T.ink4 }}>
+                      <span style={{ fontSize:FS.fsLabel,color:T.ink4 }}>
                         ※傷・汚れがある場合は廃棄処分として在庫には戻さないでください
                       </span>
                     </div>
@@ -10379,7 +10442,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                   {/* クレジットノート（法人・請求書払いの場合） */}
                   {actionTarget.paymentMethod==="invoice" && actionTarget.corpId && (
                     <div style={{ marginBottom:12,padding:"10px 14px",background:T.navyPale,
-                      borderRadius:8,border:"1px solid "+T.navy+"30",fontSize:11,color:T.ink3 }}>
+                      borderRadius:8,border:"1px solid "+T.navy+"30",fontSize:FS.fsLabel,color:T.ink3 }}>
                       <div style={{ fontWeight:700,color:T.navy,marginBottom:4 }}>
                         📝 法人クレジットノートについて
                       </div>
@@ -10420,7 +10483,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
             <div style={{ padding:"14px 20px",borderBottom:`1px solid ${T.rule}`,
               display:"flex",justifyContent:"space-between",alignItems:"center",
               position:"sticky",top:0,background:T.white,zIndex:10 }}>
-              <div style={{ fontSize:15,fontWeight:800,color:T.ink }}>
+              <div style={{ fontSize:FS.fsTitle,fontWeight:800,color:T.ink }}>
                 {printMode==="receipt"?"🧾 領収書":"📋 納品書"}プレビュー
               </div>
               <div style={{ display:"flex",gap:8 }}>
@@ -10438,7 +10501,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                 }}>🖨 印刷</Btn>
                 <button onClick={()=>{ setActionTarget(null); setPrintMode(null); setReceiptName(""); }}
                   style={{ background:T.bg,border:`1px solid ${T.rule}`,borderRadius:6,
-                    padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12 }} aria-label="閉じる">✕</button>
+                    padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:FS.fsBody }} aria-label="閉じる">✕</button>
               </div>
             </div>
 
@@ -10446,11 +10509,11 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
               {/* 領収書の宛名入力 */}
               {printMode==="receipt" && (
                 <div style={{ marginBottom:16,display:"flex",gap:8,alignItems:"center" }}>
-                  <div style={{ fontSize:12,fontWeight:700,color:T.ink3,flexShrink:0 }}>宛名：</div>
+                  <div style={{ fontSize:FS.fsBody,fontWeight:700,color:T.ink3,flexShrink:0 }}>宛名：</div>
                   <input aria-label="領収書宛名" value={receiptName} onChange={e=>setReceiptName(e.target.value)}
                     style={{ flex:1,padding:"7px 10px",borderRadius:6,border:`1.5px solid ${T.rule}`,
-                      fontSize:13,outline:"none" }} />
-                  <span style={{ fontSize:12,color:T.ink4,flexShrink:0 }}>御中 / 様</span>
+                      fontSize:FS.fsBody,outline:"none" }} />
+                  <span style={{ fontSize:FS.fsBody,color:T.ink4,flexShrink:0 }}>御中 / 様</span>
                 </div>
               )}
 
@@ -10458,26 +10521,26 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
               <div id="print-doc" style={{ border:`1px solid ${T.rule}`,borderRadius:8,padding:"28px 32px" }}>
                 {/* タイトル */}
                 <div style={{ textAlign:"center",marginBottom:24 }}>
-                  <div style={{ fontSize:22,fontWeight:800,color:T.ink,marginBottom:4 }}>
+                  <div style={{ fontSize:FS.fsNum,fontWeight:800,color:T.ink,marginBottom:4 }}>
                     {printMode==="receipt"?"領　収　書":"納　品　書"}
                   </div>
-                  <div style={{ fontSize:11,color:T.ink4 }}>No. {actionTarget.id}</div>
+                  <div style={{ fontSize:FS.fsLabel,color:T.ink4 }}>No. {actionTarget.id}</div>
                 </div>
 
                 {/* 宛先（領収書）/ 納品先（納品書） */}
                 {printMode==="receipt" ? (
                   <div style={{ marginBottom:20 }}>
-                    <span style={{ fontSize:16,fontWeight:700,color:T.ink,borderBottom:`2px solid ${T.ink}` }}>
+                    <span style={{ fontSize:FS.fsTitle,fontWeight:700,color:T.ink,borderBottom:`2px solid ${T.ink}` }}>
                       {receiptName||actionTarget.member} 御中
                     </span>
-                    <div style={{ marginTop:8,fontSize:13,fontWeight:700,color:T.g2 }}>
+                    <div style={{ marginTop:8,fontSize:FS.fsBody,fontWeight:700,color:T.g2 }}>
                       下記金額を領収いたしました
                     </div>
                   </div>
                 ) : (
-                  <div style={{ marginBottom:16,fontSize:13 }}>
+                  <div style={{ marginBottom:16,fontSize:FS.fsBody }}>
                     <div style={{ color:T.ink4 }}>納品先：</div>
-                    <div style={{ fontWeight:700,color:T.ink,fontSize:14 }}>{actionTarget.member} 御中</div>
+                    <div style={{ fontWeight:700,color:T.ink,fontSize:FS.fsTitle }}>{actionTarget.member} 御中</div>
                   </div>
                 )}
 
@@ -10485,13 +10548,13 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                 {(actionTarget.caseNo||actionTarget.caseName) && (
                   <div style={{ marginBottom:14,padding:"8px 12px",
                     background:"#f0f4ff",borderRadius:6,
-                    border:"1px solid #c5d0f5",fontSize:11 }}>
+                    border:"1px solid #c5d0f5",fontSize:FS.fsLabel }}>
                     <span style={{ color:"#3a5cc5",fontWeight:700 }}>📂 事件番号：</span>
                     <span style={{ color:T.ink,marginLeft:4 }}>{actionTarget.caseNo}</span>
                     {actionTarget.caseName && (
                       <span style={{ color:T.ink3,marginLeft:8 }}>（{actionTarget.caseName}）</span>
                     )}
-                    <span style={{ marginLeft:8,fontSize:10,color:T.ink4 }}>
+                    <span style={{ marginLeft:8,fontSize:FS.fsLabel,color:T.ink4 }}>
                       ※経費処理：新聞図書費（業務関連書籍）
                     </span>
                   </div>
@@ -10501,11 +10564,11 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                 {printMode==="receipt" && (
                   <div style={{ textAlign:"center",marginBottom:20,padding:"16px",
                     background:T.bg,borderRadius:8,border:`1px solid ${T.rule}` }}>
-                    <div style={{ fontSize:11,color:T.ink4,marginBottom:4 }}>金　額</div>
-                    <div style={{ fontFamily:"'Inter'",fontSize:28,fontWeight:800,color:T.ink }}>
+                    <div style={{ fontSize:FS.fsLabel,color:T.ink4,marginBottom:4 }}>金　額</div>
+                    <div style={{ fontFamily:"'Inter'",fontSize:FS.fsNum,fontWeight:800,color:T.ink }}>
                       ¥{actionTarget.total.toLocaleString()} -
                     </div>
-                    <div style={{ fontSize:11,color:T.ink4,marginTop:4 }}>
+                    <div style={{ fontSize:FS.fsLabel,color:T.ink4,marginTop:4 }}>
                       {(()=>{
                         const items = actionTarget.taxItems || [{ name:actionTarget.items, amount:actionTarget.total, taxRate:8 }];
                         const tax8  = items.filter(i=>i.taxRate===8).reduce((s,i)=>s+Math.round(i.amount/1.08*0.08),0);
@@ -10541,7 +10604,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                         <div style={{ padding:"8px 12px", marginBottom:10, borderRadius:6,
                           background:hasWaiting?T.amberPale:T.redPale,
                           border:"1px solid "+(hasWaiting?T.amber:T.red)+"40",
-                          fontSize:12, color:hasWaiting?T.amber:T.red, fontWeight:600 }}>
+                          fontSize:FS.fsBody, color:hasWaiting?T.amber:T.red, fontWeight:600 }}>
                           {hasWaiting && <span>📦 分納 {shippedCnt}回目 / 全{totalCnt}点中 {shippedCnt}点出荷</span>}
                           {hasWaiting && hasCancelled && <span style={{ marginLeft:12 }}>｜</span>}
                           {hasCancelled && <span>❌ キャンセル分を合計から除外済み</span>}
@@ -10550,17 +10613,17 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                       <table style={{ width:"100%",borderCollapse:"collapse",marginBottom:16 }}>
                         <thead>
                           <tr style={{ background:T.g1,color:"#fff" }}>
-                            <th style={{ padding:"8px 10px",textAlign:"left",fontSize:12 }}>品目</th>
-                            <th style={{ padding:"8px 10px",textAlign:"center",fontSize:12,width:50 }}>冊数</th>
-                            <th style={{ padding:"8px 10px",textAlign:"right",fontSize:12 }}>
+                            <th style={{ padding:"8px 10px",textAlign:"left",fontSize:FS.fsBody }}>品目</th>
+                            <th style={{ padding:"8px 10px",textAlign:"center",fontSize:FS.fsBody,width:50 }}>冊数</th>
+                            <th style={{ padding:"8px 10px",textAlign:"right",fontSize:FS.fsBody }}>
                               {printMode==="delivery"?"税抜金額":"金額（税込）"}
                             </th>
-                            <th style={{ padding:"8px 10px",textAlign:"center",fontSize:12,width:60 }}>税率</th>
+                            <th style={{ padding:"8px 10px",textAlign:"center",fontSize:FS.fsBody,width:60 }}>税率</th>
                             {printMode==="delivery" && (
-                              <th style={{ padding:"8px 10px",textAlign:"right",fontSize:12 }}>税込金額</th>
+                              <th style={{ padding:"8px 10px",textAlign:"right",fontSize:FS.fsBody }}>税込金額</th>
                             )}
                             {printMode==="delivery" && (
-                              <th style={{ padding:"8px 10px",textAlign:"center",fontSize:12,width:80 }}>納品</th>
+                              <th style={{ padding:"8px 10px",textAlign:"center",fontSize:FS.fsBody,width:80 }}>納品</th>
                             )}
                           </tr>
                         </thead>
@@ -10576,30 +10639,30 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                             var textStyle = isCancelled ? { textDecoration:"line-through", color:T.ink4 } : {};
                             return (
                               <tr key={ii} style={rowStyle}>
-                                <td style={Object.assign({ padding:"10px",fontSize:12 }, textStyle)}>
+                                <td style={Object.assign({ padding:"10px",fontSize:FS.fsBody }, textStyle)}>
                                   {item.name}
-                                  {item.taxRate===8 && <span style={{ marginLeft:4,fontSize:10,color:T.ok }}>※</span>}
+                                  {item.taxRate===8 && <span style={{ marginLeft:4,fontSize:FS.fsLabel,color:T.ok }}>※</span>}
                                 </td>
-                                <td style={Object.assign({ padding:"10px",textAlign:"center",fontSize:12,fontFamily:"'Inter'",fontWeight:700 }, textStyle)}>
+                                <td style={Object.assign({ padding:"10px",textAlign:"center",fontSize:FS.fsBody,fontFamily:"'Inter'",fontWeight:700 }, textStyle)}>
                                   {qty}
                                 </td>
-                                <td style={Object.assign({ padding:"10px",textAlign:"right",fontFamily:"'Inter'",fontSize:12 }, textStyle)}>
+                                <td style={Object.assign({ padding:"10px",textAlign:"right",fontFamily:"'Inter'",fontSize:FS.fsBody }, textStyle)}>
                                   ¥{printMode==="delivery"?taxExcl.toLocaleString():item.amount.toLocaleString()}
                                 </td>
-                                <td style={Object.assign({ padding:"10px",textAlign:"center",fontSize:11,
+                                <td style={Object.assign({ padding:"10px",textAlign:"center",fontSize:FS.fsLabel,
                                   color:item.taxRate===8?T.ok:T.amber,fontWeight:700 }, isCancelled?textStyle:{})}>
                                   {item.taxRate}%{item.taxRate===8?"※":""}
                                 </td>
                                 {printMode==="delivery" && (
-                                  <td style={Object.assign({ padding:"10px",textAlign:"right",fontFamily:"'Inter'",fontWeight:700,fontSize:12 }, textStyle)}>
+                                  <td style={Object.assign({ padding:"10px",textAlign:"right",fontFamily:"'Inter'",fontWeight:700,fontSize:FS.fsBody }, textStyle)}>
                                     ¥{item.amount.toLocaleString()}
                                   </td>
                                 )}
                                 {printMode==="delivery" && (
-                                  <td style={{ padding:"10px",textAlign:"center",fontSize:11,fontWeight:700 }}>
+                                  <td style={{ padding:"10px",textAlign:"center",fontSize:FS.fsLabel,fontWeight:700 }}>
                                     {isShipped && <span style={{ color:T.g2 }}>☑</span>}
-                                    {isWaiting && <span style={{ color:T.red,fontSize:10 }}>後日納品</span>}
-                                    {isCancelled && <span style={{ color:T.ink4,fontSize:10,textDecoration:"line-through" }}>キャンセル</span>}
+                                    {isWaiting && <span style={{ color:T.red,fontSize:FS.fsLabel }}>後日納品</span>}
+                                    {isCancelled && <span style={{ color:T.ink4,fontSize:FS.fsLabel,textDecoration:"line-through" }}>キャンセル</span>}
                                     {!isShipped && !isWaiting && !isCancelled && <span style={{ color:T.ink4 }}>—</span>}
                                   </td>
                                 )}
@@ -10610,16 +10673,16 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                         <tfoot>
                           <tr style={{ background:T.bg }}>
                             <td colSpan={printMode==="delivery"?(hasWaiting||hasCancelled?5:4):2}
-                              style={{ padding:"10px",fontWeight:700,fontSize:12 }}>
+                              style={{ padding:"10px",fontWeight:700,fontSize:FS.fsBody }}>
                               合計（税込）
                               {(hasCancelled||hasWaiting) && (
-                                <span style={{ marginLeft:8, fontSize:10, color:T.ink4, fontWeight:400 }}>
+                                <span style={{ marginLeft:8, fontSize:FS.fsLabel, color:T.ink4, fontWeight:400 }}>
                                   ※キャンセル分を除く
                                 </span>
                               )}
                             </td>
                             <td style={{ padding:"10px",textAlign:"right",fontFamily:"'Inter'",
-                              fontWeight:800,fontSize:14,color:T.g2 }}>
+                              fontWeight:800,fontSize:FS.fsTitle,color:T.g2 }}>
                               ¥{activeTotal.toLocaleString()}
                             </td>
                           </tr>
@@ -10631,18 +10694,18 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
 
                 {/* 発行者 */}
                 <div style={{ textAlign:"right",marginTop:20,paddingTop:16,borderTop:`1px solid ${T.rule}` }}>
-                  <div style={{ fontSize:12,color:T.ink3,marginBottom:4 }}>
+                  <div style={{ fontSize:FS.fsBody,color:T.ink3,marginBottom:4 }}>
                     発行日：{new Date().toLocaleDateString("ja-JP")}
                   </div>
-                  <div style={{ fontSize:14,fontWeight:800,color:T.ink }}>至誠堂書店</div>
-                  <div style={{ fontSize:11,color:T.ink4 }}>{COMPANY.zip} {COMPANY.addr}</div>
-                  <div style={{ fontSize:11,color:T.ink4 }}>TEL: 03-0000-0000</div>
+                  <div style={{ fontSize:FS.fsTitle,fontWeight:800,color:T.ink }}>至誠堂書店</div>
+                  <div style={{ fontSize:FS.fsLabel,color:T.ink4 }}>{COMPANY.zip} {COMPANY.addr}</div>
+                  <div style={{ fontSize:FS.fsLabel,color:T.ink4 }}>TEL: 03-0000-0000</div>
                   {printMode==="receipt" && (
                   <div>
-                    <div style={{ marginTop:8,fontSize:11,color:T.ink3 }}>
+                    <div style={{ marginTop:8,fontSize:FS.fsLabel,color:T.ink3 }}>
                       但し：{receiptName ? receiptName+"　様" : "書籍代として"}
                     </div>
-                    <div style={{ marginTop:10,fontSize:11,color:T.ink3 }}>
+                    <div style={{ marginTop:10,fontSize:FS.fsLabel,color:T.ink3 }}>
                       但し書き：書籍代として
                     </div>
                     {/* 収受印欄（5万円以上で自動表示） */}
@@ -10651,14 +10714,14 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                         <div style={{ textAlign:"center" }}>
                           <div style={{ width:60,height:60,border:"1.5px solid "+T.g2,
                             borderRadius:"50%",display:"flex",alignItems:"center",
-                            justifyContent:"center",fontSize:10,color:T.g2,fontWeight:700 }}>
+                            justifyContent:"center",fontSize:FS.fsLabel,color:T.g2,fontWeight:700 }}>
                             収受印
                           </div>
-                          <div style={{ fontSize:10,color:T.ink4,marginTop:3 }}>
+                          <div style={{ fontSize:FS.fsLabel,color:T.ink4,marginTop:3 }}>
                             （収入印紙200円貼付）
                           </div>
                         </div>
-                        <div style={{ fontSize:10,color:T.amber,flex:1,lineHeight:1.6 }}>
+                        <div style={{ fontSize:FS.fsLabel,color:T.amber,flex:1,lineHeight:1.6 }}>
                           ⚠ 5万円以上のため収入印紙（200円）が必要です。<br/>
                           電子メール送付の場合は不要です。
                         </div>
@@ -10686,7 +10749,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
             <div style={{ padding:"14px 20px",borderBottom:"1px solid "+T.rule,
               display:"flex",justifyContent:"space-between",alignItems:"center",
               position:"sticky",top:0,background:T.white,zIndex:10 }}>
-              <div style={{ fontSize:14,fontWeight:800,color:T.ink }}>
+              <div style={{ fontSize:FS.fsTitle,fontWeight:800,color:T.ink }}>
                 {"📄 合算請求書作成 — "+mergeInvOrders.length+"件の注文"}
               </div>
               <div style={{ display:"flex",gap:8 }}>
@@ -10708,31 +10771,31 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                 }}>🖨 印刷</Btn>
                 <button onClick={() => setMergeInvModal(false)}
                   style={{ background:T.bg,border:"1px solid "+T.rule,borderRadius:6,
-                    padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12 }} aria-label="閉じる">✕</button>
+                    padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:FS.fsBody }} aria-label="閉じる">✕</button>
               </div>
             </div>
             {/* 設定エリア */}
             <div style={{ padding:"14px 20px",background:T.bg,borderBottom:"1px solid "+T.rule }}>
               <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:10 }}>
                 <div>
-                  <div style={{ fontSize:10,fontWeight:700,color:T.ink4,marginBottom:4 }}>宛名</div>
+                  <div style={{ fontSize:FS.fsLabel,fontWeight:700,color:T.ink4,marginBottom:4 }}>宛名</div>
                   <div style={{ display:"flex",gap:6 }}>
                     <input aria-label="統合請求書宛名" value={mergeInvMeta.recipientName}
                       onChange={e => setMergeInvMeta(p => Object.assign({},p,{recipientName:e.target.value}))}
                       placeholder={mergeInvOrders[0]?.member||""}
-                      style={{ flex:1,padding:"6px 9px",borderRadius:5,border:"1px solid "+T.rule,fontSize:12 }} />
+                      style={{ flex:1,padding:"6px 9px",borderRadius:5,border:"1px solid "+T.rule,fontSize:FS.fsBody }} />
                     <select aria-label="宛名敬称" value={mergeInvMeta.recipientTitle}
                       onChange={e => setMergeInvMeta(p => Object.assign({},p,{recipientTitle:e.target.value}))}
-                      style={{ padding:"6px",borderRadius:5,border:"1px solid "+T.rule,fontSize:12,width:72 }}>
+                      style={{ padding:"6px",borderRadius:5,border:"1px solid "+T.rule,fontSize:FS.fsBody,width:72 }}>
                       <option>御中</option><option>様</option>
                     </select>
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize:10,fontWeight:700,color:T.ink4,marginBottom:4 }}>支払期限</div>
+                  <div style={{ fontSize:FS.fsLabel,fontWeight:700,color:T.ink4,marginBottom:4 }}>支払期限</div>
                   <input aria-label="支払期限" type="date" value={mergeInvMeta.dueDate}
                     onChange={e => setMergeInvMeta(p => Object.assign({},p,{dueDate:e.target.value}))}
-                    style={{ width:"100%",padding:"6px 9px",borderRadius:5,border:"1px solid "+T.rule,fontSize:12,boxSizing:"border-box" }} />
+                    style={{ width:"100%",padding:"6px 9px",borderRadius:5,border:"1px solid "+T.rule,fontSize:FS.fsBody,boxSizing:"border-box" }} />
                 </div>
               </div>
             </div>
@@ -10749,65 +10812,65 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                   <div>
                     <div style={{ display:"flex",justifyContent:"space-between",marginBottom:20 }}>
                       <div>
-                        <div style={{ fontSize:22,fontWeight:900,color:T.ink,letterSpacing:"0.1em",marginBottom:4 }}>請　求　書</div>
-                        <div style={{ fontSize:11,color:T.ink4 }}>No. {invNo}</div>
-                        <div style={{ fontSize:11,color:T.ink4 }}>発行日：{today}</div>
+                        <div style={{ fontSize:FS.fsNum,fontWeight:900,color:T.ink,letterSpacing:"0.1em",marginBottom:4 }}>請　求　書</div>
+                        <div style={{ fontSize:FS.fsLabel,color:T.ink4 }}>No. {invNo}</div>
+                        <div style={{ fontSize:FS.fsLabel,color:T.ink4 }}>発行日：{today}</div>
                       </div>
-                      <div style={{ textAlign:"right",fontSize:11,color:T.ink3,lineHeight:1.8 }}>
-                        <div style={{ fontSize:13,fontWeight:800,color:T.ink }}>至誠堂書店</div>
+                      <div style={{ textAlign:"right",fontSize:FS.fsLabel,color:T.ink3,lineHeight:1.8 }}>
+                        <div style={{ fontSize:FS.fsBody,fontWeight:800,color:T.ink }}>至誠堂書店</div>
                         <div>{COMPANY.zip} {COMPANY.addr}</div>
-                        <div style={{ color:T.g2,fontWeight:700,fontSize:10,marginTop:2 }}>適格請求書発行事業者登録番号：{COMPANY.invoiceNo}</div>
+                        <div style={{ color:T.g2,fontWeight:700,fontSize:FS.fsLabel,marginTop:2 }}>適格請求書発行事業者登録番号：{COMPANY.invoiceNo}</div>
                       </div>
                     </div>
                     <div style={{ marginBottom:14,paddingBottom:10,borderBottom:"2px solid "+T.ink }}>
-                      <div style={{ fontSize:17,fontWeight:800,color:T.ink }}>
+                      <div style={{ fontSize:FS.fsNum,fontWeight:800,color:T.ink }}>
                         {(mergeInvMeta.recipientName||mergeInvOrders[0]?.member||"")+" "+mergeInvMeta.recipientTitle}
                       </div>
                     </div>
                     <div style={{ display:"flex",justifyContent:"space-between",marginBottom:14,
                       padding:"10px 14px",background:T.okPale,borderRadius:8 }}>
                       <div>
-                        <div style={{ fontSize:11,color:T.ink4 }}>{"件名：注文 "+mergeInvOrders.map(o=>o.id).join("・")+" の合算請求"}</div>
-                        <div style={{ fontSize:11,color:T.ink4 }}>{"お支払期限："+dueDay}</div>
+                        <div style={{ fontSize:FS.fsLabel,color:T.ink4 }}>{"件名：注文 "+mergeInvOrders.map(o=>o.id).join("・")+" の合算請求"}</div>
+                        <div style={{ fontSize:FS.fsLabel,color:T.ink4 }}>{"お支払期限："+dueDay}</div>
                       </div>
                       <div style={{ textAlign:"right" }}>
-                        <div style={{ fontSize:11,color:T.ink4 }}>ご請求金額（税込）</div>
-                        <div style={{ fontFamily:"'Inter'",fontSize:22,fontWeight:900,color:T.g2 }}>{"¥"+totalAmt.toLocaleString()+" -"}</div>
+                        <div style={{ fontSize:FS.fsLabel,color:T.ink4 }}>ご請求金額（税込）</div>
+                        <div style={{ fontFamily:"'Inter'",fontSize:FS.fsNum,fontWeight:900,color:T.g2 }}>{"¥"+totalAmt.toLocaleString()+" -"}</div>
                       </div>
                     </div>
                     <table style={{ width:"100%",borderCollapse:"collapse",marginBottom:12 }}>
                       <thead>
                         <tr>
                           {["注文番号","品目","税率","税込金額"].map((h,i) => (
-                            <th key={i} style={{ padding:"8px 10px",textAlign:i>1?"right":"left",background:T.g1,color:"#fff",fontSize:11 }}>{h}</th>
+                            <th key={i} style={{ padding:"8px 10px",textAlign:i>1?"right":"left",background:T.g1,color:"#fff",fontSize:FS.fsLabel }}>{h}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
                         {mergeInvOrders.map((o,i) => (
                           <tr key={i} style={{ borderBottom:"1px solid "+T.rule }}>
-                            <td style={{ padding:"8px 10px",fontSize:11,color:T.navy,fontWeight:700 }}>{o.id}</td>
-                            <td style={{ padding:"8px 10px",fontSize:11 }}>{o.items}<span style={{ fontSize:10,marginLeft:4,color:T.ok,fontWeight:700 }}>※</span></td>
-                            <td style={{ padding:"8px 10px",textAlign:"right",fontSize:11,color:T.ok,fontWeight:700 }}>8%※</td>
-                            <td style={{ padding:"8px 10px",textAlign:"right",fontFamily:"'Inter'",fontWeight:700,fontSize:12 }}>{"¥"+o.total.toLocaleString()}</td>
+                            <td style={{ padding:"8px 10px",fontSize:FS.fsLabel,color:T.navy,fontWeight:700 }}>{o.id}</td>
+                            <td style={{ padding:"8px 10px",fontSize:FS.fsLabel }}>{o.items}<span style={{ fontSize:FS.fsLabel,marginLeft:4,color:T.ok,fontWeight:700 }}>※</span></td>
+                            <td style={{ padding:"8px 10px",textAlign:"right",fontSize:FS.fsLabel,color:T.ok,fontWeight:700 }}>8%※</td>
+                            <td style={{ padding:"8px 10px",textAlign:"right",fontFamily:"'Inter'",fontWeight:700,fontSize:FS.fsBody }}>{"¥"+o.total.toLocaleString()}</td>
                           </tr>
                         ))}
                       </tbody>
                       <tfoot>
                         <tr style={{ background:T.bg }}>
-                          <td colSpan="3" style={{ padding:"9px 10px",fontWeight:700,fontSize:12 }}>合計（税込）</td>
-                          <td style={{ padding:"9px 10px",textAlign:"right",fontFamily:"'Inter'",fontWeight:900,fontSize:16,color:T.g2 }}>{"¥"+totalAmt.toLocaleString()}</td>
+                          <td colSpan="3" style={{ padding:"9px 10px",fontWeight:700,fontSize:FS.fsBody }}>合計（税込）</td>
+                          <td style={{ padding:"9px 10px",textAlign:"right",fontFamily:"'Inter'",fontWeight:900,fontSize:FS.fsTitle,color:T.g2 }}>{"¥"+totalAmt.toLocaleString()}</td>
                         </tr>
                       </tfoot>
                     </table>
-                    <div style={{ background:T.navyPale,borderRadius:7,padding:"8px 12px",fontSize:10,color:T.ink3,marginBottom:12 }}>
+                    <div style={{ background:T.navyPale,borderRadius:7,padding:"8px 12px",fontSize:FS.fsLabel,color:T.ink3,marginBottom:12 }}>
                       {"消費税内訳（合算計算・端数切捨）　※8%（軽減税率）対象：¥"+base8.toLocaleString()+"　消費税：¥"+tax8.toLocaleString()}
-                      <br/><span style={{ fontSize:10 }}>※印は軽減税率（8%）対象。書籍は消費税法上の軽減税率適用対象品目です。</span>
+                      <br/><span style={{ fontSize:FS.fsLabel }}>※印は軽減税率（8%）対象。書籍は消費税法上の軽減税率適用対象品目です。</span>
                     </div>
-                    <div style={{ border:"1px solid "+T.rule,borderRadius:7,padding:"10px 14px",fontSize:11,color:T.ink3,lineHeight:1.9 }}>
+                    <div style={{ border:"1px solid "+T.rule,borderRadius:7,padding:"10px 14px",fontSize:FS.fsLabel,color:T.ink3,lineHeight:1.9 }}>
                       <div style={{ fontWeight:700,color:T.ink,marginBottom:3 }}>お振込先</div>
                       {COMPANY.bank}　{COMPANY.bankType} {COMPANY.bankNo}　口座名義：株式会社至誠堂書店<br/>
-                      <span style={{ fontSize:10,color:T.ink4 }}>※振込手数料はご負担ください</span>
+                      <span style={{ fontSize:FS.fsLabel,color:T.ink4 }}>※振込手数料はご負担ください</span>
                     </div>
                   </div>
                 );
@@ -10830,7 +10893,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
             <div style={{ padding:"14px 20px",borderBottom:"1px solid "+T.rule,
               display:"flex",justifyContent:"space-between",alignItems:"center",
               position:"sticky",top:0,background:T.white,zIndex:10,borderRadius:"14px 14px 0 0" }}>
-              <div style={{ fontSize:14,fontWeight:800,color:T.ink }}>
+              <div style={{ fontSize:FS.fsTitle,fontWeight:800,color:T.ink }}>
                 {"📄 請求書発行 — "+orderInvTarget.id}
               </div>
               <div style={{ display:"flex",gap:8 }}>
@@ -10860,7 +10923,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                 )}
                 <button onClick={function(){ setOrderInvModal(false); }}
                   style={{ background:T.bg,border:"1px solid "+T.rule,borderRadius:6,
-                    padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12 }} aria-label="閉じる">✕</button>
+                    padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:FS.fsBody }} aria-label="閉じる">✕</button>
               </div>
             </div>
 
@@ -10868,41 +10931,41 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
             <div style={{ padding:"16px 20px",background:T.bg,borderBottom:"1px solid "+T.rule }}>
               <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10 }}>
                 <div>
-                  <div style={{ fontSize:10,fontWeight:700,color:T.ink4,marginBottom:4 }}>宛名</div>
+                  <div style={{ fontSize:FS.fsLabel,fontWeight:700,color:T.ink4,marginBottom:4 }}>宛名</div>
                   <div style={{ display:"flex",gap:6 }}>
                     <input aria-label="注文請求書宛名" value={orderInvMeta.recipientName}
                       onChange={function(e){ var v=e.target.value; setOrderInvMeta(function(p){ return Object.assign({},p,{recipientName:v}); }); }}
-                      style={{ flex:1,padding:"6px 9px",borderRadius:5,border:"1px solid "+T.rule,fontSize:12 }} />
+                      style={{ flex:1,padding:"6px 9px",borderRadius:5,border:"1px solid "+T.rule,fontSize:FS.fsBody }} />
                     <select aria-label="宛名敬称" value={orderInvMeta.recipientTitle}
                       onChange={function(e){ var v=e.target.value; setOrderInvMeta(function(p){ return Object.assign({},p,{recipientTitle:v}); }); }}
-                      style={{ padding:"6px 8px",borderRadius:5,border:"1px solid "+T.rule,fontSize:12,width:72 }}>
+                      style={{ padding:"6px 8px",borderRadius:5,border:"1px solid "+T.rule,fontSize:FS.fsBody,width:72 }}>
                       <option>御中</option><option>様</option><option>殿</option>
                     </select>
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize:10,fontWeight:700,color:T.ink4,marginBottom:4 }}>支払期限</div>
+                  <div style={{ fontSize:FS.fsLabel,fontWeight:700,color:T.ink4,marginBottom:4 }}>支払期限</div>
                   <input aria-label="支払期限" type="date" value={orderInvMeta.dueDate}
                     onChange={function(e){ var v=e.target.value; setOrderInvMeta(function(p){ return Object.assign({},p,{dueDate:v}); }); }}
-                    style={{ width:"100%",padding:"6px 9px",borderRadius:5,border:"1px solid "+T.rule,fontSize:12,boxSizing:"border-box" }} />
+                    style={{ width:"100%",padding:"6px 9px",borderRadius:5,border:"1px solid "+T.rule,fontSize:FS.fsBody,boxSizing:"border-box" }} />
                 </div>
                 <div>
-                  <div style={{ fontSize:10,fontWeight:700,color:T.ink4,marginBottom:4 }}>但し書き</div>
+                  <div style={{ fontSize:FS.fsLabel,fontWeight:700,color:T.ink4,marginBottom:4 }}>但し書き</div>
                   <input aria-label="但し書き" value={orderInvMeta.note}
                     onChange={function(e){ var v=e.target.value; setOrderInvMeta(function(p){ return Object.assign({},p,{note:v}); }); }}
-                    style={{ width:"100%",padding:"6px 9px",borderRadius:5,border:"1px solid "+T.rule,fontSize:12,boxSizing:"border-box" }} />
+                    style={{ width:"100%",padding:"6px 9px",borderRadius:5,border:"1px solid "+T.rule,fontSize:FS.fsBody,boxSizing:"border-box" }} />
                 </div>
                 <div>
-                  <div style={{ fontSize:10,fontWeight:700,color:T.ink4,marginBottom:4 }}>消費税計算方式</div>
+                  <div style={{ fontSize:FS.fsLabel,fontWeight:700,color:T.ink4,marginBottom:4 }}>消費税計算方式</div>
                   <select aria-label="消費税計算方式" value={orderInvMeta.taxCalcMethod}
                     onChange={function(e){ var v=e.target.value; setOrderInvMeta(function(p){ return Object.assign({},p,{taxCalcMethod:v}); }); }}
-                    style={{ width:"100%",padding:"6px 9px",borderRadius:5,border:"1px solid "+T.rule,fontSize:12,boxSizing:"border-box" }}>
+                    style={{ width:"100%",padding:"6px 9px",borderRadius:5,border:"1px solid "+T.rule,fontSize:FS.fsBody,boxSizing:"border-box" }}>
                     <option value="grouped">合算計算（インボイス準拠・推奨）</option>
                     <option value="per_line">1行単位計算</option>
                   </select>
                 </div>
               </div>
-              <div style={{ display:"flex",gap:12,fontSize:11,color:T.ink4,flexWrap:"wrap" }}>
+              <div style={{ display:"flex",gap:12,fontSize:FS.fsLabel,color:T.ink4,flexWrap:"wrap" }}>
                 {[
                   { key:"showDeliveryAddr", label:"配送先住所を記載" },
                   { key:"stamp",            label:"検収印欄を印字" },
@@ -10926,7 +10989,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
               {orderInvMeta.govMode && (
                 <div style={{ marginTop:10,padding:"12px 14px",background:T.navyPale,
                   borderRadius:8,border:"1px solid #01579b30" }}>
-                  <div style={{ fontSize:10,fontWeight:700,color:T.navy,marginBottom:8 }}>
+                  <div style={{ fontSize:FS.fsLabel,fontWeight:700,color:T.navy,marginBottom:8 }}>
                     🏛 官公庁・裁判所向け追加記載事項
                   </div>
                   <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:8 }}>
@@ -10937,12 +11000,12 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                     ].map(function(f){
                       return (
                         <div key={f.key} style={{ gridColumn:f.key==="govProjectName"?"span 2":"auto" }}>
-                          <div style={{ fontSize:10,fontWeight:700,color:T.navy,marginBottom:3 }}>{f.label}</div>
+                          <div style={{ fontSize:FS.fsLabel,fontWeight:700,color:T.navy,marginBottom:3 }}>{f.label}</div>
                           <input aria-label={f.label} value={orderInvMeta[f.key]||""}
                             onChange={function(e){ var v=e.target.value; setOrderInvMeta(function(p){ return Object.assign({},p,Object.fromEntries([[f.key,v]])); }); }}
                             placeholder={f.ph}
                             style={{ width:"100%",padding:"5px 8px",borderRadius:5,
-                              border:"1px solid #90caf9",fontSize:11,boxSizing:"border-box" }} />
+                              border:"1px solid #90caf9",fontSize:FS.fsLabel,boxSizing:"border-box" }} />
                         </div>
                       );
                     })}
@@ -10952,7 +11015,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
               {/* メール送付設定 */}
               {orderInvMeta.sendByEmail && (
                 <div style={{ marginTop:8,padding:"10px 12px",background:T.navyPale,
-                  borderRadius:7,border:"1px solid "+T.navy+"20",fontSize:11,color:T.ink3 }}>
+                  borderRadius:7,border:"1px solid "+T.navy+"20",fontSize:FS.fsLabel,color:T.ink3 }}>
                   📧 印刷後「メール送付」ボタンで
                   <strong style={{ color:T.navy }}> {orderInvTarget&&orderInvTarget.member} </strong>
                   宛にBrevo経由で送信されます（送付記録も残ります）
@@ -10973,7 +11036,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                   <div>
                     {/* 控え帯 */}
                     {orderInvMeta.isCopy && (
-                      <div style={{ textAlign:"center",fontSize:11,fontWeight:700,
+                      <div style={{ textAlign:"center",fontSize:FS.fsLabel,fontWeight:700,
                         color:T.ink4,marginBottom:12,letterSpacing:"0.3em",
                         borderBottom:"1px dashed "+T.rule,paddingBottom:8 }}>
                         （　控　）
@@ -10983,16 +11046,16 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                     <div style={{ display:"flex",justifyContent:"space-between",
                       alignItems:"flex-start",marginBottom:20 }}>
                       <div>
-                        <div style={{ fontSize:24,fontWeight:900,color:T.ink,
+                        <div style={{ fontSize:FS.fsNum,fontWeight:900,color:T.ink,
                           letterSpacing:"0.1em",marginBottom:4 }}>請　求　書</div>
-                        <div style={{ fontSize:11,color:T.ink4 }}>No. {invNo}</div>
-                        <div style={{ fontSize:11,color:T.ink4 }}>発行日：{today}</div>
+                        <div style={{ fontSize:FS.fsLabel,color:T.ink4 }}>No. {invNo}</div>
+                        <div style={{ fontSize:FS.fsLabel,color:T.ink4 }}>発行日：{today}</div>
                       </div>
-                      <div style={{ textAlign:"right",fontSize:11,color:T.ink3,lineHeight:1.8 }}>
-                        <div style={{ fontSize:14,fontWeight:800,color:T.ink }}>至誠堂書店</div>
+                      <div style={{ textAlign:"right",fontSize:FS.fsLabel,color:T.ink3,lineHeight:1.8 }}>
+                        <div style={{ fontSize:FS.fsTitle,fontWeight:800,color:T.ink }}>至誠堂書店</div>
                         <div>{COMPANY.zip} {COMPANY.addr}</div>
                         <div>TEL: 03-0000-0000 / FAX: 03-0000-0001</div>
-                        <div style={{ color:T.g2,fontWeight:700,fontSize:11,marginTop:2 }}>
+                        <div style={{ color:T.g2,fontWeight:700,fontSize:FS.fsLabel,marginTop:2 }}>
                           適格請求書発行事業者登録番号：{COMPANY.invoiceNo}
                         </div>
                       </div>
@@ -11001,11 +11064,11 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                     {/* 宛先 */}
                     <div style={{ marginBottom:16,paddingBottom:10,
                       borderBottom:"2px solid "+T.ink }}>
-                      <div style={{ fontSize:18,fontWeight:800,color:T.ink }}>
+                      <div style={{ fontSize:FS.fsNum,fontWeight:800,color:T.ink }}>
                         {orderInvMeta.recipientName} {orderInvMeta.recipientTitle}
                       </div>
                       {orderInvMeta.showDeliveryAddr && o.deliveryAddr && (
-                        <div style={{ fontSize:11,color:T.ink4,marginTop:2 }}>
+                        <div style={{ fontSize:FS.fsLabel,color:T.ink4,marginTop:2 }}>
                           {o.deliveryAddr}
                         </div>
                       )}
@@ -11015,23 +11078,23 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                     {orderInvMeta.govMode && (orderInvMeta.govProjectName||orderInvMeta.govContractNo||orderInvMeta.govBudgetItem) && (
                       <div style={{ marginBottom:14,padding:"11px 14px",
                         border:"2px solid #01579b",borderRadius:8 }}>
-                        <div style={{ fontSize:10,fontWeight:700,color:T.navy,marginBottom:6 }}>
+                        <div style={{ fontSize:FS.fsLabel,fontWeight:700,color:T.navy,marginBottom:6 }}>
                           ■ 請求内容
                         </div>
                         {orderInvMeta.govProjectName && (
-                          <div style={{ display:"flex",gap:12,marginBottom:4,fontSize:12 }}>
+                          <div style={{ display:"flex",gap:12,marginBottom:4,fontSize:FS.fsBody }}>
                             <span style={{ minWidth:140,color:T.ink3 }}>件名（支出負担行為）</span>
                             <span style={{ fontWeight:700,color:T.ink }}>{orderInvMeta.govProjectName}</span>
                           </div>
                         )}
                         {orderInvMeta.govContractNo && (
-                          <div style={{ display:"flex",gap:12,marginBottom:4,fontSize:12 }}>
+                          <div style={{ display:"flex",gap:12,marginBottom:4,fontSize:FS.fsBody }}>
                             <span style={{ minWidth:140,color:T.ink3 }}>契約番号・注文番号</span>
                             <span style={{ fontWeight:700,color:T.ink }}>{orderInvMeta.govContractNo}</span>
                           </div>
                         )}
                         {orderInvMeta.govBudgetItem && (
-                          <div style={{ display:"flex",gap:12,marginBottom:4,fontSize:12 }}>
+                          <div style={{ display:"flex",gap:12,marginBottom:4,fontSize:FS.fsBody }}>
                             <span style={{ minWidth:140,color:T.ink3 }}>予算科目</span>
                             <span style={{ fontWeight:700,color:T.ink }}>{orderInvMeta.govBudgetItem}</span>
                           </div>
@@ -11043,22 +11106,22 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                       padding:"12px 16px",background:T.okPale,borderRadius:8,
                       border:"1px solid "+T.ok+"30" }}>
                       <div style={{ flex:1 }}>
-                        <div style={{ fontSize:11,color:T.ink4 }}>
+                        <div style={{ fontSize:FS.fsLabel,color:T.ink4 }}>
                           {"件名：注文 "+o.id+" に関する請求"}
                         </div>
                         {o.caseNo && (
-                          <div style={{ fontSize:11,color:T.ink4 }}>
+                          <div style={{ fontSize:FS.fsLabel,color:T.ink4 }}>
                             {"事件番号："+o.caseNo+(o.caseName?" （"+o.caseName+"）":"")}
                           </div>
                         )}
-                        <div style={{ fontSize:11,color:T.ink4,marginTop:2 }}>
+                        <div style={{ fontSize:FS.fsLabel,color:T.ink4,marginTop:2 }}>
                           {"お支払期限："}
                           <strong style={{ color:T.ink }}>{dueDay}</strong>
                         </div>
                       </div>
                       <div style={{ textAlign:"right" }}>
-                        <div style={{ fontSize:11,color:T.ink4 }}>ご請求金額（税込）</div>
-                        <div style={{ fontFamily:"'Inter'",fontSize:24,fontWeight:900,color:T.g2 }}>
+                        <div style={{ fontSize:FS.fsLabel,color:T.ink4 }}>ご請求金額（税込）</div>
+                        <div style={{ fontFamily:"'Inter'",fontSize:FS.fsNum,fontWeight:900,color:T.g2 }}>
                           {"¥"+o.total.toLocaleString()+" -"}
                         </div>
                       </div>
@@ -11069,7 +11132,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                       <thead>
                         <tr>
                           {["品目・書名","数量","税率","税抜単価","税込金額"].map(function(h,i){
-                            return <th key={i} style={{ padding:"8px 10px",textAlign:i>1?"right":i===1?"center":"left",background:T.g1,color:"#fff",fontSize:11 }}>{h}</th>;
+                            return <th key={i} style={{ padding:"8px 10px",textAlign:i>1?"right":i===1?"center":"left",background:T.g1,color:"#fff",fontSize:FS.fsLabel }}>{h}</th>;
                           })}
                         </tr>
                       </thead>
@@ -11079,35 +11142,35 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                           var base = Math.round(it.amount/(rate===8?1.08:1.10));
                           return (
                             <tr key={i} style={{ borderBottom:"1px solid "+T.rule }}>
-                              <td style={{ padding:"9px 10px",fontSize:12 }}>
+                              <td style={{ padding:"9px 10px",fontSize:FS.fsBody }}>
                                 {it.name}
-                                {rate===8&&<span style={{ fontSize:10,marginLeft:6,color:T.ok,fontWeight:700 }}>※</span>}
+                                {rate===8&&<span style={{ fontSize:FS.fsLabel,marginLeft:6,color:T.ok,fontWeight:700 }}>※</span>}
                               </td>
-                              <td style={{ padding:"9px 10px",textAlign:"center",fontSize:12 }}>—</td>
-                              <td style={{ padding:"9px 10px",textAlign:"right",fontSize:11,
+                              <td style={{ padding:"9px 10px",textAlign:"center",fontSize:FS.fsBody }}>—</td>
+                              <td style={{ padding:"9px 10px",textAlign:"right",fontSize:FS.fsLabel,
                                 color:rate===8?T.ok:T.amber,fontWeight:700 }}>
                                 {rate===8?"8%※":"10%"}
                               </td>
-                              <td style={{ padding:"9px 10px",textAlign:"right",fontFamily:"'Inter'",fontSize:12 }}>
+                              <td style={{ padding:"9px 10px",textAlign:"right",fontFamily:"'Inter'",fontSize:FS.fsBody }}>
                                 {"¥"+base.toLocaleString()}
                               </td>
-                              <td style={{ padding:"9px 10px",textAlign:"right",fontFamily:"'Inter'",fontWeight:700,fontSize:12 }}>
+                              <td style={{ padding:"9px 10px",textAlign:"right",fontFamily:"'Inter'",fontWeight:700,fontSize:FS.fsBody }}>
                                 {"¥"+it.amount.toLocaleString()}
                               </td>
                             </tr>
                           );
                         }) : (
                           <tr style={{ borderBottom:"1px solid "+T.rule }}>
-                            <td style={{ padding:"9px 10px",fontSize:12 }}>
+                            <td style={{ padding:"9px 10px",fontSize:FS.fsBody }}>
                               {o.items||"書籍代"}
-                              <span style={{ fontSize:10,marginLeft:6,color:T.ok,fontWeight:700 }}>※</span>
+                              <span style={{ fontSize:FS.fsLabel,marginLeft:6,color:T.ok,fontWeight:700 }}>※</span>
                             </td>
-                            <td style={{ padding:"9px 10px",textAlign:"center",fontSize:12 }}>—</td>
-                            <td style={{ padding:"9px 10px",textAlign:"right",fontSize:11,color:T.ok,fontWeight:700 }}>8%※</td>
-                            <td style={{ padding:"9px 10px",textAlign:"right",fontFamily:"'Inter'",fontSize:12 }}>
+                            <td style={{ padding:"9px 10px",textAlign:"center",fontSize:FS.fsBody }}>—</td>
+                            <td style={{ padding:"9px 10px",textAlign:"right",fontSize:FS.fsLabel,color:T.ok,fontWeight:700 }}>8%※</td>
+                            <td style={{ padding:"9px 10px",textAlign:"right",fontFamily:"'Inter'",fontSize:FS.fsBody }}>
                               {"¥"+taxR.base8.toLocaleString()}
                             </td>
-                            <td style={{ padding:"9px 10px",textAlign:"right",fontFamily:"'Inter'",fontWeight:700,fontSize:12 }}>
+                            <td style={{ padding:"9px 10px",textAlign:"right",fontFamily:"'Inter'",fontWeight:700,fontSize:FS.fsBody }}>
                               {"¥"+o.total.toLocaleString()}
                             </td>
                           </tr>
@@ -11115,8 +11178,8 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                       </tbody>
                       <tfoot>
                         <tr style={{ background:T.bg }}>
-                          <td colSpan="4" style={{ padding:"9px 10px",fontWeight:700,fontSize:12 }}>合計（税込）</td>
-                          <td style={{ padding:"9px 10px",textAlign:"right",fontFamily:"'Inter'",fontWeight:900,fontSize:16,color:T.g2 }}>
+                          <td colSpan="4" style={{ padding:"9px 10px",fontWeight:700,fontSize:FS.fsBody }}>合計（税込）</td>
+                          <td style={{ padding:"9px 10px",textAlign:"right",fontFamily:"'Inter'",fontWeight:900,fontSize:FS.fsTitle,color:T.g2 }}>
                             {"¥"+o.total.toLocaleString()}
                           </td>
                         </tr>
@@ -11125,7 +11188,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
 
                     {/* 消費税内訳（インボイス必須記載） */}
                     <div style={{ background:T.navyPale,borderRadius:7,padding:"9px 14px",
-                      marginBottom:14,fontSize:10,color:T.ink3,lineHeight:1.8 }}>
+                      marginBottom:14,fontSize:FS.fsLabel,color:T.ink3,lineHeight:1.8 }}>
                       <span style={{ fontWeight:700,color:T.navy }}>消費税内訳（税率ごとに端数切捨）　</span>
                       {taxR.base8>0 && (
                         <span>{"※8%（軽減税率）対象：¥"+taxR.base8.toLocaleString()+"　消費税：¥"+taxR.tax8.toLocaleString()+"　"}</span>
@@ -11134,23 +11197,23 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                         <span>{"10%（標準税率）対象：¥"+taxR.base10.toLocaleString()+"　消費税：¥"+taxR.tax10.toLocaleString()}</span>
                       )}
                       <br/>
-                      <span style={{ fontSize:10 }}>※印は軽減税率（8%）対象。書籍は消費税法上の軽減税率適用対象品目です。</span>
+                      <span style={{ fontSize:FS.fsLabel }}>※印は軽減税率（8%）対象。書籍は消費税法上の軽減税率適用対象品目です。</span>
                     </div>
 
                     {/* 振込先 */}
                     <div style={{ border:"1px solid "+T.rule,borderRadius:7,
-                      padding:"11px 14px",marginBottom:14,fontSize:11,color:T.ink3,lineHeight:1.9 }}>
+                      padding:"11px 14px",marginBottom:14,fontSize:FS.fsLabel,color:T.ink3,lineHeight:1.9 }}>
                       <div style={{ fontWeight:700,color:T.ink,marginBottom:4 }}>お振込先</div>
                       {COMPANY.bank}　{COMPANY.bankType} {COMPANY.bankNo}<br/>
                       口座名義：{COMPANY.corpName}（カ）{COMPANY.corpKana}<br/>
-                      <span style={{ fontSize:10,color:T.ink4 }}>
+                      <span style={{ fontSize:FS.fsLabel,color:T.ink4 }}>
                         ※振込手数料はご負担ください。お振込の際は注文番号（{o.id}）を備考欄にご記入ください。
                       </span>
                     </div>
 
                     {/* 但し書き + 検収印欄 */}
                     <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-end" }}>
-                      <div style={{ fontSize:11,color:T.ink3 }}>
+                      <div style={{ fontSize:FS.fsLabel,color:T.ink3 }}>
                         <span style={{ fontWeight:700 }}>但し書き：</span>
                         {orderInvMeta.note}
                       </div>
@@ -11158,17 +11221,17 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                         <div style={{ textAlign:"center" }}>
                           <div style={{ width:64,height:64,border:"1.5px solid "+T.g2,
                             borderRadius:"50%",display:"flex",alignItems:"center",
-                            justifyContent:"center",fontSize:10,color:T.g2,fontWeight:700 }}>
+                            justifyContent:"center",fontSize:FS.fsLabel,color:T.g2,fontWeight:700 }}>
                             検収印
                           </div>
-                          <div style={{ fontSize:10,color:T.ink4,marginTop:3 }}>検収日：　　　月　　　日</div>
+                          <div style={{ fontSize:FS.fsLabel,color:T.ink4,marginTop:3 }}>検収日：　　　月　　　日</div>
                         </div>
                       )}
                     </div>
 
                     {/* 5万円以上の収入印紙注意 */}
                     {o.total >= 50000 && (
-                      <div style={{ marginTop:10,fontSize:10,color:T.amber,
+                      <div style={{ marginTop:10,fontSize:FS.fsLabel,color:T.amber,
                         borderTop:"1px dashed "+T.rule,paddingTop:8 }}>
                         ⚠ 本請求書の金額が5万円以上のため、紙で交付する場合は収入印紙（200円）の貼付が必要です。電子メールでの交付は不要です。
                       </div>
@@ -11193,7 +11256,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
             <div style={{ padding:"14px 20px",borderBottom:"1px solid "+T.rule,
               display:"flex",justifyContent:"space-between",alignItems:"center",
               position:"sticky",top:0,background:T.white,zIndex:10 }}>
-              <div style={{ fontSize:14,fontWeight:800,color:T.ink }}>📋 返品伝票プレビュー</div>
+              <div style={{ fontSize:FS.fsTitle,fontWeight:800,color:T.ink }}>📋 返品伝票プレビュー</div>
               <div style={{ display:"flex",gap:8 }}>
                 <Btn small onClick={function(){
                   var el=document.getElementById("return-slip-doc");
@@ -11205,7 +11268,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                 }}>🖨 印刷</Btn>
                 <button onClick={function(){ setReturnSlipTarget(null); }}
                   style={{ background:T.bg,border:"1px solid "+T.rule,borderRadius:6,
-                    padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12 }} aria-label="閉じる">✕</button>
+                    padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:FS.fsBody }} aria-label="閉じる">✕</button>
               </div>
             </div>
             {/* 返品伝票本体 */}
@@ -11222,40 +11285,40 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                   <div>
                     {/* タイトル */}
                     <div style={{ textAlign:"center",marginBottom:24 }}>
-                      <div style={{ fontSize:22,fontWeight:900,color:T.ink,letterSpacing:"0.1em" }}>
+                      <div style={{ fontSize:FS.fsNum,fontWeight:900,color:T.ink,letterSpacing:"0.1em" }}>
                         {isPartialReturn ? "一部返品伝票" : "返　品　伝　票"}
                       </div>
                       {isPartialReturn && (
                         <div style={{ display:"inline-block",marginTop:4,padding:"2px 10px",
                           borderRadius:10,background:T.amberPale,color:T.amber,
-                          fontSize:11,fontWeight:700 }}>
+                          fontSize:FS.fsLabel,fontWeight:700 }}>
                           ⚡ 部分返品 — 元注文 ¥{o.total.toLocaleString()} のうち ¥{totalAmt.toLocaleString()} を返品
                         </div>
                       )}
-                      <div style={{ fontSize:11,color:T.ink4,marginTop:4 }}>No. {slipNo}</div>
+                      <div style={{ fontSize:FS.fsLabel,color:T.ink4,marginTop:4 }}>No. {slipNo}</div>
                     </div>
                     {/* 発行情報 */}
                     <div style={{ display:"flex",justifyContent:"space-between",marginBottom:20 }}>
                       <div>
-                        <div style={{ fontSize:16,fontWeight:800,color:T.ink,marginBottom:2 }}>
+                        <div style={{ fontSize:FS.fsTitle,fontWeight:800,color:T.ink,marginBottom:2 }}>
                           {o.member} 様
                         </div>
-                        <div style={{ fontSize:11,color:T.ink4 }}>
+                        <div style={{ fontSize:FS.fsLabel,color:T.ink4 }}>
                           {"元注文番号："+o.id}
                         </div>
                       </div>
-                      <div style={{ textAlign:"right",fontSize:11,color:T.ink3,lineHeight:1.7 }}>
-                        <div style={{ fontWeight:700,fontSize:13,color:T.ink }}>至誠堂書店</div>
+                      <div style={{ textAlign:"right",fontSize:FS.fsLabel,color:T.ink3,lineHeight:1.7 }}>
+                        <div style={{ fontWeight:700,fontSize:FS.fsBody,color:T.ink }}>至誠堂書店</div>
                         <div>{COMPANY.zip} {COMPANY.addr}</div>
                         <div>{"発行日："+today}</div>
-                        <div style={{ color:T.g2,fontWeight:700,fontSize:11 }}>
+                        <div style={{ color:T.g2,fontWeight:700,fontSize:FS.fsLabel }}>
                           登録番号：{COMPANY.invoiceNo}
                         </div>
                       </div>
                     </div>
                     {/* 返品理由 */}
                     <div style={{ background:T.redPale,border:"1px solid "+T.red+"30",
-                      borderRadius:8,padding:"10px 14px",marginBottom:16,fontSize:12 }}>
+                      borderRadius:8,padding:"10px 14px",marginBottom:16,fontSize:FS.fsBody }}>
                       <span style={{ fontWeight:700,color:T.red }}>返品理由：</span>
                       <span style={{ color:T.ink }}>{o.returnReason||"—"}</span>
                     </div>
@@ -11263,18 +11326,18 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                     <table style={{ width:"100%",borderCollapse:"collapse",marginBottom:16 }}>
                       <thead>
                         <tr>
-                          <th style={{ padding:"9px 12px",textAlign:"left",background:T.g1,color:"#fff",fontSize:12 }}>返品品目</th>
-                          <th style={{ padding:"9px 12px",textAlign:"center",background:T.g1,color:"#fff",fontSize:12,width:60 }}>税率</th>
-                          <th style={{ padding:"9px 12px",textAlign:"right",background:T.g1,color:"#fff",fontSize:12,width:130 }}>返品金額（税込）</th>
+                          <th style={{ padding:"9px 12px",textAlign:"left",background:T.g1,color:"#fff",fontSize:FS.fsBody }}>返品品目</th>
+                          <th style={{ padding:"9px 12px",textAlign:"center",background:T.g1,color:"#fff",fontSize:FS.fsBody,width:60 }}>税率</th>
+                          <th style={{ padding:"9px 12px",textAlign:"right",background:T.g1,color:"#fff",fontSize:FS.fsBody,width:130 }}>返品金額（税込）</th>
                         </tr>
                       </thead>
                       <tbody>
                         <tr>
-                          <td style={{ padding:"10px 12px",fontSize:12 }}>
+                          <td style={{ padding:"10px 12px",fontSize:FS.fsBody }}>
                             {o.items||"書籍代"}
-                            <div style={{ fontSize:10,color:T.ink4,marginTop:2 }}>※軽減税率（8%）対象</div>
+                            <div style={{ fontSize:FS.fsLabel,color:T.ink4,marginTop:2 }}>※軽減税率（8%）対象</div>
                           </td>
-                          <td style={{ padding:"10px 12px",textAlign:"center",fontSize:11,color:T.ok,fontWeight:700 }}>8%※</td>
+                          <td style={{ padding:"10px 12px",textAlign:"center",fontSize:FS.fsLabel,color:T.ok,fontWeight:700 }}>8%※</td>
                           <td style={{ padding:"10px 12px",textAlign:"right",fontFamily:"'Inter'",fontWeight:700 }}>
                             {"¥"+totalAmt.toLocaleString()}
                           </td>
@@ -11282,8 +11345,8 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                       </tbody>
                       <tfoot>
                         <tr style={{ background:T.bg }}>
-                          <td colSpan="2" style={{ padding:"10px 12px",fontWeight:700,fontSize:12 }}>返品合計（税込）</td>
-                          <td style={{ padding:"10px 12px",textAlign:"right",fontFamily:"'Inter'",fontWeight:900,fontSize:15,color:T.red }}>
+                          <td colSpan="2" style={{ padding:"10px 12px",fontWeight:700,fontSize:FS.fsBody }}>返品合計（税込）</td>
+                          <td style={{ padding:"10px 12px",textAlign:"right",fontFamily:"'Inter'",fontWeight:900,fontSize:FS.fsTitle,color:T.red }}>
                             {"▲¥"+totalAmt.toLocaleString()}
                           </td>
                         </tr>
@@ -11291,17 +11354,17 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                     </table>
                     {/* 税率内訳 */}
                     <div style={{ background:T.navyPale,borderRadius:8,padding:"10px 14px",
-                      marginBottom:16,fontSize:11,color:T.ink3 }}>
+                      marginBottom:16,fontSize:FS.fsLabel,color:T.ink3 }}>
                       <div style={{ fontWeight:700,color:T.navy,marginBottom:4 }}>消費税内訳</div>
                       {"8%（軽減）対象：¥"+Math.round(totalAmt/1.08).toLocaleString()+"　消費税：▲¥"+taxAmt8.toLocaleString()}
                     </div>
                     {/* 返金案内 */}
-                    <div style={{ border:"1px solid "+T.rule,borderRadius:8,padding:"12px 16px",fontSize:12,color:T.ink3 }}>
+                    <div style={{ border:"1px solid "+T.rule,borderRadius:8,padding:"12px 16px",fontSize:FS.fsBody,color:T.ink3 }}>
                       <div style={{ fontWeight:700,color:T.ink,marginBottom:6 }}>返金方法</div>
                       <div style={{ lineHeight:1.8 }}>
                         ご返金は次回請求書にて相殺、または下記口座へのお振込にて対応いたします。<br/>
                         {COMPANY.bank}　{COMPANY.bankType} {COMPANY.bankNo}　口座名義：株式会社至誠堂書店<br/>
-                        <span style={{ fontSize:10,color:T.ink4 }}>
+                        <span style={{ fontSize:FS.fsLabel,color:T.ink4 }}>
                           ※処理完了まで3〜5営業日いただく場合がございます
                         </span>
                       </div>
@@ -11324,27 +11387,27 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
             maxHeight:"90vh",overflowY:"auto",boxShadow:"0 8px 48px rgba(0,0,0,.22)" }}>
             <div style={{ padding:"16px 22px",borderBottom:`1px solid ${T.rule}`,
               display:"flex",justifyContent:"space-between",alignItems:"center" }}>
-              <div style={{ fontSize:15,fontWeight:800,color:T.ink }}>📊 CSV一括注文</div>
+              <div style={{ fontSize:FS.fsTitle,fontWeight:800,color:T.ink }}>📊 CSV一括注文</div>
               <button onClick={()=>{setCsvModal(false);setCsvPreview([]);}} style={{ background:T.bg,
                 border:`1px solid ${T.rule}`,borderRadius:6,padding:"4px 10px",
-                cursor:"pointer",color:T.ink4,fontSize:12 }} aria-label="閉じる">✕</button>
+                cursor:"pointer",color:T.ink4,fontSize:FS.fsBody }} aria-label="閉じる">✕</button>
             </div>
             <div style={{ padding:"18px 22px" }}>
               {csvPreview.length===0 ? (
                 <>
                   <div style={{ border:`2px dashed ${T.rule}`,borderRadius:10,
                     padding:"28px",textAlign:"center",marginBottom:14,background:T.bg }}>
-                    <div style={{ fontSize:28,marginBottom:8 }}>📊</div>
-                    <div style={{ fontSize:12,color:T.ink4,marginBottom:10 }}>
+                    <div style={{ fontSize:FS.fsNum,marginBottom:8 }}>📊</div>
+                    <div style={{ fontSize:FS.fsBody,color:T.ink4,marginBottom:10 }}>
                       CSVファイルをここにドロップ、または貼り付けてください<br/>
-                      <span style={{ fontSize:11,color:T.ink4 }}>対応：UTF-8 / Shift_JIS</span>
+                      <span style={{ fontSize:FS.fsLabel,color:T.ink4 }}>対応：UTF-8 / Shift_JIS</span>
                     </div>
                     <Btn variant="secondary" onClick={()=>onToast("ファイル選択（デモ）")}>ファイルを選択</Btn>
                   </div>
                   <textarea aria-label="CSV入力" value={csvRaw} onChange={e=>setCsvRaw(e.target.value)}
                     placeholder={"order_date,customer_name,book_id,qty,format,payment\n2026-03-15,山田司法書士事務所,b1,5,paper,bank_transfer\n..."}
                     style={{ width:"100%",height:120,padding:"8px 10px",borderRadius:7,
-                      border:`1.5px solid ${T.rule}`,fontSize:12,fontFamily:"monospace",
+                      border:`1.5px solid ${T.rule}`,fontSize:FS.fsBody,fontFamily:"monospace",
                       outline:"none",resize:"vertical",boxSizing:"border-box",marginBottom:12 }} />
                   <div style={{ display:"flex",gap:8,justifyContent:"flex-end" }}>
                     <Btn variant="ghost" onClick={()=>setCsvModal(false)}>キャンセル</Btn>
@@ -11353,7 +11416,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                 </>
               ) : (
                 <>
-                  <div style={{ fontSize:13,fontWeight:700,color:T.ink,marginBottom:10 }}>
+                  <div style={{ fontSize:FS.fsBody,fontWeight:700,color:T.ink,marginBottom:10 }}>
                     プレビュー — {csvPreview.filter(r=>r.status==="ok").length}件有効 / {csvPreview.filter(r=>r.status!=="ok").length}件エラー
                   </div>
                   <div style={{ display:"flex",flexDirection:"column",gap:6,marginBottom:14 }}>
@@ -11361,7 +11424,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                       <div key={i} style={{ padding:"10px 14px",borderRadius:8,
                         background:r.status==="ok"?T.okPale:T.redPale,
                         border:`1px solid ${r.status==="ok"?T.ok:T.red}30`,
-                        fontSize:12,color:T.ink }}>
+                        fontSize:FS.fsBody,color:T.ink }}>
                         <div style={{ display:"flex",justifyContent:"space-between" }}>
                           <span>{r.customer_name} / {r.book_id} ×{r.qty} / {r.format}</span>
                           <span style={{ fontWeight:700,color:r.status==="ok"?T.ok:T.red }}>
@@ -11395,24 +11458,24 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
             <div style={{ padding:"16px 22px",borderBottom:`1px solid ${T.rule}`,
               display:"flex",justifyContent:"space-between",alignItems:"center" }}>
               <div>
-                <div style={{ fontSize:15,fontWeight:800,color:T.ink }}>✉ メール注文 AI認識</div>
-                <div style={{ fontSize:11,color:T.ink4,marginTop:2 }}>
+                <div style={{ fontSize:FS.fsTitle,fontWeight:800,color:T.ink }}>✉ メール注文 AI認識</div>
+                <div style={{ fontSize:FS.fsLabel,color:T.ink4,marginTop:2 }}>
                   メール本文を貼り付け → AIが注文情報を抽出 → 確認後に登録
                 </div>
               </div>
               <button onClick={()=>{setEmailModal(false);setEmailParsed(null);setEmailText("");}}
                 style={{ background:T.bg,border:`1px solid ${T.rule}`,borderRadius:6,
-                  padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:12 }} aria-label="閉じる">✕</button>
+                  padding:"4px 10px",cursor:"pointer",color:T.ink4,fontSize:FS.fsBody }} aria-label="閉じる">✕</button>
             </div>
             <div style={{ padding:"18px 22px" }}>
               <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:14 }}>
                 {/* 左：テキスト入力 */}
                 <div>
-                  <div style={{ fontSize:12,fontWeight:700,color:T.ink,marginBottom:6 }}>メール本文を貼り付け</div>
+                  <div style={{ fontSize:FS.fsBody,fontWeight:700,color:T.ink,marginBottom:6 }}>メール本文を貼り付け</div>
                   <textarea aria-label="メール本文貼り付け" value={emailText} onChange={e=>setEmailText(e.target.value)}
                     placeholder={"件名：書籍注文のお願い\n\nお世話になっております。\n東京合同法律事務所の田中です。\n\n以下の書籍を注文させてください。\n・民法改正と実務対応【第3版】 3冊\n・会社法実務ハンドブック 1冊\n\n支払い方法：請求書払い\n届け先：東京都千代田区…"}
                     style={{ width:"100%",height:260,padding:"10px",borderRadius:8,
-                      border:`1.5px solid ${T.rule}`,fontSize:12,fontFamily:"inherit",
+                      border:`1.5px solid ${T.rule}`,fontSize:FS.fsBody,fontFamily:"inherit",
                       outline:"none",resize:"none",boxSizing:"border-box" }} />
                   <Btn style={{ marginTop:10,width:"100%" }} onClick={parseEmailOrder}
                     disabled={aiLoading}>
@@ -11421,13 +11484,13 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                 </div>
                 {/* 右：AI解析結果 */}
                 <div>
-                  <div style={{ fontSize:12,fontWeight:700,color:T.ink,marginBottom:6 }}>AI解析結果</div>
+                  <div style={{ fontSize:FS.fsBody,fontWeight:700,color:T.ink,marginBottom:6 }}>AI解析結果</div>
                   {emailParsed ? (
                     <div style={{ border:`2px solid ${T.g2}40`,borderRadius:10,padding:"14px" }}>
                       <div style={{ display:"flex",justifyContent:"space-between",
                         alignItems:"center",marginBottom:10 }}>
-                        <span style={{ fontSize:12,fontWeight:700,color:T.ink }}>抽出結果</span>
-                        <span style={{ fontSize:11,padding:"2px 8px",borderRadius:6,
+                        <span style={{ fontSize:FS.fsBody,fontWeight:700,color:T.ink }}>抽出結果</span>
+                        <span style={{ fontSize:FS.fsLabel,padding:"2px 8px",borderRadius:6,
                           background:emailParsed.confidence>=90?T.okPale:T.amberPale,
                           color:emailParsed.confidence>=90?T.ok:T.amber,fontWeight:700 }}>
                           信頼度 {emailParsed.confidence}%
@@ -11441,15 +11504,15 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                       ].map((r,i)=>(
                         <div key={i} style={{ display:"flex",gap:8,marginBottom:8,
                           padding:"6px 8px",background:T.bg,borderRadius:6 }}>
-                          <span style={{ fontSize:11,color:T.ink4,minWidth:60 }}>{r.label}:</span>
-                          <span style={{ fontSize:11,fontWeight:700,color:T.ink }}>{r.val}</span>
+                          <span style={{ fontSize:FS.fsLabel,color:T.ink4,minWidth:60 }}>{r.label}:</span>
+                          <span style={{ fontSize:FS.fsLabel,fontWeight:700,color:T.ink }}>{r.val}</span>
                         </div>
                       ))}
-                      <div style={{ fontSize:11,fontWeight:700,color:T.ink,
+                      <div style={{ fontSize:FS.fsLabel,fontWeight:700,color:T.ink,
                         marginBottom:6,marginTop:10 }}>注文内容</div>
                       {emailParsed.items.map((item,i)=>(
                         <div key={i} style={{ padding:"6px 8px",background:T.bg,
-                          borderRadius:6,marginBottom:4,fontSize:11,color:T.ink }}>
+                          borderRadius:6,marginBottom:4,fontSize:FS.fsLabel,color:T.ink }}>
                           📚 {item.book} ×{item.qty} — ¥{item.price.toLocaleString()}/冊
                         </div>
                       ))}
@@ -11474,8 +11537,8 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                     <div style={{ height:260, display:"flex", alignItems:"center",
                       justifyContent:"center", flexDirection:"column", gap:8,
                       border:`2px dashed ${T.rule}`, borderRadius:10, color:T.ink4 }}>
-                      <span style={{ fontSize:24 }}>🤖</span>
-                      <span style={{ fontSize:12 }}>メール本文を貼り付けて<br/>「AI解析」ボタンを押してください</span>
+                      <span style={{ fontSize:FS.fsNum }}>🤖</span>
+                      <span style={{ fontSize:FS.fsBody }}>メール本文を貼り付けて<br/>「AI解析」ボタンを押してください</span>
                     </div>
                   )}
                 </div>
