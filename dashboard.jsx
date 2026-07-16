@@ -1,12 +1,13 @@
 const { useState, useRef, useEffect, useMemo, useCallback } = React;
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // TODO[P0]: ファイル分割計画（5月エンジニア参画前に実施）
-// 分割対象:
-//   1. OrdersView（7,983行）→ orders/OrdersView.jsx + orders/PicklistSection.jsx + orders/SagawaSection.jsx
-//   2. DashboardView（850行）→ dashboard/DashboardView.jsx
-//   3. PubReportView（630行）→ publisher/PubReportView.jsx
-//   4. SettingsView（400行）→ settings/SettingsView.jsx
-//   5. 共通コンポーネント（Card/Btn/Table等）→ components/ui/
+// 分割対象（v22.64時点の実測行数）:
+//   1. OrdersView（約5,031行）→ orders/OrdersView.jsx + orders/PicklistSection.jsx + orders/SagawaSection.jsx
+//   2. DashboardView（約850行）→ dashboard/DashboardView.jsx
+//   3. PubReportView（約630行）→ publisher/PubReportView.jsx
+//   4. SettingsView（約560行）→ settings/SettingsView.jsx
+//   5. ContentView（約840行）→ content/ContentView.jsx
+//   6. 共通コンポーネント（Card/Btn/Table等）→ components/ui/
 // 分割後もindex.tsxからre-exportして既存importを維持
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -84,15 +85,7 @@ const FONT_SCALES = {
   large:    { fsLabel:14, fsBody:16, fsTitle:18, fsNum:24, fsButton:14, fsId:14 },
   xlarge:   { fsLabel:16, fsBody:18, fsTitle:22, fsNum:32, fsButton:16, fsId:18 },
 };
-// 旧fontSize値 → スケール変数マッピング（視認性優先の底上げ）
-// 10/11 → fsLabel, 12/13 → fsBody, 14/15/16 → fsTitle, 18/20/22/24+ → fsNum
-function fsFor(base, scale){
-  var s = FONT_SCALES[scale] || FONT_SCALES.large;
-  if (base <= 11) return s.fsLabel;
-  if (base <= 13) return s.fsBody;
-  if (base <= 16) return s.fsTitle;
-  return s.fsNum;
-}
+// ※v22.64で fsFor() helper関数を削除。一括置換で旧fontSize値 → FS.fsXxx に直接変換済み
 
 // ── localStorage キー定数（一元管理）──────────
 const LS = {
@@ -198,6 +191,12 @@ const PUBLISHERS = [
   { id:"shinzansha", name:"信山社",   color:T.purple, short:"信",
     kakuRate:0.67, returnRate:0.05, paymentDays:60, elecShareRate:0.62, elecType:"revenue_share",
     negotiationNote:"中規模出版社。掛率67%はほぼ標準。学術系に強い。" },
+  // ★v22.63追加: ぎょうせい（税務・自治体・法曹向け総合出版社）
+  // 麻生グループ傘下・1893年創業・自治体65%に条例例規DB導入（Wikipedia出典）
+  // ⚠ 掛率0.70はサンプル値。実際の取引条件は未確定、運用開始時に鈴木社長に要確認。
+  { id:"gyosei",     name:"ぎょうせい", color:T.purple, short:"ぎ",
+    kakuRate:0.70, returnRate:0.04, paymentDays:60, elecShareRate:0.60, elecType:"revenue_share",
+    negotiationNote:"⚠サンプル値(70%)。税務・自治体・法曹分野の総合出版社。加除式『現代地方自治全集』が看板商品。実際の取引条件は未確定。" },
 ];
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // SECTION 1b: 出版社向け読者データ（Legal Reader Report）
@@ -337,6 +336,33 @@ const READER_PROFILE_DATA = {
       { isbn:"企業法務の基礎",       pub:"koubundou", samePeriodPct:22, pubId:"b4" },
     ],
   },
+  // ★v22.63: ぎょうせい『地方税法総則逐条解説』の読者データ
+  bG1: {
+    totalBuyers: 12,
+    byType: [
+      { type:"公務員(税務)", pct:50, count:6,  color:"#78909c" },
+      { type:"税理士",       pct:33, count:4,  color:"#0C447C" },
+      { type:"弁護士",       pct:8,  count:1,  color:T.g2 },
+      { type:"その他",       pct:9,  count:1,  color:"#a8cbb7"  },
+    ],
+    byCareer: [
+      { label:"〜5年",    pct:25, count:3 },
+      { label:"5〜15年",  pct:50, count:6 },
+      { label:"15年超",   pct:25, count:3 },
+    ],
+    byAssoc: [
+      { assoc:"自治体税務部門", pct:50 },
+      { assoc:"税理士会",       pct:33 },
+      { assoc:"弁護士会",       pct:8 },
+      { assoc:"その他",         pct:9 },
+    ],
+    avgRepurchaseDays: 720, // 加除式・改訂時のみ購入
+    urgentOrderPct: 5,       // 計画購入が主
+    crossBuy: [
+      { isbn:"行政法実務テキスト",     pub:"yuhikaku",  samePeriodPct:33, pubId:"b6" },
+      { isbn:"個人情報保護法の解説",   pub:"shojihomu", samePeriodPct:17, pubId:"b5" },
+    ],
+  },
 };
 
 // 新刊企画支援データ（需要予測・部数根拠）
@@ -381,6 +407,19 @@ const PLANNING_SUPPORT_DATA = {
       { keyword:"刑事弁護 実践 手続き",   monthlySearches:840, purchased:2, gap:"ニッチ・固定需要" },
     ],
   },
+  // ★v22.63: ぎょうせい（自治体・税務・行政法）
+  gyosei: {
+    potentialSegments: [
+      { category:"自治体税務実務（逐条解説）",matchedMembers:420, repurchaseRate:78, priceRange:"4,000〜7,000円", urgentBuyerPct:8,  competitorBooks:1 },
+      { category:"条例実務・例規整備",        matchedMembers:280, repurchaseRate:62, priceRange:"5,000〜9,000円", urgentBuyerPct:15, competitorBooks:2 },
+      { category:"地方公務員法 解説",          matchedMembers:185, repurchaseRate:55, priceRange:"3,500〜6,000円", urgentBuyerPct:5,  competitorBooks:3 },
+    ],
+    searchDemand: [
+      { keyword:"地方税法 逐条",      monthlySearches:620, purchased:8, gap:"固定需要・改訂期に集中" },
+      { keyword:"条例 例規 整備",     monthlySearches:380, purchased:2, gap:"官公庁ニーズあり" },
+      { keyword:"月刊地方自治 定期購読",monthlySearches:240, purchased:0, gap:"継続課金機能が必要" },
+    ],
+  },
 };
 
 // DM配信代行履歴
@@ -404,7 +443,7 @@ const PAYMENT_METHODS = [
 // ── 粗利計算エンジン ───────────────────────────────
 
 // 仕入掛率から粗利率を算出（紙書籍）
-const kakuToMargin = (kaku) => 1 - kaku;
+// ※v22.64で未使用ヘルパー kakuToMargin (= 1-kaku) を削除。粗利率は各calc関数内で直接計算
 
 // 紙書籍 粗利計算
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -637,6 +676,7 @@ const PUBLISHER_LABELS = {
   shojihomu: "商事法務",
   koubundou: "弘文堂",
   seirinshoin:"青林書院",
+  gyosei:    "ぎょうせい",
 };
 
 const MOCK_BOOKS = [ // ⚠ MOCK: Supabase移行時にAPI呼び出しに差替え
@@ -658,6 +698,11 @@ const MOCK_BOOKS = [ // ⚠ MOCK: Supabase移行時にAPI呼び出しに差替�
   { id:"b6", title:"行政法実務テキスト",               author:"宇賀克也",   pub:"yuhikaku",   price:4800, rate:0.65, stock:33,  stockByLocation:{kasumigaseki:33, honsha:0},  elec:false, pod:false, podPrintCost:0,    status:"published", rank:12, sales:28,  elecSales:0,  views:740,  trialClicks:88,  cartRate:0.10, cvr:0.07, elecReq:11,
     genre:"行政法", tags:[], publisher:"有斐閣", isbn:"978-4-641-01789-0",
     prevEditionId:null, prevEditionTitle:null, revisionNote:null, revisionDate:null, prevBuyerCount:0 },
+  // ★v22.63追加: ぎょうせい刊行書籍（税務分野）
+  // ⚠ ID注意: b7/b8/b9は既存のサンプル注文(ORD-2833/2829/2826)で使用中のため、b10を割当
+  { id:"b10", title:"地方税法総則逐条解説【令和7年版】", author:"地方税務研究会", pub:"gyosei", price:8800, rate:0.70, stock:18, stockByLocation:{kasumigaseki:12, honsha:6}, elec:false, pod:false, podPrintCost:0, status:"published", rank:24, sales:14, elecSales:0, views:420, trialClicks:52, cartRate:0.09, cvr:0.06, elecReq:8,
+    genre:"税法", tags:["新刊","改訂版"], publisher:"ぎょうせい", isbn:"978-4-324-11234-5",
+    prevEditionId:"b10_r6", prevEditionTitle:"地方税法総則逐条解説【令和6年版】", revisionNote:"令和7年度改正対応・インボイス制度経過措置追記", revisionDate:"2026-02-15", prevBuyerCount:96 },
 ];
 
 // ── バナー広告・メルマガ広告 サンプルデータ ──────
@@ -1105,6 +1150,140 @@ const MOCK_ORDERS = [
       { name:"個人情報保護法の解説【第5版】", amount:16200, taxRate:8, bookId:"b5", qty:3, isbn:"978-4-785-72890-1", publisher:"商事法務", unitPrice:5400 },
       { name:"行政法実務テキスト", amount:9600, taxRate:8, bookId:"b6", qty:2, isbn:"978-4-641-01789-0", publisher:"有斐閣", unitPrice:4800 },
     ] },
+  // ★v22.62: 大量注文パターン検証用サンプル10件追加
+  // Case 1: 単品20冊の一括注文（研修用）
+  { id:"ORD-2835", member:"野村不動産法務部", items:"会社法実務ハンドブック ×20", total:130000, fmt:"paper", status:"pending", date:"2026-03-07 11:42",
+    email:"houmu@nomura-re.co.jp", address:"東京都新宿区西新宿1-26-2 新宿野村ビル",
+    caseNo:"", caseName:"新任法務向け研修テキスト",
+    urgent:false, urgentBy:"", urgentNote:"",
+    channel:"gaishoo", shipMethod:"sagawa_gaishoo", assignedTo:"金子", shipFrom:"honsha",
+    corpId:"corp-02", shippedAt:null, deliveredAt:null,
+    staffMemo:"新人研修用。4月1日までに納品希望。",
+    paymentMethod:"invoice", paymentStatus:"unpaid", shipApproved:true,
+    taxItems:[{ name:"会社法実務ハンドブック", amount:130000, taxRate:8, bookId:"b2", qty:20, isbn:"978-4-785-72734-5", publisher:"商事法務", unitPrice:6500, itemStatus:"ready", shippedQty:0, itemNote:"" }] },
+  // Case 2: 単品50冊の超大量注文
+  { id:"ORD-2834", member:"第二東京弁護士会", items:"民法改正と実務対応【第3版】 ×50", total:290000, fmt:"paper", status:"pending", date:"2026-03-07 10:15",
+    email:"library@niben.jp", address:"東京都千代田区霞が関1-1-3 弁護士会館9階",
+    caseNo:"", caseName:"会員配布用書籍一括購入",
+    urgent:true, urgentBy:"2026-03-25", urgentNote:"総会までに全会員配布必要",
+    channel:"gaishoo", shipMethod:"direct", assignedTo:"専務", shipFrom:"kasumigaseki",
+    corpId:null, shippedAt:null, deliveredAt:null,
+    staffMemo:"在庫要確認。重版予定あるため分納の可能性。",
+    paymentMethod:"invoice", paymentStatus:"unpaid", shipApproved:true,
+    taxItems:[{ name:"民法改正と実務対応【第3版】", amount:290000, taxRate:8, bookId:"b1", qty:50, isbn:"978-4-641-13456-7", publisher:"有斐閣", unitPrice:5800, itemStatus:"waiting", shippedQty:0, itemNote:"在庫30冊のみ、20冊は重版待ち" }] },
+  // Case 3: 多品目大量注文（8種類×各5冊＝40冊）
+  { id:"ORD-2833", member:"長島・大野・常松法律事務所", items:"実務書籍8タイトル ×各5冊＝40冊", total:234000, fmt:"paper", status:"pending", date:"2026-03-06 15:30",
+    email:"library@noandt.com", address:"東京都千代田区大手町1-1-1 大手町パークビル",
+    caseNo:"", caseName:"アソシエイト向け教材一括",
+    urgent:false, urgentBy:"", urgentNote:"",
+    channel:"gaishoo", shipMethod:"sagawa_gaishoo", assignedTo:"金子", shipFrom:"honsha",
+    corpId:null, shippedAt:null, deliveredAt:null,
+    staffMemo:"アソシエイト40名分。箱詰め指定あり。",
+    paymentMethod:"invoice", paymentStatus:"unpaid", shipApproved:true,
+    taxItems:[
+      { name:"民法改正と実務対応【第3版】", amount:29000, taxRate:8, bookId:"b1", qty:5, isbn:"978-4-641-13456-7", publisher:"有斐閣", unitPrice:5800, itemStatus:"ready", shippedQty:0, itemNote:"" },
+      { name:"会社法実務ハンドブック", amount:32500, taxRate:8, bookId:"b2", qty:5, isbn:"978-4-785-72734-5", publisher:"商事法務", unitPrice:6500, itemStatus:"ready", shippedQty:0, itemNote:"" },
+      { name:"労働法実務大全【第4版】", amount:36000, taxRate:8, bookId:"b3", qty:5, isbn:"978-4-335-30812-3", publisher:"弘文堂", unitPrice:7200, itemStatus:"ready", shippedQty:0, itemNote:"" },
+      { name:"企業法務の基礎【第2版】", amount:27500, taxRate:8, bookId:"b4", qty:5, isbn:"978-4-335-36054-1", publisher:"弘文堂", unitPrice:5500, itemStatus:"ready", shippedQty:0, itemNote:"" },
+      { name:"個人情報保護法の解説【第5版】", amount:27000, taxRate:8, bookId:"b5", qty:5, isbn:"978-4-785-72890-1", publisher:"商事法務", unitPrice:5400, itemStatus:"ready", shippedQty:0, itemNote:"" },
+      { name:"行政法実務テキスト", amount:24000, taxRate:8, bookId:"b6", qty:5, isbn:"978-4-641-01789-0", publisher:"有斐閣", unitPrice:4800, itemStatus:"ready", shippedQty:0, itemNote:"" },
+      { name:"刑事訴訟法講義【第4版】", amount:28000, taxRate:8, bookId:"b7", qty:5, isbn:"978-4-641-13901-2", publisher:"有斐閣", unitPrice:5600, itemStatus:"ready", shippedQty:0, itemNote:"" },
+      { name:"倒産法実務の論点", amount:30000, taxRate:8, bookId:"b8", qty:5, isbn:"978-4-785-72911-3", publisher:"商事法務", unitPrice:6000, itemStatus:"ready", shippedQty:0, itemNote:"" },
+    ] },
+  // Case 4: 個人会員・通常のEC注文（1冊のみ）
+  { id:"ORD-2832", member:"伊藤 律子（個人）", items:"企業法務の基礎 ×1", total:5225, fmt:"paper", status:"shipped", date:"2026-03-06 13:22",
+    email:"r.ito@gmail.com", address:"東京都世田谷区三軒茶屋2-11-22",
+    caseNo:"", caseName:"",
+    urgent:false, urgentBy:"", urgentNote:"",
+    channel:"ec", shipMethod:"sagawa", assignedTo:"", shipFrom:"honsha",
+    corpId:null, shippedAt:"2026-03-06 16:00", deliveredAt:null,
+    staffMemo:"",
+    paymentMethod:"credit", paymentStatus:"paid", shipApproved:true,
+    taxItems:[{ name:"企業法務の基礎【第2版】", amount:5225, taxRate:8, bookId:"b4", qty:1, isbn:"978-4-335-36054-1", publisher:"弘文堂", unitPrice:5225, itemStatus:"shipped", shippedQty:1, itemNote:"" }] },
+  // Case 5: 分納対応（品切れ1件混在）★ partial_shipped パターン
+  { id:"ORD-2831", member:"三井物産法務部", items:"民法3冊＋会社法2冊（1品目品切れ）", total:31900, fmt:"paper", status:"partial_shipped", date:"2026-03-06 09:44",
+    email:"houmu@mitsui.com", address:"東京都千代田区大手町1-2-1 三井物産ビル",
+    caseNo:"2026-商-0089", caseName:"海外子会社ガバナンス調査",
+    urgent:false, urgentBy:"", urgentNote:"",
+    channel:"gaishoo", shipMethod:"sagawa_gaishoo", assignedTo:"金子", shipFrom:"honsha",
+    corpId:"corp-03", shippedAt:"2026-03-06 17:00", deliveredAt:null,
+    staffMemo:"⚠ 個人情報保護法が在庫切れ、重版3/20予定。3冊＋2冊を先行出荷済。",
+    paymentMethod:"invoice", paymentStatus:"unpaid", shipApproved:true,
+    taxItems:[
+      { name:"民法改正と実務対応【第3版】", amount:17400, taxRate:8, bookId:"b1", qty:3, isbn:"978-4-641-13456-7", publisher:"有斐閣", unitPrice:5800, itemStatus:"shipped", shippedQty:3, itemNote:"" },
+      { name:"会社法実務ハンドブック", amount:13000, taxRate:8, bookId:"b2", qty:2, isbn:"978-4-785-72734-5", publisher:"商事法務", unitPrice:6500, itemStatus:"shipped", shippedQty:2, itemNote:"" },
+      { name:"個人情報保護法の解説【第5版】", amount:1500, taxRate:8, bookId:"b5", qty:0, isbn:"978-4-785-72890-1", publisher:"商事法務", unitPrice:5400, itemStatus:"waiting", shippedQty:0, itemNote:"重版3/20予定・後日納品" },
+    ] },
+  // Case 6: 全キャンセル済
+  { id:"ORD-2830", member:"高橋 誠一（個人）", items:"労働法実務大全 ×2（キャンセル）", total:14400, fmt:"paper", status:"cancelled", date:"2026-03-05 20:15",
+    email:"takahashi@example.com", address:"東京都品川区大崎1-2-3",
+    caseNo:"", caseName:"",
+    urgent:false, urgentBy:"", urgentNote:"",
+    channel:"ec", shipMethod:"sagawa", assignedTo:"", shipFrom:"honsha",
+    corpId:null, shippedAt:null, deliveredAt:null,
+    staffMemo:"顧客都合キャンセル（3/6 10:00連絡）。クレジットカード決済取消済。",
+    paymentMethod:"credit", paymentStatus:"refunded", shipApproved:false,
+    taxItems:[{ name:"労働法実務大全【第4版】", amount:14400, taxRate:8, bookId:"b3", qty:2, isbn:"978-4-335-30812-3", publisher:"弘文堂", unitPrice:7200, itemStatus:"cancelled", shippedQty:0, itemNote:"顧客都合キャンセル" }] },
+  // Case 7: 官公庁向け30冊・請求書払い
+  { id:"ORD-2829", member:"法務省 大臣官房司法法制部", items:"刑事訴訟法講義 ×30冊（官公庁）", total:168000, fmt:"paper", status:"pending", date:"2026-03-05 14:08",
+    email:"shihou@moj.go.jp", address:"東京都千代田区霞が関1-1-1 法務省",
+    caseNo:"R8-契-0234", caseName:"司法研修用教材 令和8年度",
+    urgent:false, urgentBy:"2026-04-01", urgentNote:"年度開始前に納品",
+    channel:"gaishoo", shipMethod:"direct", assignedTo:"専務", shipFrom:"kasumigaseki",
+    corpId:null, shippedAt:null, deliveredAt:null,
+    staffMemo:"官公庁案件。予算科目：消耗品費、契約番号：R8-契-0234。納品書3部要。",
+    paymentMethod:"invoice", paymentStatus:"unpaid", shipApproved:true,
+    taxItems:[{ name:"刑事訴訟法講義【第4版】", amount:168000, taxRate:8, bookId:"b7", qty:30, isbn:"978-4-641-13901-2", publisher:"有斐閣", unitPrice:5600, itemStatus:"ready", shippedQty:0, itemNote:"納品書3部同梱" }] },
+  // Case 8: 電子書籍10ライセンス一括
+  { id:"ORD-2828", member:"森・濱田松本法律事務所", items:"電子書籍10ライセンス一括", total:74800, fmt:"elec", status:"completed", date:"2026-03-05 11:30",
+    email:"library@mhmjapan.com", address:"",
+    caseNo:"", caseName:"所内ライブラリ電子化",
+    urgent:false, urgentBy:"", urgentNote:"",
+    channel:"gaishoo", shipMethod:"sagawa", assignedTo:"金子", shipFrom:"elec",
+    corpId:null, shippedAt:null, deliveredAt:null,
+    staffMemo:"電子書籍10ID発行済。Legalscapeビューワで閲覧可能。",
+    paymentMethod:"invoice", paymentStatus:"paid", shipApproved:true,
+    taxItems:[
+      { name:"民法改正と実務対応【第3版】（電子）", amount:29800, taxRate:10, bookId:"b1e", qty:10, isbn:"978-4-641-13456-7", publisher:"有斐閣", unitPrice:2980, itemStatus:"shipped", shippedQty:10, itemNote:"ライセンスID発行済" },
+      { name:"労働法実務大全【第4版】（電子）", amount:45000, taxRate:10, bookId:"b3e", qty:10, isbn:"978-4-335-30812-3", publisher:"弘文堂", unitPrice:4500, itemStatus:"shipped", shippedQty:10, itemNote:"ライセンスID発行済" },
+    ] },
+  // Case 9: 配送中（佐川追跡番号あり）3冊
+  { id:"ORD-2827", member:"鈴木 健太郎 弁護士", items:"行政法・倒産法 ×3冊", total:16440, fmt:"paper", status:"delivering", date:"2026-03-04 18:05",
+    email:"suzuki@suzuki-law.jp", address:"東京都港区赤坂2-17-22 赤坂ツインタワー",
+    caseNo:"", caseName:"",
+    urgent:false, urgentBy:"", urgentNote:"",
+    channel:"ec", shipMethod:"sagawa", assignedTo:"林", shipFrom:"honsha",
+    corpId:null, shippedAt:"2026-03-05 10:30", deliveredAt:null,
+    trackingNo:"1234-5678-9012",
+    staffMemo:"佐川配送中。3/6午前着予定。",
+    paymentMethod:"credit", paymentStatus:"paid", shipApproved:true,
+    taxItems:[
+      { name:"行政法実務テキスト", amount:4800, taxRate:8, bookId:"b6", qty:1, isbn:"978-4-641-01789-0", publisher:"有斐閣", unitPrice:4800, itemStatus:"shipped", shippedQty:1, itemNote:"" },
+      { name:"倒産法実務の論点", amount:11640, taxRate:8, bookId:"b8", qty:2, isbn:"978-4-785-72911-3", publisher:"商事法務", unitPrice:5820, itemStatus:"shipped", shippedQty:2, itemNote:"" },
+    ] },
+  // Case 10: 司法研修所向け15冊（研修所店拠点）
+  { id:"ORD-2826", member:"司法研修所", items:"民事訴訟法・刑事訴訟法 ×15冊", total:84000, fmt:"paper", status:"pending", date:"2026-03-04 09:20",
+    email:"kyozai@courts.go.jp", address:"埼玉県和光市南2-3-8 司法研修所",
+    caseNo:"", caseName:"令和8年度司法修習生配布教材",
+    urgent:true, urgentBy:"2026-03-28", urgentNote:"4月入所式までに必須",
+    channel:"gaishoo", shipMethod:"direct", assignedTo:"専務", shipFrom:"shihou",
+    corpId:null, shippedAt:null, deliveredAt:null,
+    staffMemo:"司法研修所店から直配。修習生75期配布分。",
+    paymentMethod:"invoice", paymentStatus:"unpaid", shipApproved:true,
+    taxItems:[
+      { name:"刑事訴訟法講義【第4版】", amount:42000, taxRate:8, bookId:"b7", qty:15, isbn:"978-4-641-13901-2", publisher:"有斐閣", unitPrice:2800, itemStatus:"ready", shippedQty:0, itemNote:"" },
+      { name:"民事訴訟法の基礎", amount:42000, taxRate:8, bookId:"b9", qty:15, isbn:"978-4-641-13712-4", publisher:"有斐閣", unitPrice:2800, itemStatus:"ready", shippedQty:0, itemNote:"" },
+    ] },
+  // ★v22.63追加: ぎょうせい書籍サンプル注文（税理士事務所・自治体税務部向け）
+  { id:"ORD-2825", member:"税理士法人 山田会計事務所", items:"地方税法総則逐条解説 ×3冊", total:26400, fmt:"paper", status:"pending", date:"2026-03-03 14:18",
+    email:"info@yamada-tax.jp", address:"東京都千代田区丸の内1-8-3 丸の内トラストタワー本館",
+    caseNo:"", caseName:"令和7年度税制改正対応 所内研修",
+    urgent:false, urgentBy:"", urgentNote:"",
+    channel:"gaishoo", shipMethod:"sagawa_gaishoo", assignedTo:"林", shipFrom:"honsha",
+    corpId:null, shippedAt:null, deliveredAt:null,
+    staffMemo:"税理士法人。税制改正対応の年次書籍更新。請求書払い。",
+    paymentMethod:"invoice", paymentStatus:"unpaid", shipApproved:true,
+    taxItems:[{ name:"地方税法総則逐条解説【令和7年版】", amount:26400, taxRate:8, bookId:"b10", qty:3, isbn:"978-4-324-11234-5", publisher:"ぎょうせい", unitPrice:8800, itemStatus:"ready", shippedQty:0, itemNote:"" }] },
 ];
 
 
@@ -7775,10 +7954,33 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                     {/* 書籍バッジ＋在庫ステータス */}
                     {r.taxItems&&r.taxItems.length>0 ? (
                       <div style={{ display:"flex",flexDirection:"column",gap:3 }}>
-                        {/* 品目数サマリ */}
-                        {r.taxItems.length>1 && (
-                          <div style={{ fontSize:FS.fsLabel,fontWeight:700,color:T.ink3,marginBottom:1 }}>
-                            📦 {r.taxItems.length}品目・計{r.taxItems.reduce(function(s,it){return s+(it.qty||1);},0)}冊
+                        {/* 品目数サマリ：冊数を大きく強調表示 */}
+                        {r.taxItems.length>1 && (function(){
+                          var totalQty = r.taxItems.reduce(function(s,it){return s+(it.qty||1);},0);
+                          var isLargeOrder = totalQty >= 20; // 20冊以上は大量注文として強調
+                          return (
+                            <div style={{ display:"inline-flex",alignItems:"center",gap:6,marginBottom:3,
+                              padding:"2px 8px",borderRadius:6,
+                              background:isLargeOrder ? T.amberPale : T.ink+"08",
+                              border: isLargeOrder ? "1px solid "+T.amber+"60" : "none" }}>
+                              <span style={{ fontSize:FS.fsLabel,fontWeight:700,color:T.ink3 }}>
+                                📦 {r.taxItems.length}品目
+                              </span>
+                              <span style={{ fontSize:FS.fsTitle,fontWeight:900,color:isLargeOrder?T.amber:T.ink }}>
+                                計{totalQty}冊
+                              </span>
+                              {isLargeOrder && <span style={{ fontSize:FS.fsLabel,fontWeight:700,color:T.amber }}>⚠大量</span>}
+                            </div>
+                          );
+                        })()}
+                        {/* 単品注文の冊数強調（品目1つだけの場合） */}
+                        {r.taxItems.length===1 && (r.taxItems[0].qty||1) >= 10 && (
+                          <div style={{ display:"inline-flex",alignItems:"center",gap:6,marginBottom:3,
+                            padding:"2px 8px",borderRadius:6,background:T.amberPale,border:"1px solid "+T.amber+"60" }}>
+                            <span style={{ fontSize:FS.fsTitle,fontWeight:900,color:T.amber }}>
+                              計{r.taxItems[0].qty}冊
+                            </span>
+                            <span style={{ fontSize:FS.fsLabel,fontWeight:700,color:T.amber }}>⚠大量</span>
                           </div>
                         )}
                         {r.taxItems.map(function(it,i){
@@ -7844,7 +8046,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
                 background:r.fmt==="elec"?T.navyPale:r.fmt==="pod"?T.amberPale:T.okPale,
                 color:r.fmt==="elec"?T.navy:r.fmt==="pod"?T.amber:T.g2}}>
                 {r.fmt==="elec"?"電子":r.fmt==="pod"?"POD":"紙"}</span>},
-              {key:"total", label:"金額",   render:r=><span style={{fontFamily:"'Inter'",fontWeight:700}}>¥{r.total.toLocaleString()}</span>},
+              {key:"total", label:"金額",   render:r=><span style={{fontFamily:"'Inter'",fontWeight:800,fontSize:FS.fsTitle,color:T.ink}}>¥{r.total.toLocaleString()}</span>},
               {key:"status",label:"状態",   render:r=>(
                 <span style={{padding:"2px 8px",borderRadius:6,fontSize:FS.fsLabel,fontWeight:700,
                   background:statusColor(r.status)+"18",color:statusColor(r.status)}}>
@@ -8778,7 +8980,7 @@ const OrdersView = ({ onToast, globalOrders, setGlobalOrders, updateOrder, addOr
         </div>
       )}
 
-      {/* ── 電話注文代理入力 ── */}}
+      {/* ── 電話注文代理入力 ── */}
       {tab==="phone" && (
         <PhoneOrderEntry orders={orders} setOrders={setOrders} addOrder={_addOrder} onToast={onToast} setGlobalAddrHistory={setGlobalAddrHistory} initShipApproval={initShipApproval} />
       )}
@@ -16041,7 +16243,6 @@ const ReconciliationView = ({ onToast, globalOrders, setGlobalOrders, updateOrde
 };
 
 
-
 // ── 発注記録 サンプルデータ ──────────────────
 // ⚠ MOCK: Supabase purchase_order_records に差替え
 // 将来接続: eFAX Webhook → Claude Vision API OCR → 自動INSERT
@@ -18919,15 +19120,13 @@ const PAY_METHOD_META = {
 };
 
 // 弁護士会員（登録番号確認済み）かどうかを判定
+// ※v22.64時点で未使用。将来 BPO・SaaS で本人確認時に使用予定
 function isVerifiedLawyer(memberName) {
   var m = MOCK_MEMBERS.find(function(x){
     return x.name === memberName || (memberName && memberName.includes(x.name));
   });
   return !!(m && m.type === "弁護士" && m.barNo && m.barNo.length > 2);
 }
-
-// 発送承認の自動判定
-// autoShipApprove: OrdersView内に統合済み（v22.55で削除）
 
 // ── ロール定義 ──────────────────────────────────────────
 // role: ロールキー
@@ -18997,6 +19196,8 @@ function roleCanAccess(role, navId) {
   if (rm.navAllow === "all") return true;
   return (rm.navAllow||[]).includes(navId);
 }
+// ※下記2関数は v22.64時点で未使用。ROLE_META[role].showXxx を直接アクセスする場面が多いため未配線。
+//   将来、ロール拡張時にヘルパー経由でアクセスを統一する設計
 function roleShowFinance(role) {
   return (ROLE_META[role]||ROLE_META.admin).showFinance;
 }
